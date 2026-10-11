@@ -85,5 +85,5 @@ and static effect feature commits. It excludes PWM, RPM-sync, firmware,
 merge and motherboard-sync commands. It leaves the final requested
 colour purple. Fan Control remains running. Hub capabilities were
 independently confirmed read-only; physical colour response is pending.
-Earlier vendor settings recorded port fan counts 3,2,1,0; the launcher
-requires confirmation of actual port counts before writing.
+The user confirmed one hub with port fan counts 3,2,1,0. The launcher
+uses these confirmed counts.
