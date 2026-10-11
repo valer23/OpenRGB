@@ -401,6 +401,12 @@ void RGBController_LianLiUniHubSLInfinity::DeviceConfigureZone(int zone_idx)
 
 void RGBController_LianLiUniHubSLInfinity::DeviceUpdateLEDs()
 {
+    if(active_mode != 0)
+    {
+        // Preserve the selected hardware animation when colours are applied.
+        DeviceUpdateMode();
+        return;
+    }
 
     if(!initializedMode)
     {
@@ -417,6 +423,12 @@ void RGBController_LianLiUniHubSLInfinity::DeviceUpdateLEDs()
 
 void RGBController_LianLiUniHubSLInfinity::DeviceUpdateZoneLEDs(int zone)
 {
+    if(active_mode != 0)
+    {
+        // Preserve the selected hardware animation when colours are applied.
+        DeviceUpdateMode();
+        return;
+    }
     if(!initializedMode)
     {
         DeviceUpdateMode();
@@ -429,7 +441,14 @@ void RGBController_LianLiUniHubSLInfinity::DeviceUpdateZoneLEDs(int zone)
 
 void RGBController_LianLiUniHubSLInfinity::DeviceUpdateSingleLED(int /* led */)
 {
-    DeviceUpdateMode();
+    if(active_mode == 0)
+    {
+        DeviceUpdateLEDs();
+    }
+    else
+    {
+        DeviceUpdateMode();
+    }
 }
 
 void RGBController_LianLiUniHubSLInfinity::DeviceUpdateMode()
@@ -447,7 +466,7 @@ void RGBController_LianLiUniHubSLInfinity::DeviceUpdateMode()
     {
         if(zones[zone_idx].leds_count == 0)
         {
-            return;     // Do nothing, channel isn't in use
+            continue;   // Skip unused channels; later channels may be populated
         }
         fan_idx = ((zones[zone_idx].leds_count / 16) - 1);        // Indexes start at 0
 
