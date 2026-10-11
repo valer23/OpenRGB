@@ -128,3 +128,31 @@ startup; capture initialisation before changing the wiring.
   command decoding.
 - Initialization/configuration queries and arbitrary LED counts.
 - A complete OpenRGB implementation and build validation.
+
+## Narrow onboard-logo OpenRGB prototype, 2026-10-12
+
+The Windows-only ASUS Aura NEO controller registers only 0B05:1CD2 on
+interface 1, usage FF0A:0001. It exposes one Static logo zone and sends
+both captured onboard output indices the same colour. Their independent
+physical mapping remains unknown. It uses HIDAPI `hid_send_output_report`,
+which matches the captured control SET_REPORT transport; ordinary
+`hid_write` is not used.
+
+Detection and construction send no commands. The first colour update lazily
+sends only exact onboard setup frames 369 and 371, waits 2.2 seconds, sends
+exact activation frame 407, waits one second, then sends two 64-byte colour
+reports with the captured GRB layout. All reserved bytes stay zero. No
+header count/configuration or selector-0 ARGB colour reports are sent. The
+activation command's full semantics remain inferred from the earlier replay.
+
+The earlier successful physical replay included header setup/colour packets
+as well. This narrower onboard-only subset is an implementation hypothesis
+and still requires a physical test with LightingService paused. Existing
+GPU/fan drivers and cooling settings are not modified by this controller.
+The prototype offers no firmware writes, persistent saving, independent
+onboard outputs, effects, or ARGB-header support.
+
+Offline packet regressions compare against exact extracted capture fixtures
+and cover full-length writes, every initialization/colour failure position,
+retry setup and invalid callbacks. Compilation and these tests pass; a
+full application build and physical logo response remain to be validated.
