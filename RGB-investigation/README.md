@@ -61,7 +61,7 @@ Start menu entry. The purple profile is copied from the isolated test settings.
 
 Configure-OpenRGB-Custom.ps1 runs elevated device discovery and registers the
 OpenRGB Custom (valerian) login task with a 30-second delay, highest privileges,
-and ValPurple profile loading. The GUI's built-in Auto Start remains disabled
+and ValWhite profile loading. Save ValWhite before running this setup. The GUI's built-in Auto Start remains disabled
 to keep one startup mechanism. Fan Control remains running and controls cooling.
 
 A successful build restores available standard detectors; it does not add

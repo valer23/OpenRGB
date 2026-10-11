@@ -14,7 +14,7 @@ try {
     if(-not $latestLog){throw 'Device discovery produced no log.'}
     $devices = @(Get-Content -LiteralPath $latestLog.FullName | Where-Object {$_ -match 'Registering RGB controller'} | ForEach-Object {($_ -split 'Registering RGB controller ',2)[1]})
     if($devices.Count -eq 0){throw 'No RGB controllers were detected.'}
-    $profile = Join-Path $settingsRoot 'profiles\ValPurple.json'
+    $profile = Join-Path $settingsRoot 'profiles\ValWhite.json'
     if(-not(Test-Path -LiteralPath $profile)){throw 'Saved purple profile is missing.'}
     $userId = [Security.Principal.WindowsIdentity]::GetCurrent().Name
     $action = New-ScheduledTaskAction -Execute "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -WorkingDirectory $appRoot -Argument ('-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "' + (Join-Path $appRoot 'Start-OpenRGB-Custom.ps1') + '"')
