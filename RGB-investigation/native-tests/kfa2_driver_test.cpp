@@ -8,8 +8,8 @@ unsigned int logged_errors=0;
 unsigned char registers[16]={0x11,0,255,0,0,0,0x20,1};
 unsigned int sync_failures=0;
 bool fail_bus=false,fail_slot=false;
-NV_STATUS NvAPI_GPU_GetBusId(NV_PHYSICAL_GPU_HANDLE gpu,NV_U32* bus) {if(fail_bus)return -1; *bus=gpu?2:1; return 0;}
-NV_STATUS NvAPI_GPU_GetBusSlotId(NV_PHYSICAL_GPU_HANDLE,NV_U32* slot) {if(fail_slot)return -1; *slot=0; return 0;}
+NV_STATUS NvAPI_GPU_GetBusId(NV_PHYSICAL_GPU_HANDLE gpu,NV_U32* bus) {if(fail_bus)return -1; *bus=gpu && *gpu!=2?2:1; return 0;}
+NV_STATUS NvAPI_GPU_GetBusSlotId(NV_PHYSICAL_GPU_HANDLE gpu,NV_U32* slot) {if(fail_slot)return -1; *slot=gpu && *gpu==2?1:0; return 0;}
 struct Call { unsigned char reg; std::vector<unsigned char> data; };
 std::vector<Call> writes;
 
@@ -44,6 +44,12 @@ int main() {
     RGBController_KFA2EX driver(nullptr);
     NV_S32 second_handle=1;
     RGBController_KFA2EX second(&second_handle);
+    NV_S32 third_handle=2;
+    RGBController_KFA2EX same_bus_other_slot(&third_handle);
+    RGBController_KFA2EX same_card_again(nullptr);
+    assert(driver.location==same_card_again.location);
+    assert(driver.location!=same_bus_other_slot.location);
+    assert(second.location!=same_bus_other_slot.location);
     assert(driver.location!=second.location);
     assert(driver.location=="NVAPI: PCI bus 1, slot 0, I2C address 0x23, port 1");
     for(bool bus_failure : {true,false}) {

@@ -13,6 +13,13 @@ try {
         & $exe
         if($LASTEXITCODE -ne 0) {throw 'GPU regression tests failed.'}
     }
+    if(Test-Path -LiteralPath (Join-Path $PSScriptRoot 'nvapi_wrapper_test.cpp')) {
+        $exe = Join-Path $testOutput 'nvapi.exe'
+        & $Compiler @common tests/driver-regressions/nvapi_wrapper_test.cpp -o $exe
+        if($LASTEXITCODE -ne 0) {throw 'NVAPI wrapper test compilation failed.'}
+        & $exe
+        if($LASTEXITCODE -ne 0) {throw 'NVAPI wrapper tests failed.'}
+    }
     if(Test-Path -LiteralPath (Join-Path $PSScriptRoot 'lianli_lighting_test.cpp')) {
         $exe = Join-Path $testOutput 'lianli.exe'
         & $Compiler @common -IControllers/LianLiController/LianLiUniHubSLInfinityController tests/driver-regressions/lianli_lighting_test.cpp Controllers/LianLiController/LianLiUniHubSLInfinityController/LianLiUniHubSLInfinityController.cpp Controllers/LianLiController/LianLiUniHubSLInfinityController/RGBController_LianLiUniHubSLInfinity.cpp -o $exe
