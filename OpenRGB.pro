@@ -330,7 +330,11 @@ TRANSLATIONS +=                                                                 
 #-----------------------------------------------------------------------------------------------#
 # Windows-specific Configuration                                                                #
 #-----------------------------------------------------------------------------------------------#
-win32:QMAKE_CXXFLAGS += /utf-8
+win32-msvc*:QMAKE_CXXFLAGS += /utf-8
+win32-g++ {
+    QMAKE_TARGET.arch = $$QT_ARCH
+    LIBS += -lws2_32 -liphlpapi -lole32 -loleaut32 -luuid -lwbemuuid -lsetupapi -lwinhttp
+}
 win32:INCLUDEPATH +=                                                                            \
     dependencies/display-library/include                                                        \
     dependencies/hidapi-hotplug-win/include                                                     \
@@ -847,4 +851,21 @@ equals(HID_HOTPLUG_ENABLED, "true") {
 message("HID Hotplug: Enabled")
 } else {
 message("HID Hotplug: Disabled")
+}
+
+# Local hardware verification build: register only the captured KFA2 driver.
+# Normal builds retain every controller and detector.
+win32:contains(CONFIG, kfa2_capture_test) {
+    win32-g++ {
+        isEmpty(KFA2_MBEDTLS_ARCHIVE): error("Supply KFA2_MBEDTLS_ARCHIVE built with MinGW")
+        LIBS -= -lmbedcrypto -lmbedtls -lmbedx509
+        LIBS += $$quote($$KFA2_MBEDTLS_ARCHIVE)
+    }
+    SOURCES -= $$files("Controllers/*.cpp", true)
+    SOURCES += Controllers/GalaxGPUController/RGBController_KFA2EX_Windows.cpp \
+               Controllers/GalaxGPUController/KFA2EXControllerDetect_Windows.cpp \
+               Controllers/NanoleafController/NanoleafController.cpp
+    HEADERS -= $$files("Controllers/*.h", true)
+    HEADERS += Controllers/GalaxGPUController/RGBController_KFA2EX_Windows.h
+    TARGET = OpenRGB-KFA2-test
 }

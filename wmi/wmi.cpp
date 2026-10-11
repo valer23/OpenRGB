@@ -179,8 +179,8 @@ HRESULT Wmi::query(std::string queryStr, std::vector<QueryObj>& queryVectorOut, 
 
     // Make the WMI query
     hres = pSvc->ExecQuery(
-        bstr_t("WQL"),
-        bstr_t(queryStr.c_str()),
+        bstr_t(L"WQL"),
+        bstr_t(utf8_decode(queryStr).c_str()),
         WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
         nullptr,
         &pEnumerator

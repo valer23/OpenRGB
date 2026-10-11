@@ -122,3 +122,23 @@ compile_commands.json
 
 # Generated i18n files
 *.qm
+
+# Local RGB investigation: retain source and notes, exclude captures and runtimes.
+RGB-investigation/**/__pycache__/
+RGB-investigation/analysis-libs/
+RGB-investigation/build-libs/
+RGB-investigation/toolchain/
+RGB-investigation/mbedtls-source/
+RGB-investigation/mbedtls-mingw/
+RGB-investigation/OpenRGB-build/
+RGB-investigation/OpenRGB-KFA2-build/
+RGB-investigation/OpenRGB-KFA2-settings/
+RGB-investigation/*.zip
+RGB-investigation/*.pcap
+RGB-investigation/*.jsonl
+RGB-investigation/*.tsv
+RGB-investigation/*.txt
+RGB-investigation/Aura-unique-reports.json
+RGB-investigation/ValFans-before-ARGB-*.json
+RGB-investigation/native-tests/*.exe
+!RGB-investigation/Build-OpenRGB-KFA2.ps1
