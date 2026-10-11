@@ -468,7 +468,7 @@ void RGBController_LianLiUniHubSLInfinity::DeviceUpdateMode()
         {
             continue;   // Skip unused channels; later channels may be populated
         }
-        fan_idx = ((zones[zone_idx].leds_count / 16) - 1);        // Indexes start at 0
+        fan_idx = (((zones[zone_idx].leds_count + 15) / 16) - 1);        // Indexes start at 0
 
         controller->SetChannelMode((unsigned char)zone_idx,
                                    modes[active_mode],
