@@ -23,6 +23,6 @@ try {
     }
     & (Join-Path $compilerBin 'mingw32-make.exe') -j6 *> build.log
     if ($LASTEXITCODE -ne 0) { throw 'Compilation failed; see build.log.' }
-    & (Join-Path $qtBin 'windeployqt.exe') --release --no-translations --no-system-d3d-compiler --no-opengl-sw (Join-Path $buildRoot 'release\OpenRGB-KFA2-test.exe')
+    & (Join-Path $qtBin 'windeployqt.exe') --release --no-translations --no-system-d3d-compiler --no-opengl-sw (Join-Path $buildRoot 'release\OpenRGB-Custom.exe')
     if ($LASTEXITCODE -ne 0) { throw 'Qt runtime deployment failed.' }
 } finally { Pop-Location }

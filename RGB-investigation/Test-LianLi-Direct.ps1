@@ -4,7 +4,7 @@ $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 Start-Transcript -Path (Join-Path $PSScriptRoot "LianLi-direct-$stamp-result.txt")
 try {
     if (-not (Get-Process FanControl -ErrorAction SilentlyContinue)) { throw 'Keep Fan Control running.' }
-    if (Get-Process 'L-Connect 3','OpenRGB','OpenRGB-KFA2-test' -ErrorAction SilentlyContinue) {
+    if (Get-Process 'L-Connect 3','OpenRGB','OpenRGB-KFA2-test','OpenRGB-Custom' -ErrorAction SilentlyContinue) {
         throw 'Exit L-Connect and both OpenRGB versions from their tray menus, then run this test again. Your GPU colour will remain set.'
     }
     if ((Get-Service LConnectService).Status -ne 'Stopped') { throw 'L-Connect service must remain stopped for this test.' }

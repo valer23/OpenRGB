@@ -144,3 +144,5 @@ RGB-investigation/native-tests/*.exe
 !RGB-investigation/Build-OpenRGB-KFA2.ps1
 RGB-investigation/decompiler/
 RGB-investigation/*-decompiled.cs
+
+!RGB-investigation/Build-OpenRGB-Custom.ps1

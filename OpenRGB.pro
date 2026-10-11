@@ -875,5 +875,5 @@ win32:contains(CONFIG, kfa2_capture_test) {
         HEADERS += Controllers/LianLiController/LianLiUniHubSLInfinityController/LianLiUniHubSLInfinityController.h \
                    Controllers/LianLiController/LianLiUniHubSLInfinityController/RGBController_LianLiUniHubSLInfinity.h
     }
-    TARGET = OpenRGB-KFA2-test
+    TARGET = OpenRGB-Custom
 }

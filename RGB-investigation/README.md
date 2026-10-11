@@ -18,7 +18,7 @@ Nothing has been published or submitted upstream.
 ## Run the test
 
 Exit the installed OpenRGB and Xtreme Tuner through their tray menus.
-Keep Fan Control running. Open `Start-OpenRGB-KFA2-Test.cmd` and approve the
+Keep Fan Control running. Open `Start-OpenRGB-Custom.cmd` and approve the
 administrator prompt. Select the KFA2 GPU, choose Static and test green,
 then purple. With -IncludeFans, this executable uses separate settings and contains only
 the KFA2 and SL-Infinity detectors. It does not replace the installed OpenRGB.
@@ -37,7 +37,7 @@ as historical diagnostics; use the KFA2 launcher for the current test.
 
 ## Rebuild
 
-Run `Build-OpenRGB-KFA2.ps1 -IncludeFans` for the combined lighting test. It uses portable Qt 6.8.3 / MinGW 13.1,
+Run `Build-OpenRGB-Custom.ps1 -IncludeFans` for the combined lighting test. It uses portable Qt 6.8.3 / MinGW 13.1,
 Python 3.12, and official mbedTLS v3.2.1 C sources. These dependencies are
 copied locally and ignored by Git. The mbedTLS archive is rebuilt with the
 same compiler rather than linking the original MSVC library.

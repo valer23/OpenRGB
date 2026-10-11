@@ -177,3 +177,12 @@ pending. No cooling commands are added.
 
 The native HID boundary checks passed and the combined GUI executable rebuilt
 successfully on 2026-10-11. Physical animation confirmation remains pending.
+
+## Physical animation confirmation
+
+The user confirmed all exposed effects work: Rainbow Wave, Spectrum Cycle,
+Breathing, and returning to Static. This confirmation covers the isolated
+local GUI build on the six-fan hub with port counts 3,2,1,0.
+
+The combined application is now named OpenRGB-Custom. Existing build and
+settings directories retain their paths so saved profiles remain available.
