@@ -87,3 +87,32 @@ colour purple. Fan Control remains running. Hub capabilities were
 independently confirmed read-only; physical colour response is pending.
 The user confirmed one hub with port fan counts 3,2,1,0. The launcher
 uses these confirmed counts.
+
+## Direct test failed; vendor sync-off implementation verified
+
+The user observed no fan lighting changes during direct test
+`LianLi-direct-20261011-191707-result.txt`, despite successful API delivery.
+This rejects feature transport alone as a sufficient fix. The earlier exact
+sync replay enabled motherboard lighting sync, and the direct test did not
+disable it. Current mode was not queried, so retained sync is a hypothesis.
+
+Read-only ILSpy inspection of installed L-Connect-Service.exe located
+`LConnectService.Products.Ene6K77Fan.SLInfinityController`. Its
+`ApplyMotherboardARGBSync(false)` disables sync, then reapplies lighting
+configuration. It also suppresses direct colour updates while sync is on.
+Inspection of installed L-Connect.Core.dll, class
+`LConnectCore.Products.Ene6K77Fan.SLInfinityDevice`, independently verified
+that `SetLightingMotherboardSync(false)` uses feature command E0 10 61 00
+00 00 (padded to the known seven-byte feature length). It preserves the
+separate PWM/RPM sync command 62; that command is not part of this test.
+
+L-Connect.Core.dll SHA256:
+4D11F179841FD9877B0CC79FA85E446625367A4EA91327EDC0C0F3D6ED9EC600
+ILSpy command version: 11.1.0.9782. Vendor code was inspected as data;
+no vendor device constructor or hardware method was executed. Decompiled
+vendor files and downloaded analysis tools are ignored by Git.
+
+The revised launcher uses `--disable-sync` before the same direct colour
+sequence. This command is verified from the vendor implementation, not an
+exact sync-off packet in the earlier capture (which only contains sync ON).
+Physical response to the revised test is still pending.

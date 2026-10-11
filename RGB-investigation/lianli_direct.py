@@ -30,6 +30,7 @@ def colour_report(channel, rgb, fans):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--replay', action='store_true')
+    parser.add_argument('--disable-sync', action='store_true', help='Use verified vendor motherboard lighting sync OFF command before colours')
     parser.add_argument('--fans', default='3,2,1,0', help='Fans on each physical hub port, confirmed before replay')
     parser.add_argument('--offline', action='store_true')
     args = parser.parse_args()
@@ -59,7 +60,7 @@ def main():
             # Explicit lighting allowlist. Never send PWM commands 0x20-0x23,
             # RPM sync 0x62, merge configuration, or firmware commands.
             if feature:
-                valid = data[1:3] == b'\x10\x60' or (0x10 <= data[1] <= 0x17 and data[2] == 1)
+                valid = data == bytes.fromhex('e0106100000000') or data[1:3] == b'\x10\x60' or (0x10 <= data[1] <= 0x17 and data[2] == 1)
             else:
                 valid = 0x30 <= data[1] <= 0x37
             if not valid:
@@ -69,6 +70,10 @@ def main():
             if not call(handle, buffer, len(data)):
                 raise c.WinError(c.get_last_error())
             time.sleep(0.03)
+        if args.disable_sync:
+            print('Switching motherboard LIGHTING sync OFF using the verified vendor command.', flush=True)
+            send(bytes.fromhex('e0106100000000'), True)
+            time.sleep(0.1)
         for label, rgb in [('RED', (255, 0, 0)), ('GREEN', (0, 255, 0)),
                            ('BLUE', (0, 0, 255)), ('PURPLE', (128, 0, 255))]:
             print(f'{label}: watch fan centre and side lighting.', flush=True)
@@ -84,7 +89,7 @@ def main():
                         raise RuntimeError('Uncaptured static commit blocked')
                     send(commit, True)
             time.sleep(5)
-        print('Lighting test finished; final requested colour is purple. Confirm physical response.', flush=True)
+        print('Commands delivered; requested final colour is purple. Confirm physical response.', flush=True)
     finally:
         hid.kernel.CloseHandle(handle)
 
