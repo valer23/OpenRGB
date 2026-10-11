@@ -235,9 +235,9 @@ void LianLiUniHubSLInfinityController::SetChannelMode(unsigned char channel, con
     );
 }
 
-void LianLiUniHubSLInfinityController::SendStartAction(unsigned char channel, unsigned int /*num_fans*/)
+void LianLiUniHubSLInfinityController::SendStartAction(unsigned char channel, unsigned int num_fans)
 {
-    unsigned char usb_buf[65];
+    unsigned char usb_buf[7];
 
     /*-----------------------------------------------------*\
     | Zero out buffer                                       |
@@ -251,12 +251,12 @@ void LianLiUniHubSLInfinityController::SendStartAction(unsigned char channel, un
     usb_buf[0x01]   = 0x10;
     usb_buf[0x02]   = 0x60;
     usb_buf[0x03]   = 1 + (channel / 2); // every fan-array uses two channels (one for the spinner and one for the led-band on the side)
-    usb_buf[0x04]   = 0x04; // TODO: number of fans (1-4) on this channel, hardcoding this to 4 for now
+    usb_buf[0x04]   = static_cast<unsigned char>(num_fans);
 
     /*-----------------------------------------------------*\
     | Send packet                                           |
     \*-----------------------------------------------------*/
-    hid_write(dev, usb_buf, sizeof(usb_buf));
+    hid_send_feature_report(dev, usb_buf, sizeof(usb_buf));
     std::this_thread::sleep_for(5ms);
 
 }
@@ -294,7 +294,7 @@ void LianLiUniHubSLInfinityController::SendColorData(unsigned char   channel, un
 
 void LianLiUniHubSLInfinityController::SendCommitAction(unsigned char channel, unsigned char effect, unsigned char speed, unsigned int direction, unsigned int brightness)
 {
-    unsigned char usb_buf[65];
+    unsigned char usb_buf[7];
 
     /*-----------------------------------------------------*\
     | Zero out buffer                                       |
@@ -314,6 +314,6 @@ void LianLiUniHubSLInfinityController::SendCommitAction(unsigned char channel, u
     /*-----------------------------------------------------*\
     | Send packet                                           |
     \*-----------------------------------------------------*/
-    hid_write(dev, usb_buf, sizeof(usb_buf));
+    hid_send_feature_report(dev, usb_buf, sizeof(usb_buf));
     std::this_thread::sleep_for(5ms);
 }

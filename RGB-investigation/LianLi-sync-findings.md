@@ -60,3 +60,30 @@ Fan Control plugin is active. LightingService was restored to running.
 Do not infer a cable fault or conclude the headers work from successful USB
 reports. Establish which headers and any splitter/controller are involved
 before a physical signal test.
+
+## Direct lighting transport comparison (2026-10-11)
+
+The same vendor capture contains direct lighting commands, not only sync.
+Tshark verbose inspection confirmed frame 23 (E0 10 60 01 03 00 00) and
+frame 33 (E0 17 01 00 00 00 00) are seven-byte feature reports, wValue
+03E0. Frame 31 is a 353-byte colour output report, wValue 02E0.
+All eight output colour channels E0 30 through E0 37 and corresponding
+static feature commits E0 10 through E0 17 are present in this capture.
+Colour payload order is RBG, matching the existing OpenRGB driver.
+
+The existing OpenRGB SL-Infinity driver used hid_write with 65-byte
+buffers for the start and effect commits. The experimental patch uses
+hid_send_feature_report with seven-byte buffers, preserves output
+colour reports, and uses the configured fan count instead of hardcoded 4.
+Unused zones are skipped rather than preventing later populated zones
+from updating. Hardware-free tests compile the actual low-level driver,
+verify report types, fan counts, RBG payloads, zero padding and no writes
+for empty channels.
+
+The direct Python test sends only port LED-count setup, colour output
+and static effect feature commits. It excludes PWM, RPM-sync, firmware,
+merge and motherboard-sync commands. It leaves the final requested
+colour purple. Fan Control remains running. Hub capabilities were
+independently confirmed read-only; physical colour response is pending.
+Earlier vendor settings recorded port fan counts 3,2,1,0; the launcher
+requires confirmation of actual port counts before writing.
