@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $buildFiles = Join-Path $PSScriptRoot 'OpenRGB-Custom-full-build\release'
 $appRoot = 'C:\Users\valerian\Apps\OpenRGB-Custom'
-$settingsRoot = 'C:\Users\valerian\AppData\Local\OpenRGB-Custom'
+$settingsRoot = 'C:\Users\valerian\Apps\OpenRGB-Custom\Settings'
 $testSettings = Join-Path $PSScriptRoot 'OpenRGB-KFA2-settings'
 if(-not(Test-Path -LiteralPath (Join-Path $buildFiles 'OpenRGB-Custom.exe'))){throw 'The full build is not ready.'}
 if(Get-Process OpenRGB,OpenRGB-Custom,OpenRGB-KFA2-test -ErrorAction SilentlyContinue){throw 'Close all OpenRGB instances before installing.'}
@@ -16,17 +16,18 @@ $settingsFile = Join-Path $settingsRoot 'OpenRGB.json'
 $config = Get-Content -LiteralPath $settingsFile -Raw | ConvertFrom-Json
 $config | Add-Member -NotePropertyName AutoStart -NotePropertyValue ([PSCustomObject]@{enabled=$false;start_minimized=$true;custom_arguments=''}) -Force
 $config | ConvertTo-Json -Depth 50 | Set-Content -LiteralPath $settingsFile -Encoding utf8
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Start-OpenRGB-Custom-Installed.ps1') -Destination (Join-Path $appRoot 'Start-OpenRGB-Custom.ps1') -Force
 $launcher = Join-Path $appRoot 'OpenRGB-Custom.cmd'
 $launcherText = @'
 @echo off
-powershell.exe -NoProfile -Command "Start-Process -FilePath 'C:\Users\valerian\Apps\OpenRGB-Custom\OpenRGB-Custom.exe' -Verb RunAs -WorkingDirectory 'C:\Users\valerian\Apps\OpenRGB-Custom' -ArgumentList '--config C:\Users\valerian\AppData\Local\OpenRGB-Custom --gui'"
+powershell.exe -NoProfile -Command "Start-Process -FilePath 'C:\Users\valerian\Apps\OpenRGB-Custom\OpenRGB-Custom.exe' -Verb RunAs -WorkingDirectory 'C:\Users\valerian\Apps\OpenRGB-Custom' -ArgumentList '--config C:\Users\valerian\Apps\OpenRGB-Custom\Settings --gui'"
 '@
 Set-Content -LiteralPath $launcher -Value $launcherText -Encoding ascii
 $startMenu = 'C:\Users\valerian\AppData\Roaming\Microsoft\Windows\Start Menu\Programs'
 $shell = New-Object -ComObject WScript.Shell
 $link = $shell.CreateShortcut((Join-Path $startMenu 'OpenRGB Custom.lnk'))
 $link.TargetPath = Join-Path $appRoot 'OpenRGB-Custom.exe'
-$link.Arguments = '--config "C:\Users\valerian\AppData\Local\OpenRGB-Custom" --gui'
+$link.Arguments = '--config "C:\Users\valerian\Apps\OpenRGB-Custom\Settings" --gui'
 $link.WorkingDirectory = $appRoot
 $link.IconLocation = (Join-Path $appRoot 'OpenRGB-Custom.exe') + ',0'
 $link.Description = 'OpenRGB with local GPU and fan support'

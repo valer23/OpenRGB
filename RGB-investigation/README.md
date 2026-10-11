@@ -56,7 +56,7 @@ standard. These personal build changes are excluded from the driver MRs.
 
 Install-OpenRGB-Custom.ps1 copies the complete deployed runtime to
 C:\Users\valerian\Apps\OpenRGB-Custom and preserves settings separately in
-C:\Users\valerian\AppData\Local\OpenRGB-Custom. It adds the OpenRGB Custom
+C:\Users\valerian\Apps\OpenRGB-Custom\Settings. It adds the OpenRGB Custom
 Start menu entry. The purple profile is copied from the isolated test settings.
 
 Configure-OpenRGB-Custom.ps1 runs elevated device discovery and registers the

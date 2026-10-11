@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $appRoot = 'C:\Users\valerian\Apps\OpenRGB-Custom'
-$settingsRoot = 'C:\Users\valerian\AppData\Local\OpenRGB-Custom'
+$settingsRoot = 'C:\Users\valerian\Apps\OpenRGB-Custom\Settings'
 $exe = Join-Path $appRoot 'OpenRGB-Custom.exe'
 $resultFile = Join-Path $settingsRoot 'setup-result.json'
 try {
@@ -17,7 +17,7 @@ try {
     $profile = Join-Path $settingsRoot 'profiles\ValPurple.json'
     if(-not(Test-Path -LiteralPath $profile)){throw 'Saved purple profile is missing.'}
     $userId = [Security.Principal.WindowsIdentity]::GetCurrent().Name
-    $action = New-ScheduledTaskAction -Execute $exe -WorkingDirectory $appRoot -Argument ('--config "' + $settingsRoot + '" --startminimized --profile ValPurple')
+    $action = New-ScheduledTaskAction -Execute "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -WorkingDirectory $appRoot -Argument ('-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "' + (Join-Path $appRoot 'Start-OpenRGB-Custom.ps1') + '"')
     $trigger = New-ScheduledTaskTrigger -AtLogOn -User $userId
     $trigger.Delay = 'PT30S'
     $principal = New-ScheduledTaskPrincipal -UserId $userId -LogonType Interactive -RunLevel Highest
