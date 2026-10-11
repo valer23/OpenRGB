@@ -10,7 +10,7 @@ Nothing has been published or submitted upstream.
 - Independent replay physically passed red / green / blue / red.
 - The native OpenRGB driver and GUI build successfully.
 - Read-only application detection identifies the KFA2 card correctly.
-- Native GUI colour confirmation is the next test.
+- The user confirmed native GUI colour control works on 2026-10-11.
 - ASUS motherboard logo control works; ARGB fan/GPU header sync is unresolved.
 - Fan Control continues to manage cooling; these tests target lighting only.
 

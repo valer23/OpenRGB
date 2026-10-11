@@ -61,9 +61,17 @@ application log, not inferred from an empty output file. A subsequent
 independent read confirmed RGB FF0000, mode 00, mode2 20 and sync 01
 unchanged. The normal-build NVIDIA detector exclusion also passed a
 syntax check against the real headers. Native transport regression checks
-passed with MinGW 13.1. Physical GUI colour verification remains pending.
+passed with MinGW 13.1.
 
 Original hardware evidence: the user confirmed direct Python replay
 red/green/blue/red with Xtreme Tuner closed. Its restoration of MBSync
 failed once; MBSync was repaired and read back as 01. Native GUI validation
-is a separate step and must not be inferred from the prototype.
+was subsequently confirmed by the user on 2026-10-11.
+
+## Physical OpenRGB GUI verification
+
+On 2026-10-11 the user reported that the native OpenRGB test worked and
+provided a screenshot showing the correctly named KFA2 GPU, GPU zone, Static
+mode and colour 0000FF. This confirms working native GUI colour control;
+it does not establish motherboard-sync operation, hardware persistence,
+other GPU models, or fan lighting support.
