@@ -116,3 +116,36 @@ The revised launcher uses `--disable-sync` before the same direct colour
 sequence. This command is verified from the vendor implementation, not an
 exact sync-off packet in the earlier capture (which only contains sync ON).
 Physical response to the revised test is still pending.
+
+## Physical direct-control success and native integration
+
+The user confirmed red / green / blue / purple on every fan after the revised
+sync-off test; fans finished purple. Channels updated sequentially, with a
+user-estimated delay of less than half a second between physical ports.
+The prototype intentionally waits 30 ms between each of the five lighting
+reports per populated port. Each port has centre and side colour channels;
+this accounts for staggered application and is not a failed colour update.
+
+Native integration disables motherboard lighting sync lazily before the
+first lighting start report, checks successful delivery, and aborts colour
+writes on failed sync/setup. Detection does not send lighting commands.
+The native driver uses its existing 5 ms inter-report pause instead of the
+prototype's 30 ms. Colour buffers are zero-initialized, and Custom-mode
+single-LED callbacks now apply colour changes rather than returning via an
+inactive effect-mode callback. Other effect mappings remain unverified.
+
+`Build-OpenRGB-KFA2.ps1 -IncludeFans` enables an isolated combined build.
+Its local fan detector preconfigures the confirmed 3,2,1,0 counts: zones
+48,48,32,32,16,16,0,0, paired centres/sides. This preset applies only to the
+local test detector; normal discovery remains configurable. The isolated
+build exposes only Static for fans, retaining the two proven GPU modes.
+It uses separate settings and does not include motherboard, RAM or keyboard
+detectors. Native GUI fan colour verification is pending until reported.
+
+The combined native application linked and deployed successfully on
+2026-10-11. Read-only discovery with Fan Control running registered both
+`Lian Li SL Infinity (local static test)` and the KFA2 GPU, and exited 0.
+See test log `OpenRGB_20261011_194027.log`. Non-admin PawnIO initialization
+warnings relate to unused system SMBus interfaces; both selected lighting
+detectors registered. Native HID boundary checks also passed after the
+final driver edit. Physical fan GUI colour confirmation remains pending.

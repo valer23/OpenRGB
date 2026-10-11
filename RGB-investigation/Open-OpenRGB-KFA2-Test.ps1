@@ -7,7 +7,7 @@ try {
         throw 'Exit OpenRGB and Xtreme Tuner from their tray icons before opening the test build.'
     }
     if (-not (Get-Process FanControl -ErrorAction SilentlyContinue)) { throw 'Keep Fan Control running.' }
-    Write-Host 'Opening the GPU-only OpenRGB test build with separate settings.' -ForegroundColor Cyan
+    Write-Host 'Opening the GPU and SL-Infinity lighting test build with separate settings.' -ForegroundColor Cyan
     & $testExe --config $settingsRoot --gui
 } catch {
     Write-Host $_ -ForegroundColor Red

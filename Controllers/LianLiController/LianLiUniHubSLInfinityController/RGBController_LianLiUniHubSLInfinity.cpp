@@ -429,7 +429,14 @@ void RGBController_LianLiUniHubSLInfinity::DeviceUpdateZoneLEDs(int zone)
 
 void RGBController_LianLiUniHubSLInfinity::DeviceUpdateSingleLED(int /* led */)
 {
-    DeviceUpdateMode();
+    if(active_mode == 0)
+    {
+        DeviceUpdateLEDs();
+    }
+    else
+    {
+        DeviceUpdateMode();
+    }
 }
 
 void RGBController_LianLiUniHubSLInfinity::DeviceUpdateMode()

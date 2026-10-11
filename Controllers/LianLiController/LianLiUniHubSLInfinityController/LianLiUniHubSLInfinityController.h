@@ -136,7 +136,7 @@ public:
                                 float           brightness
                                 );
 
-    void                SendStartAction
+    bool                SendStartAction
                                 (
                                 unsigned char   channel,
                                 unsigned int    num_fans
@@ -200,6 +200,7 @@ private:
     };
 
 private:
+    bool                    direct_lighting_enabled = false;
     hid_device*             dev;
 
     /*---------------------------------------------------------*\

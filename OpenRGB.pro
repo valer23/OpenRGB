@@ -867,5 +867,13 @@ win32:contains(CONFIG, kfa2_capture_test) {
                Controllers/NanoleafController/NanoleafController.cpp
     HEADERS -= $$files("Controllers/*.h", true)
     HEADERS += Controllers/GalaxGPUController/RGBController_KFA2EX_Windows.h
+    contains(CONFIG, slinf_capture_test) {
+        DEFINES += SLINF_LOCAL_TEST
+        SOURCES += Controllers/LianLiController/LianLiUniHubSLInfinityController/LianLiUniHubSLInfinityController.cpp \
+                   Controllers/LianLiController/LianLiUniHubSLInfinityController/RGBController_LianLiUniHubSLInfinity.cpp \
+                   Controllers/LianLiController/LianLiUniHubSLInfinityController/LianLiSLInfinityTestDetect_Windows.cpp
+        HEADERS += Controllers/LianLiController/LianLiUniHubSLInfinityController/LianLiUniHubSLInfinityController.h \
+                   Controllers/LianLiController/LianLiUniHubSLInfinityController/RGBController_LianLiUniHubSLInfinity.h
+    }
     TARGET = OpenRGB-KFA2-test
 }

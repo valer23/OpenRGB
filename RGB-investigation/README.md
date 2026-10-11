@@ -11,7 +11,8 @@ Nothing has been published or submitted upstream.
 - The native OpenRGB driver and GUI build successfully.
 - Read-only application detection identifies the KFA2 card correctly.
 - The user confirmed native GUI colour control works on 2026-10-11.
-- ASUS motherboard logo control works; ARGB fan/GPU header sync is unresolved.
+- The user confirmed direct SL-Infinity colours after lighting sync OFF; fans finish purple.
+- The combined native build detects GPU and fans; GUI fan colour confirmation is next.
 - Fan Control continues to manage cooling; these tests target lighting only.
 
 ## Run the test
@@ -19,8 +20,8 @@ Nothing has been published or submitted upstream.
 Exit the installed OpenRGB and Xtreme Tuner through their tray menus.
 Keep Fan Control running. Open `Start-OpenRGB-KFA2-Test.cmd` and approve the
 administrator prompt. Select the KFA2 GPU, choose Static and test green,
-then purple. This executable uses separate settings and contains only the
-KFA2 detector. It does not replace the installed OpenRGB.
+then purple. With -IncludeFans, this executable uses separate settings and contains only
+the KFA2 and SL-Infinity detectors. It does not replace the installed OpenRGB.
 
 ## Repository contents
 
@@ -36,7 +37,7 @@ as historical diagnostics; use the KFA2 launcher for the current test.
 
 ## Rebuild
 
-Run `Build-OpenRGB-KFA2.ps1`. It uses portable Qt 6.8.3 / MinGW 13.1,
+Run `Build-OpenRGB-KFA2.ps1 -IncludeFans` for the combined lighting test. It uses portable Qt 6.8.3 / MinGW 13.1,
 Python 3.12, and official mbedTLS v3.2.1 C sources. These dependencies are
 copied locally and ignored by Git. The mbedTLS archive is rebuilt with the
 same compiler rather than linking the original MSVC library.

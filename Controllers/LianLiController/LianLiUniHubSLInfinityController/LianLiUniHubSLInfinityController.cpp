@@ -15,6 +15,7 @@
 #include <string.h>
 #include "LianLiUniHubSLInfinityController.h"
 #include "StringUtils.h"
+#include "LogManager.h"
 
 using namespace std::chrono_literals;
 
@@ -82,7 +83,7 @@ float infinityBrightnessLimit(RGBColor color)
 
 void LianLiUniHubSLInfinityController::SetChannelLEDs(unsigned char channel, RGBColor * colors, unsigned int num_colors, float brightness)
 {
-    unsigned char   led_data[16 * 6 * 3];
+    unsigned char   led_data[16 * 6 * 3] = {};
     int             fan_idx = 0;
     int             mod_led_idx;
     int             cur_led_idx;
@@ -115,11 +116,10 @@ void LianLiUniHubSLInfinityController::SetChannelLEDs(unsigned char channel, RGB
     | Send fan LED data                                         |
     \*---------------------------------------------------------*/
 
-    SendStartAction
-    (
-        channel,            // Current channel
-        (fan_idx + 1)       // Number of fans
-    );
+    if(!SendStartAction(channel, fan_idx + 1))
+    {
+        return;
+    }
 
     SendColorData
     (
@@ -212,11 +212,10 @@ void LianLiUniHubSLInfinityController::SetChannelMode(unsigned char channel, con
 
     }
 
-    SendStartAction
-    (
-        channel,                                // Current channel
-        (num_fans + 1)                          // Number of fans
-    );
+    if(!SendStartAction(channel, num_fans + 1))
+    {
+        return;
+    }
 
     SendColorData
     (
@@ -235,8 +234,19 @@ void LianLiUniHubSLInfinityController::SetChannelMode(unsigned char channel, con
     );
 }
 
-void LianLiUniHubSLInfinityController::SendStartAction(unsigned char channel, unsigned int num_fans)
+bool LianLiUniHubSLInfinityController::SendStartAction(unsigned char channel, unsigned int num_fans)
 {
+    if(!direct_lighting_enabled)
+    {
+        unsigned char sync_off[7] = {0xE0, 0x10, 0x61, 0, 0, 0, 0};
+        if(hid_send_feature_report(dev, sync_off, sizeof(sync_off)) != static_cast<int>(sizeof(sync_off)))
+        {
+            LOG_ERROR("[Lian Li SL Infinity] Unable to disable motherboard lighting sync");
+            return false;
+        }
+        std::this_thread::sleep_for(20ms);
+        direct_lighting_enabled = true;
+    }
     unsigned char usb_buf[7];
 
     /*-----------------------------------------------------*\
@@ -256,8 +266,13 @@ void LianLiUniHubSLInfinityController::SendStartAction(unsigned char channel, un
     /*-----------------------------------------------------*\
     | Send packet                                           |
     \*-----------------------------------------------------*/
-    hid_send_feature_report(dev, usb_buf, sizeof(usb_buf));
+    if(hid_send_feature_report(dev, usb_buf, sizeof(usb_buf)) != static_cast<int>(sizeof(usb_buf)))
+    {
+        LOG_ERROR("[Lian Li SL Infinity] Lighting setup report failed");
+        return false;
+    }
     std::this_thread::sleep_for(5ms);
+    return true;
 
 }
 
