@@ -19,10 +19,17 @@ public:
             zones[channel].name = "Port " + std::to_string(channel / 2 + 1) + (channel % 2 ? " sides" : " centres");
         }
         SetupZones();
-        // Expose only the physically verified static protocol in this test.
+        // Keep the verified Static mode and vendor-defined independent effects.
+        mode breathing = modes[2];
+        mode spectrum = modes[3];
+        mode rainbow = modes[4];
+        breathing.colors.assign(6, ToRGBColor(128, 0, 255));
         modes.resize(1);
         modes[0].name = "Static";
         modes[0].brightness = modes[0].brightness_max;
+        modes.push_back(breathing);
+        modes.push_back(spectrum);
+        modes.push_back(rainbow);
         active_mode = 0;
         for(auto& color : colors) color = ToRGBColor(128, 0, 255);
         // Presentation only: no lighting or cooling writes during detection.

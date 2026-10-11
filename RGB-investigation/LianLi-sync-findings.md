@@ -115,7 +115,7 @@ vendor files and downloaded analysis tools are ignored by Git.
 The revised launcher uses `--disable-sync` before the same direct colour
 sequence. This command is verified from the vendor implementation, not an
 exact sync-off packet in the earlier capture (which only contains sync ON).
-Physical response to the revised test is still pending.
+Physical response to the revised test was subsequently confirmed; see below.
 
 ## Physical direct-control success and native integration
 
@@ -140,7 +140,7 @@ Its local fan detector preconfigures the confirmed 3,2,1,0 counts: zones
 local test detector; normal discovery remains configurable. The isolated
 build exposes only Static for fans, retaining the two proven GPU modes.
 It uses separate settings and does not include motherboard, RAM or keyboard
-detectors. Native GUI fan colour verification is pending until reported.
+detectors. Native GUI fan colour verification was subsequently confirmed; see below.
 
 The combined native application linked and deployed successfully on
 2026-10-11. Read-only discovery with Fan Control running registered both
@@ -148,4 +148,32 @@ The combined native application linked and deployed successfully on
 See test log `OpenRGB_20261011_194027.log`. Non-admin PawnIO initialization
 warnings relate to unused system SMBus interfaces; both selected lighting
 detectors registered. Native HID boundary checks also passed after the
-final driver edit. Physical fan GUI colour confirmation remains pending.
+final driver edit. The user subsequently confirmed that fan colour control works in the native GUI.
+
+## Native GUI physical confirmation
+
+On 2026-10-11, the user reported that the combined OpenRGB build works
+and supplied a screenshot showing the local SL-Infinity controller selected
+in Static mode, with purple colour 4E00AD. This establishes physical fan
+colour control through the native OpenRGB interface, in addition to the
+earlier independently verified GPU control. Dynamic effects and rainbow
+remain untested in this build, which currently exposes Static only for fans.
+
+## Independent hardware animation trial
+
+The local detector now exposes Static, Breathing, Spectrum Cycle, and Rainbow
+Wave. Vendor SLInfinityController maps independent inner and outer effects
+respectively to the same codes 2, 4, and 5. These are distinct from combined
+Rainbow (50) and combined RainbowMorph (63); combined and merged effects
+remain excluded. The existing speed/brightness encoding is retained.
+Breathing starts with purple on all six colour slots.
+
+Colour and zone callbacks now reapply a selected hardware effect rather than
+sending the per-LED Static commit, which would stop the animation. Native
+boundary checks cover all six populated centre/side channels, effect codes,
+fan counts, feature/output report lengths and default speed/brightness.
+Physical animation, speed, brightness, and return-to-Static confirmation are
+pending. No cooling commands are added.
+
+The native HID boundary checks passed and the combined GUI executable rebuilt
+successfully on 2026-10-11. Physical animation confirmation remains pending.

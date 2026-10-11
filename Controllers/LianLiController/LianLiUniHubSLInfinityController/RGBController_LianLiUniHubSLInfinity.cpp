@@ -401,6 +401,12 @@ void RGBController_LianLiUniHubSLInfinity::DeviceConfigureZone(int zone_idx)
 
 void RGBController_LianLiUniHubSLInfinity::DeviceUpdateLEDs()
 {
+    if(active_mode != 0)
+    {
+        // Preserve the selected hardware animation when colours are applied.
+        DeviceUpdateMode();
+        return;
+    }
 
     if(!initializedMode)
     {
@@ -417,6 +423,12 @@ void RGBController_LianLiUniHubSLInfinity::DeviceUpdateLEDs()
 
 void RGBController_LianLiUniHubSLInfinity::DeviceUpdateZoneLEDs(int zone)
 {
+    if(active_mode != 0)
+    {
+        // Preserve the selected hardware animation when colours are applied.
+        DeviceUpdateMode();
+        return;
+    }
     if(!initializedMode)
     {
         DeviceUpdateMode();

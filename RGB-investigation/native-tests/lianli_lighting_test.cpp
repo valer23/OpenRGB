@@ -37,6 +37,24 @@ int main() {
     driver.SetChannelLEDs(3,green.data(),48,1.0f);
     assert(reports.size()==3 && reports[0].data[2]==0x60); // Sync is disabled once per instance.
     reports.clear();
+    // Vendor independent inner/outer animations: rainbow=5, spectrum=4, breathing=2.
+    for(unsigned int effect : {5u,4u,2u}) {
+        mode animation{};
+        animation.value=effect; animation.speed=2; animation.brightness=4;
+        animation.direction=0;
+        if(effect==2) animation.colors.assign(6,ToRGBColor(128,0,255));
+        for(unsigned char channel : {0,1,2,3,4,5}) {
+            reports.clear();
+            driver.SetChannelMode(channel,animation,channel/2==0?2:channel/2==1?1:0);
+            assert(reports.size()==3);
+            assert(reports[0].feature && reports[0].data[2]==0x60);
+            assert(reports[0].data[3]==1+channel/2);
+            assert(reports[0].data[4]==(channel/2==0?3:channel/2==1?2:1));
+            assert(!reports[1].feature && reports[1].data.size()==353);
+            assert(reports[2].feature && reports[2].data==std::vector<unsigned char>({0xe0,static_cast<unsigned char>(0x10+channel),static_cast<unsigned char>(effect),0,0,0,0}));
+        }
+    }
+    reports.clear();
     LianLiUniHubSLInfinityController failing(nullptr,"fake","fake");
     fail_feature=true;
     failing.SetChannelLEDs(0,green.data(),48,1.0f);
