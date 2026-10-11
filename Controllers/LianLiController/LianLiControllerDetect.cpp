@@ -332,7 +332,9 @@ REGISTER_HID_DETECTOR_IPU("Lian Li Uni Hub - AL",               DetectLianLiUniH
 REGISTER_HID_DETECTOR_IPU("Lian Li Uni Hub - SL V2",            DetectLianLiUniHubSLV2,         ENE_USB_VID,        UNI_HUB_SLV2_PID,         0x01,   0xFF72, 0xA1);
 REGISTER_HID_DETECTOR_IPU("Lian Li Uni Hub - AL V2",            DetectLianLiUniHubSLV2,         ENE_USB_VID,        UNI_HUB_ALV2_PID,         0x01,   0xFF72, 0xA1);
 REGISTER_HID_DETECTOR_IPU("Lian Li Uni Hub - SL V2 v0.5",       DetectLianLiUniHubSLV2,         ENE_USB_VID,        UNI_HUB_SLV2_V05_PID,     0x01,   0xFF72, 0xA1);
+#ifndef SLINF_LOCAL_TEST
 REGISTER_HID_DETECTOR_IPU("Lian Li Uni Hub - SL Infinity",      DetectLianLiUniHubSLInfinity,   ENE_USB_VID,        UNI_HUB_SLINF_PID,        0x01,   0xFF72, 0xA1);
+#endif
 REGISTER_HID_DETECTOR_IPU("Lian Li Strimer L Connect",          DetectLianLiStrimerControllers, ENE_USB_VID,        STRIMER_L_CONNECT_PID,       1,   0xFF72, 0xA1);
 REGISTER_HID_DETECTOR_I("Lian Li GA II Trinity",                DetectLianLiGAIITrinity,        NUVOTON_USB_VID,    GAII_USB_PID,                             0x02);
 REGISTER_HID_DETECTOR_I("Lian Li GA II Trinity Performance",    DetectLianLiGAIITrinity,        NUVOTON_USB_VID,    GAII_Perf_USB_PID,                        0x02);

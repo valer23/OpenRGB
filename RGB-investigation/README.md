@@ -46,3 +46,25 @@ Hardware-free checks are `native-tests/kfa2_driver_test.cpp` (actual native
 controller with a fake NVAPI boundary) and `test_kfa2_restore.py`.
 No changes are automatically pushed. OpenRGB's upstream contribution policy
 must be respected before any proposed submission.
+
+## Full application and permanent installation
+
+Build-OpenRGB-Custom-Full.ps1 enables CONFIG+=custom_full and keeps all standard
+controller sources. SLINF_LOCAL_TEST replaces only the normal SL-Infinity
+registration with the verified local layout/effects; other detectors remain
+standard. These personal build changes are excluded from the driver MRs.
+
+Install-OpenRGB-Custom.ps1 copies the complete deployed runtime to
+C:\Users\valerian\Apps\OpenRGB-Custom and preserves settings separately in
+C:\Users\valerian\AppData\Local\OpenRGB-Custom. It adds the OpenRGB Custom
+Start menu entry. The purple profile is copied from the isolated test settings.
+
+Configure-OpenRGB-Custom.ps1 runs elevated device discovery and registers the
+OpenRGB Custom (valerian) login task with a 30-second delay, highest privileges,
+and ValPurple profile loading. The GUI's built-in Auto Start remains disabled
+to keep one startup mechanism. Fan Control remains running and controls cooling.
+
+A successful build restores available standard detectors; it does not add
+support for ASUS controller 0B05:1CD2 or the ROG Delta II headset. Their device
+control still needs separate protocol/driver work. Physical verification and
+saving a profile containing newly discovered devices remain user test steps.

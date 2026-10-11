@@ -877,3 +877,14 @@ win32:contains(CONFIG, kfa2_capture_test) {
     }
     TARGET = OpenRGB-Custom
 }
+
+# Full personal build: retain standard detectors and the verified local fan setup.
+win32:contains(CONFIG, custom_full) {
+    DEFINES += SLINF_LOCAL_TEST
+    TARGET = OpenRGB-Custom
+    win32-g++ {
+        isEmpty(KFA2_MBEDTLS_ARCHIVE): error("Supply KFA2_MBEDTLS_ARCHIVE built with MinGW")
+        LIBS -= -lmbedcrypto -lmbedtls -lmbedx509
+        LIBS += $$quote($$KFA2_MBEDTLS_ARCHIVE)
+    }
+}
