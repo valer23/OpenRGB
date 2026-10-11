@@ -7,6 +7,9 @@
 unsigned int logged_errors=0;
 unsigned char registers[16]={0x11,0,255,0,0,0,0x20,1};
 unsigned int sync_failures=0;
+bool fail_bus=false,fail_slot=false;
+NV_STATUS NvAPI_GPU_GetBusId(NV_PHYSICAL_GPU_HANDLE gpu,NV_U32* bus) {if(fail_bus)return -1; *bus=gpu?2:1; return 0;}
+NV_STATUS NvAPI_GPU_GetBusSlotId(NV_PHYSICAL_GPU_HANDLE,NV_U32* slot) {if(fail_slot)return -1; *slot=0; return 0;}
 struct Call { unsigned char reg; std::vector<unsigned char> data; };
 std::vector<Call> writes;
 
@@ -39,6 +42,17 @@ int main() {
     assert(!RGBController_KFA2EX::Probe(nullptr));
     registers[0]=0x11;
     RGBController_KFA2EX driver(nullptr);
+    NV_S32 second_handle=1;
+    RGBController_KFA2EX second(&second_handle);
+    assert(driver.location!=second.location);
+    assert(driver.location=="NVAPI: PCI bus 1, slot 0, I2C address 0x23, port 1");
+    for(bool bus_failure : {true,false}) {
+        fail_bus=bus_failure; fail_slot=!bus_failure;
+        bool rejected=false;
+        try { RGBController_KFA2EX unidentified(nullptr); } catch(const std::exception&) {rejected=true;}
+        assert(rejected);
+    }
+    fail_bus=false; fail_slot=false;
     assert(writes.empty()); // Detection/constructor must remain read-only.
     assert(driver.active_mode==1);
     driver.DeviceUpdateLEDs();assert(writes.empty()); // Ignore colours in MB mode.

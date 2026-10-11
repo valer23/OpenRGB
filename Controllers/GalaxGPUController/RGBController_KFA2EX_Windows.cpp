@@ -35,7 +35,14 @@ RGBController_KFA2EX::RGBController_KFA2EX(NV_PHYSICAL_GPU_HANDLE gpu_handle) : 
     vendor      = "KFA2";
     type        = DEVICE_TYPE_GPU;
     description = "Captured KFA2 EX lighting protocol (Windows NVAPI)";
-    location    = "NVAPI I2C, address 0x23, port 1";
+    NV_U32 bus_id = 0;
+    NV_U32 slot_id = 0;
+    if(NvAPI_GPU_GetBusId(gpu, &bus_id) != 0 || NvAPI_GPU_GetBusSlotId(gpu, &slot_id) != 0)
+    {
+        throw std::runtime_error("Unable to read KFA2 PCI location");
+    }
+    location = "NVAPI: PCI bus " + std::to_string(bus_id) + ", slot " + std::to_string(slot_id)
+             + ", I2C address 0x23, port 1";
 
     mode static_mode;
     static_mode.name       = "Static";

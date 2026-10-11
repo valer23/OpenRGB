@@ -1011,6 +1011,9 @@ NV_STATUS NvAPI_GPU_GetPCIIdentifiers(
 	NV_U32 *ext_device_id);
 
 // Standard I2C interfaces used by the KFA2 RTX 3080 Ti EX lighting controller.
+NV_STATUS NvAPI_GPU_GetBusId(NV_PHYSICAL_GPU_HANDLE handle, NV_U32* bus_id);
+NV_STATUS NvAPI_GPU_GetBusSlotId(NV_PHYSICAL_GPU_HANDLE handle, NV_U32* slot_id);
+
 NV_STATUS NvAPI_I2CRead(NV_PHYSICAL_GPU_HANDLE handle, NV_I2C_INFO_V3* info);
 NV_STATUS NvAPI_I2CWrite(NV_PHYSICAL_GPU_HANDLE handle, NV_I2C_INFO_V3* info);
 
