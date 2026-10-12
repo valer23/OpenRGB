@@ -233,6 +233,12 @@ static NV_STATUS (*pNvAPI_GPU_GetPCIIdentifiers)(
 	NV_U32 *revision_id,
 	NV_U32 *ext_device_id);
 
+static NV_STATUS (*pNvAPI_GPU_GetBusId)(NV_PHYSICAL_GPU_HANDLE, NV_U32*);
+static NV_STATUS (*pNvAPI_GPU_GetBusSlotId)(NV_PHYSICAL_GPU_HANDLE, NV_U32*);
+
+static NV_STATUS (*pNvAPI_I2CRead)(NV_PHYSICAL_GPU_HANDLE, NV_I2C_INFO_V3*);
+static NV_STATUS (*pNvAPI_I2CWrite)(NV_PHYSICAL_GPU_HANDLE, NV_I2C_INFO_V3*);
+
 // Interface: 283AC65A
 static NV_STATUS (*pNvAPI_I2CWriteEx)(
 	NV_PHYSICAL_GPU_HANDLE physical_gpu_handle,
@@ -305,7 +311,11 @@ static void QueryInterfaces(nvapi_QueryInterface_t query_interface)
 	QueryInterface(query_interface, 0xDA141340, NvAPI_GPU_GetCoolerSettings);
 	QueryInterface(query_interface, 0x891FA0AE, NvAPI_GPU_SetCoolerLevels);
 	QueryInterface(query_interface, 0x2DDFB66E, NvAPI_GPU_GetPCIIdentifiers);
+	QueryInterface(query_interface, 0x1BE0B8E5, NvAPI_GPU_GetBusId);
+	QueryInterface(query_interface, 0x2A0A350F, NvAPI_GPU_GetBusSlotId);
 
+    QueryInterface(query_interface, 0x2FDE12C5, NvAPI_I2CRead);
+    QueryInterface(query_interface, 0xE812EB07, NvAPI_I2CWrite);
 	QueryInterface(query_interface, 0x283AC65A, NvAPI_I2CWriteEx);
 	QueryInterface(query_interface, 0x4D7B0709, NvAPI_I2CReadEx);
 	QueryInterface(query_interface, 0x3DBF5764, NvAPI_GPU_ClientIllumZonesGetControl);
@@ -571,6 +581,26 @@ NV_STATUS NvAPI_GPU_GetPCIIdentifiers(
 	return pNvAPI_GPU_GetPCIIdentifiers
 		? (*pNvAPI_GPU_GetPCIIdentifiers)(physical_gpu_handle, device_id, sub_system_id, revision_id, ext_device_id)
 		: -1;
+}
+
+NV_STATUS NvAPI_GPU_GetBusId(NV_PHYSICAL_GPU_HANDLE handle, NV_U32* bus_id)
+{
+    return pNvAPI_GPU_GetBusId ? pNvAPI_GPU_GetBusId(handle, bus_id) : -1;
+}
+
+NV_STATUS NvAPI_GPU_GetBusSlotId(NV_PHYSICAL_GPU_HANDLE handle, NV_U32* slot_id)
+{
+    return pNvAPI_GPU_GetBusSlotId ? pNvAPI_GPU_GetBusSlotId(handle, slot_id) : -1;
+}
+
+NV_STATUS NvAPI_I2CRead(NV_PHYSICAL_GPU_HANDLE handle, NV_I2C_INFO_V3* info)
+{
+    return pNvAPI_I2CRead ? pNvAPI_I2CRead(handle, info) : -1;
+}
+
+NV_STATUS NvAPI_I2CWrite(NV_PHYSICAL_GPU_HANDLE handle, NV_I2C_INFO_V3* info)
+{
+    return pNvAPI_I2CWrite ? pNvAPI_I2CWrite(handle, info) : -1;
 }
 
 NV_STATUS NvAPI_I2CWriteEx(
