@@ -146,8 +146,9 @@ header count/configuration or selector-0 ARGB colour reports are sent. The
 activation command's full semantics remain inferred from the earlier replay.
 
 The earlier successful physical replay included header setup/colour packets
-as well. This narrower onboard-only subset is an implementation hypothesis
-and still requires a physical test with LightingService paused. Existing
+as well. On 2026-10-12 the user physically verified that this narrower
+onboard-only implementation changed the ROG logo red, green, blue and white
+with LightingService temporarily paused. Existing
 GPU/fan drivers and cooling settings are not modified by this controller.
 The prototype offers no firmware writes, persistent saving, independent
 onboard outputs, effects, or ARGB-header support.
@@ -155,4 +156,6 @@ onboard outputs, effects, or ARGB-header support.
 Offline packet regressions compare against exact extracted capture fixtures
 and cover full-length writes, every initialization/colour failure position,
 retry setup and invalid callbacks. Compilation and these tests pass; a
-full application build and physical logo response remain to be validated.
+full Windows application build passes. The motherboard appears in the full
+GUI, and its Static colour control is physically confirmed. ValWhite was
+saved again to include the logo. LightingService was restored after testing.
