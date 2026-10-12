@@ -65,6 +65,11 @@ and ValWhite profile loading. Save ValWhite before running this setup. The GUI's
 to keep one startup mechanism. Fan Control remains running and controls cooling.
 
 A successful build restores available standard detectors; it does not add
-support for ASUS controller 0B05:1CD2 or the ROG Delta II headset. Their device
+general ARGB-header support for ASUS controller 0B05:1CD2 or ROG Delta II headset support. Their device
 control still needs separate protocol/driver work. Physical verification and
 saving a profile containing newly discovered devices remain user test steps.
+
+The ASUS 0B05:1CD2 onboard ROG logo now has verified Windows Static colour
+control. ValWhite includes the logo. When that controller is present in
+ValWhite, the local startup launcher pauses LightingService for the OpenRGB
+session and restores it on exit; Fan Control is not stopped.
