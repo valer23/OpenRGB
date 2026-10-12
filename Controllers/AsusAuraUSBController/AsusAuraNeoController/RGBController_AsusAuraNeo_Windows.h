@@ -1,4 +1,13 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
+/*---------------------------------------------------------*\
+| RGBController_AsusAuraNeo_Windows.h                       |
+|                                                           |
+| ASUS Aura NEO onboard logo controller                     |
+|                                                           |
+| valer23                                     12 Oct 2026   |
+|                                                           |
+| This file is part of the OpenRGB project                  |
+| SPDX-License-Identifier: GPL-2.0-or-later                 |
+\*---------------------------------------------------------*/
 #pragma once
 #include "RGBController.h"
 #include <hidapi.h>

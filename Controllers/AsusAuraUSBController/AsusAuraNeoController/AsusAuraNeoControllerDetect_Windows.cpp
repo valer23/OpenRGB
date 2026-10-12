@@ -1,4 +1,13 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
+/*---------------------------------------------------------*\
+| AsusAuraNeoControllerDetect_Windows.cpp                   |
+|                                                           |
+| ASUS Aura NEO onboard logo detector                       |
+|                                                           |
+| valer23                                     12 Oct 2026   |
+|                                                           |
+| This file is part of the OpenRGB project                  |
+| SPDX-License-Identifier: GPL-2.0-or-later                 |
+\*---------------------------------------------------------*/
 #include "DetectionManager.h"
 #include "RGBController_AsusAuraNeo_Windows.h"
 #include <memory>
@@ -15,7 +24,7 @@ DetectedControllers DetectAsusAuraNeo(hid_device_info* info, const std::string&)
     std::unique_ptr<hid_device, decltype(&hid_close)> device(hid_open_path(info->path), hid_close);
     if(device)
     {
-        auto controller = std::make_unique<RGBController_AsusAuraNeo>(device.get(), info->path);
+        std::unique_ptr<RGBController_AsusAuraNeo> controller = std::make_unique<RGBController_AsusAuraNeo>(device.get(), info->path);
         device.release();
         found.push_back(controller.get());
         controller.release();
