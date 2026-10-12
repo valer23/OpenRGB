@@ -1,4 +1,4 @@
-# Rainbow Wave and Brimstone
+# Custom lighting effects
 
 The local OpenRGB Effects Plugin is based on official source commit
 `8288ef45eb27d98a237b11ae21fa76be17978c2a` (plugin API 5), built with the same
@@ -7,7 +7,7 @@ Qt 6.8.3 / MinGW 13.1 runtime as the custom OpenRGB application.
 ## Profiles
 
 - **Rainbow Wave** uses the plugin's existing effect, shared timing across all
-  assigned zones, and 10 FPS initially. Multi-LED zones show a wave; the GPU
+  assigned zones, with the current profiles using 30 renderer FPS. Multi-LED zones show a wave; the GPU
   and motherboard logo each cycle as one colour zone.
 - **Brimstone** uses an added native effect. Its dark-orange background,
   orange/red rain palette and moving waves are derived from the supplied iCUE
@@ -43,3 +43,37 @@ the controller-selection whitelist. Real continuous playback and profile
 switching still require physical validation.
 
 ASUS ARGB-header work is deferred. Fan Control remains responsible for cooling.
+
+Playback timing uses a scoped Windows timer request while effects run. The
+Windows 11 background timer policy is preserved and restored after the final
+active effect. Frames stage colours before submitting each device independently. Each device
+has at most one pending job; obsolete frames are dropped. Jobs validate current
+controller membership while holding the controller lifetime lock and finish
+before the effect thread exits.
+The driver retains its required 5 ms packet pauses using native Windows waits.
+`frame_batch_test.cpp` checks staging, independent submission, busy-device frame dropping and last-write
+semantics with `-Itest-stubs/frame-batch -Iplugin`. On Windows,
+`timer_resolution_test.cpp` with `-Iplugin` checks timing when timer requests
+are initially ignored, nested effect lifetimes and policy restoration.
+
+## XML translator
+
+See [the iCUE translator](icue-translator/README.md) for reusable lighting conversion,
+including Halloween - The Dark and Titanium. The updated plugin adds IcueLayers.
+
+## Keyboard ripple and combined profiles
+
+See [Keyboard Ripple](KEYBOARD-RIPPLE.md) for the tested white/purple keyboard effect, Windows input handling and Light Mount key mapping. The profile generator preserves ValWhite as the startup default.
+
+Combine a base profile with the keyboard effect using the helper below. It excludes the keyboard from the base effect to avoid overlapping writers and creates filenames using OpenRGB’s profile-name rules. The optional --red flag sets red ripples on a white keyboard.
+
+```powershell
+python combine-keyboard-ripple.py "C:\path\Firestorm.json" "C:\path\Keyboard Ripple.json" "C:\path\output" --name "Firestorm + Keyboard Ripple" --red
+```
+
+Existing output files are preserved. Copy the generated profile into Settings\profiles
+and restart OpenRGB to refresh the menu. Saved profiles remain local; the generator
+and renderer sources are versioned. Brimstone, Rainbow Wave, Titanium, Halloween,
+Firestorm and the keyboard ripple have been physically checked on this setup.
+The renderer targets 30 FPS; individual devices retain their own transport limits
+(the six fan lighting channels update at approximately five full frames per second).

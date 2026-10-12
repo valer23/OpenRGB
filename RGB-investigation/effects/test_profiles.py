@@ -17,8 +17,9 @@ class ProfilesTests(unittest.TestCase):
             self.assertEqual(len(profile["controllers"]), len(original["controllers"]))
             self.assertTrue(all(c["active_mode"] == 0 for c in profile["controllers"]))
             effect = profile["plugins"]["OpenRGB Effects Plugin"]["Effects"][0]
-            self.assertEqual(effect["FPS"], 10)
+            self.assertEqual(effect["FPS"], 30)
             self.assertTrue(effect["AutoStart"])
+            self.assertTrue(all(z["segment_idx"] == -1 for z in effect["ControllerZones"]))
             expected = sum(bool(z["leds_count"]) for c in original["controllers"] for z in c["zones"])
             self.assertEqual(len(effect["ControllerZones"]), expected)
             self.assertEqual(len({(z["location"], z["zone_idx"]) for z in effect["ControllerZones"]}), expected)
