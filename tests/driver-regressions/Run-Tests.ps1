@@ -22,7 +22,7 @@ try {
     }
     if(Test-Path -LiteralPath (Join-Path $PSScriptRoot 'lianli_lighting_test.cpp')) {
         $exe = Join-Path $testOutput 'lianli.exe'
-        & $Compiler @common -IControllers/LianLiController/LianLiUniHubSLInfinityController tests/driver-regressions/lianli_lighting_test.cpp Controllers/LianLiController/LianLiUniHubSLInfinityController/LianLiUniHubSLInfinityController.cpp Controllers/LianLiController/LianLiUniHubSLInfinityController/RGBController_LianLiUniHubSLInfinity.cpp -o $exe
+        & $Compiler -Idependencies/hidapi-hotplug-win/include @common -IControllers/LianLiController/LianLiUniHubSLInfinityController tests/driver-regressions/lianli_lighting_test.cpp Controllers/LianLiController/LianLiUniHubSLInfinityController/LianLiUniHubSLInfinityController.cpp Controllers/LianLiController/LianLiUniHubSLInfinityController/RGBController_LianLiUniHubSLInfinity.cpp -o $exe
         if($LASTEXITCODE -ne 0) {throw 'Fan regression test compilation failed.'}
         & $exe
         if($LASTEXITCODE -ne 0) {throw 'Fan regression tests failed.'}
