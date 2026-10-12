@@ -22,6 +22,8 @@ private:
     std::mutex io_mutex;
     static NV_STATUS Transfer(NV_PHYSICAL_GPU_HANDLE gpu, unsigned char reg,
                               unsigned char* data, unsigned int length, bool write);
+    static NV_STATUS Read(NV_PHYSICAL_GPU_HANDLE gpu, unsigned char reg,
+                          unsigned char* data, unsigned int length);
     void Write(unsigned char reg, unsigned char* data, unsigned int length);
     void WriteByte(unsigned char reg, unsigned char value);
     void SetSync(unsigned char value);
