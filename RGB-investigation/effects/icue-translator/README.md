@@ -19,6 +19,11 @@ other than the default most frequently serialized stack. `--name` supplies a
 display name. Stack frequency describes the export, not intended brightness or
 number of simultaneous layers.
 
+By default, the output file's stem becomes the profile display name. If `--name`
+is supplied, the output filename must match OpenRGB's sanitized form of that
+name. In particular `+` is stripped, so a display name `A + B` requires the file
+`A  B.json` (two spaces). A mismatched filename is rejected before writing.
+
 ## Initial supported translation
 
 - Static colours and gradient timelines retain ARGB values, alpha and duration.

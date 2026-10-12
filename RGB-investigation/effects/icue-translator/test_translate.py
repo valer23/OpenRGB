@@ -4,10 +4,15 @@ import pathlib
 import tempfile
 import unittest
 from unittest.mock import patch
-from translate_icue import compile_stack, convert, read_stacks, rgba
+from translate_icue import compile_stack, convert, read_stacks, rgba, profile_filename
 
 
 class TranslationTests(unittest.TestCase):
+    def test_profile_filename_lookup_rules(self):
+        self.assertEqual(profile_filename('ValWhite + Keyboard Ripple'), 'ValWhite  Keyboard Ripple.json')
+        self.assertEqual(profile_filename('..Name:with/invalid?chars'), 'Name-withinvalidchars.json')
+        self.assertEqual(profile_filename('New effect'), 'New effect.json')
+
     def test_argb(self):
         self.assertEqual(rgba('#80130538'), [19, 5, 56, 128])
         self.assertEqual(rgba('4283914071'), [87, 87, 87, 255])

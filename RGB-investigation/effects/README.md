@@ -77,3 +77,9 @@ and renderer sources are versioned. Brimstone, Rainbow Wave, Titanium, Halloween
 Firestorm and the keyboard ripple have been physically checked on this setup.
 The renderer targets 30 FPS; individual devices retain their own transport limits
 (the six fan lighting channels update at approximately five full frames per second).
+
+## Review corrections
+
+Busy-device filtering is restricted to RainbowWave, Brimstone, IcueLayers and KeyRipple, which do not index cached state by assignment order. Other stock effects retain the complete stable zone list. Whole-zone colour callbacks enter per-LED frame staging so stock solid-colour effects still submit hardware updates. Some stock effects can wait on slow device geometry reads; this preserves their state safely.
+
+zone-staging-check.py compiles the actual ControllerZone colour callback bodies against a fake device. Its four arguments are the Effects Plugin source directory, this effects directory, the compiler path and a temporary output directory. It checks whole-zone staging, single-LED overrides and one hardware submission. The converter rejects output filenames that disagree with OpenRGB’s normalized profile lookup.
