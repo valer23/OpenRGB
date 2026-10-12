@@ -1,4 +1,13 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
+/*---------------------------------------------------------*\
+| asus_neo_test.cpp                                         |
+|                                                           |
+| ASUS Aura NEO onboard logo regression tests               |
+|                                                           |
+| valer23                                     12 Oct 2026   |
+|                                                           |
+| This file is part of the OpenRGB project                  |
+| SPDX-License-Identifier: GPL-2.0-or-later                 |
+\*---------------------------------------------------------*/
 #include "RGBController_AsusAuraNeo_Windows.h"
 #include <cassert>
 #include <fstream>
@@ -15,10 +24,16 @@ static unsigned int closes = 0;
 extern "C" int hid_send_output_report(hid_device*, const unsigned char* data, size_t length)
 {
     sent.emplace_back(data, data + length);
-    if(static_cast<int>(sent.size()) == fail_at) return failure_result;
+    if(static_cast<int>(sent.size()) == fail_at)
+    {
+        return failure_result;
+    }
     return static_cast<int>(length);
 }
-extern "C" void hid_close(hid_device*) { ++closes; }
+extern "C" void hid_close(hid_device*)
+{
+    ++closes;
+}
 
 static std::vector<std::vector<unsigned char>> Fixtures()
 {
@@ -31,7 +46,9 @@ static std::vector<std::vector<unsigned char>> Fixtures()
         assert(line.size() == 128);
         std::vector<unsigned char> bytes;
         for(size_t i = 0; i < line.size(); i += 2)
+        {
             bytes.push_back(static_cast<unsigned char>(std::stoul(line.substr(i, 2), nullptr, 16)));
+        }
         fixtures.push_back(bytes);
     }
     assert(fixtures.size() == 9);
@@ -40,8 +57,8 @@ static std::vector<std::vector<unsigned char>> Fixtures()
 
 int main()
 {
-    const auto fixtures = Fixtures();
-    auto* handle = reinterpret_cast<hid_device*>(1);
+    const std::vector<std::vector<unsigned char>> fixtures = Fixtures();
+    hid_device* handle = reinterpret_cast<hid_device*>(1);
     {
         RGBController_AsusAuraNeo controller(handle, "test-path");
         assert(sent.empty()); // Detection is read-only.
@@ -50,7 +67,10 @@ int main()
         controller.colors[0] = ToRGBColor(255, 0, 0);
         controller.DeviceUpdateMode();
         assert(sent.size() == 5);
-        for(size_t i = 0; i < 5; ++i) assert(sent[i] == fixtures[i]);
+        for(size_t i = 0; i < 5; ++i)
+        {
+            assert(sent[i] == fixtures[i]);
+        }
         sent.clear();
         controller.colors[0] = ToRGBColor(0, 255, 0);
         controller.DeviceUpdateZoneLEDs(0);
@@ -73,7 +93,7 @@ int main()
     for(int failure = 1; failure <= 5; ++failure)
     {
         sent.clear();
-        fail_at = failure;
+        fail_at        = failure;
         failure_result = failure % 2 ? -1 : 63;
         RGBController_AsusAuraNeo controller(handle, "test-path");
         controller.DeviceUpdateLEDs();
@@ -87,7 +107,9 @@ int main()
     }
     // The fixtures and all generated writes target onboard selector1 or the
     // captured activation command. No selector0 ARGB setup/colour is emitted.
-    for(const auto& packet : fixtures)
+    for(const std::vector<unsigned char>& packet : fixtures)
+    {
         assert(packet.size() == 64 && (packet[1] == 0x21 || (packet[1] == 0x05 && packet[2] == 1)));
+    }
     std::cout << "ASUS NEO captured packets, lazy setup and failure handling passed\n";
 }

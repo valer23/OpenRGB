@@ -1,4 +1,13 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
+/*---------------------------------------------------------*\
+| RGBController_AsusAuraNeo_Windows.cpp                     |
+|                                                           |
+| ASUS Aura NEO onboard logo controller                     |
+|                                                           |
+| valer23                                     12 Oct 2026   |
+|                                                           |
+| This file is part of the OpenRGB project                  |
+| SPDX-License-Identifier: GPL-2.0-or-later                 |
+\*---------------------------------------------------------*/
 #include "RGBController_AsusAuraNeo_Windows.h"
 #include "LogManager.h"
 #include <chrono>
@@ -7,22 +16,22 @@
 RGBController_AsusAuraNeo::RGBController_AsusAuraNeo(hid_device* handle, const std::string& path)
     : device(handle)
 {
-    name = "ASUS ROG STRIX B850-F GAMING WIFI7 NEO (logo)";
-    vendor = "ASUS";
-    type = DEVICE_TYPE_MOTHERBOARD;
+    name        = "ASUS ROG STRIX B850-F GAMING WIFI7 NEO (logo)";
+    vendor      = "ASUS";
+    type        = DEVICE_TYPE_MOTHERBOARD;
     description = "Onboard logo only; captured 0B05:1CD2 protocol";
-    location = "HID: " + path;
+    location    = "HID: " + path;
     mode static_mode;
-    static_mode.name = "Static";
-    static_mode.value = 0;
-    static_mode.flags = MODE_FLAG_HAS_PER_LED_COLOR;
+    static_mode.name       = "Static";
+    static_mode.value      = 0;
+    static_mode.flags      = MODE_FLAG_HAS_PER_LED_COLOR;
     static_mode.color_mode = MODE_COLORS_PER_LED;
     modes.push_back(static_mode);
     zone logo;
-    logo.name = "ROG Logo";
-    logo.type = ZONE_TYPE_SINGLE;
-    logo.leds_min = 1;
-    logo.leds_max = 1;
+    logo.name       = "ROG Logo";
+    logo.type       = ZONE_TYPE_SINGLE;
+    logo.leds_min   = 1;
+    logo.leds_max   = 1;
     logo.leds_count = 1;
     zones.push_back(logo);
     led logo_led;
@@ -112,12 +121,18 @@ void RGBController_AsusAuraNeo::DeviceUpdateLEDs()
 
 void RGBController_AsusAuraNeo::DeviceUpdateZoneLEDs(int zone)
 {
-    if(zone == 0) DeviceUpdateLEDs();
+    if(zone == 0)
+    {
+        DeviceUpdateLEDs();
+    }
 }
 
 void RGBController_AsusAuraNeo::DeviceUpdateSingleLED(int led)
 {
-    if(led == 0) DeviceUpdateLEDs();
+    if(led == 0)
+    {
+        DeviceUpdateLEDs();
+    }
 }
 
 void RGBController_AsusAuraNeo::DeviceUpdateMode()
