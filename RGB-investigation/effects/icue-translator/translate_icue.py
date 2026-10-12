@@ -16,6 +16,11 @@ SUPPORTED = {'StaticLighting', 'GradientLighting', 'ColorWaveLighting',
              'ColorPulseLighting', 'ColorShiftLighting', 'RainLighting', 'WaveLighting'}
 
 
+def profile_filename(name):
+    name = re.sub(r"[#%&{}\\<>*?/!`';@+|=]", '', name.replace(':', '-'))
+    return re.sub(r'[\x00-\x1f\x7f]', '', name.lstrip('.')) + '.json'
+
+
 def number(text, default=0):
     value = float(text) if text is not None else default
     if not math.isfinite(value):
@@ -191,7 +196,11 @@ def main():
         return
     if not args.layout or not args.output:
         parser.error('--layout and --output are required for conversion')
-    profile, report = convert(args.input, args.layout, args.stack, args.name)
+    name = args.name if args.name else args.output.stem
+    required_filename = profile_filename(name)
+    if args.output.name != required_filename:
+        parser.error(f'OpenRGB requires the filename {required_filename!r} for profile {name!r}')
+    profile, report = convert(args.input, args.layout, args.stack, name)
     if args.output.exists():
         parser.error('Output already exists; choose a new path')
     args.output.parent.mkdir(parents=True, exist_ok=True)

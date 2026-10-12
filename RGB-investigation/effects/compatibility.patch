@@ -6,6 +6,15 @@ diff --git a/ControllerZone.cpp b/ControllerZone.cpp
  /*---------------------------------------------------------*\
  | ControllerZone.cpp                                        |
  |                                                           |
+@@ -149,7 +150,7 @@
+ 
+ void ControllerZone::SetAllZoneLEDs(RGBColor color, int brightness, int temperature, int tint)
+ {
+-    if(is_segment)
++    if(is_segment || EffectFrameBatch::Active())
+     {
+         for(unsigned int i = 0; i < leds_count(); i ++)
+         {
 @@ -166,7 +167,9 @@
  {
      if(idx != (int)0xFFFFFFFF)
@@ -59,14 +68,17 @@ diff --git a/EffectManager.cpp b/EffectManager.cpp
      LOG_VERBOSE("[OpenRGBEffectsPlugin] Effect %s thread started", effect->EffectDetails.EffectName.c_str());
  
      TCount  effect_start        = clock->now();
-@@ -360,27 +367,26 @@
+@@ -360,27 +367,29 @@
              | Create a list of zones used by this effect    |
              \*---------------------------------------------*/
              std::vector<ControllerZone*>                    controller_zones    = effect_zones[effect];
 +            // A queued writer also delays shared geometry reads in the core.
 +            // Skip busy devices before querying their zone metadata.
-+            controller_zones.erase(std::remove_if(controller_zones.begin(), controller_zones.end(),
-+                [&frame_queue](ControllerZone* zone) { return frame_queue.Busy(zone->controller); }), controller_zones.end());
++            if(EffectSupportsPartialZones(effect->EffectDetails.EffectClassName))
++            {
++                controller_zones.erase(std::remove_if(controller_zones.begin(), controller_zones.end(),
++                    [&frame_queue](ControllerZone* zone) { return frame_queue.Busy(zone->controller); }), controller_zones.end());
++            }
  
              /*---------------------------------------------*\
              | Step the effect, which updates the controller |
@@ -102,7 +114,7 @@ diff --git a/EffectManager.cpp b/EffectManager.cpp
              }
  
              /*---------------------------------------------*\
-@@ -423,6 +429,7 @@
+@@ -423,6 +432,7 @@
              {
                  last_total_duration = total_duration;
                  effect->EmitMeasure(duration * 0.001, total_duration);
@@ -110,7 +122,7 @@ diff --git a/EffectManager.cpp b/EffectManager.cpp
              }
  
              if(delta > 0)
-@@ -482,3 +489,4 @@
+@@ -482,3 +492,4 @@
  
      effect->OnControllerZonesListChanged(new_zones);
  }

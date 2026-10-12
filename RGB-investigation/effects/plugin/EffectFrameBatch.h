@@ -2,10 +2,18 @@
 #pragma once
 #include <future>
 #include <map>
+#include <string>
 #include <vector>
 #include "RGBControllerInterface.h"
 
 using EffectDeviceFrame = std::map<unsigned int, RGBColor>;
+
+// Stateful stock effects index cached data by assignment order. Only these
+// audited effects can safely render a subset while slow devices are busy.
+inline bool EffectSupportsPartialZones(const std::string& name)
+{
+    return name == "RainbowWave" || name == "Brimstone" || name == "IcueLayers" || name == "KeyRipple";
+}
 
 class EffectFrameQueue
 {
@@ -48,6 +56,7 @@ public:
     ~EffectFrameBatch() { current = previous; }
     EffectFrameBatch(const EffectFrameBatch&) = delete;
     EffectFrameBatch& operator=(const EffectFrameBatch&) = delete;
+    static bool Active() { return current != nullptr; }
     static bool Stage(RGBControllerInterface* controller, unsigned int led, RGBColor color)
     {
         if(!current) return false;
