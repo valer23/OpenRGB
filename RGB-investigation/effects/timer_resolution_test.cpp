@@ -1,0 +1,6 @@
+#include "EffectTimerResolution.h"
+#include <chrono>
+#include <cassert>
+#include <iostream>
+PROCESS_POWER_THROTTLING_STATE read(){PROCESS_POWER_THROTTLING_STATE p={};p.Version=1;assert(GetProcessInformation(GetCurrentProcess(),ProcessPowerThrottling,&p,sizeof(p)));return p;}
+int main(){auto original=read();auto ignored=original;ignored.ControlMask|=4;ignored.StateMask|=4;assert(SetProcessInformation(GetCurrentProcess(),ProcessPowerThrottling,&ignored,sizeof(ignored)));{EffectTimerResolution outer;assert(outer.IsActive());assert(!(read().StateMask&4));{EffectTimerResolution inner;assert(!(read().StateMask&4));}assert(!(read().StateMask&4));auto s=std::chrono::steady_clock::now();for(int i=0;i<18;++i)Sleep(5);auto elapsed=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-s).count();std::cout<<"Background timing override: "<<elapsed<<" ms\n";assert(elapsed<180);}auto restored=read();assert((restored.ControlMask&4)==(ignored.ControlMask&4));assert((restored.StateMask&4)==(ignored.StateMask&4));assert((restored.StateMask&1)==(ignored.StateMask&1));assert(SetProcessInformation(GetCurrentProcess(),ProcessPowerThrottling,&original,sizeof(original)));std::cout<<"Nested effect lifetime and policy restoration pass\n";}

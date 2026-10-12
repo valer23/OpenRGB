@@ -1,0 +1,7 @@
+#include "EffectFrameBatch.h"
+#include <cassert>
+#include <condition_variable>
+#include <mutex>
+#include <atomic>
+struct Device:RGBControllerInterface {std::atomic<unsigned int> updates{0};std::atomic<RGBColor> value{0};void SetColor(unsigned int index,RGBColor color)override{assert(index==2);value=color;}void UpdateLEDs()override{++updates;}};
+int main(){Device slow,fast;std::mutex mutex;std::condition_variable cv;bool release=false,slow_started=false;assert(!EffectFrameBatch::Stage(&fast,2,0));{EffectFrameQueue queue;auto submit=[&](RGBControllerInterface* device,const EffectDeviceFrame& frame){if(device==&slow){std::unique_lock<std::mutex> guard(mutex);slow_started=true;cv.notify_all();cv.wait(guard,[&]{return release;});}for(auto led:frame)device->SetColor(led.first,led.second);device->UpdateLEDs();cv.notify_all();};{EffectFrameBatch frame;EffectFrameBatch::Stage(&slow,2,1);EffectFrameBatch::Stage(&fast,2,2);EffectFrameBatch::Stage(&fast,2,3);assert(fast.updates==0);frame.Submit(queue,submit);} {std::unique_lock<std::mutex> guard(mutex);assert(cv.wait_for(guard,std::chrono::seconds(2),[&]{return slow_started&&fast.updates==1;}));}assert(fast.value==3);{EffectFrameBatch frame;EffectFrameBatch::Stage(&slow,2,99);EffectFrameBatch::Stage(&fast,2,4);frame.Submit(queue,submit);} {std::unique_lock<std::mutex> guard(mutex);assert(cv.wait_for(guard,std::chrono::seconds(2),[&]{return fast.updates==2;}));release=true;cv.notify_all();}}assert(slow.updates==1&&slow.value==1);assert(fast.updates==2&&fast.value==4);assert(!EffectFrameBatch::Stage(&fast,2,0));}
