@@ -1,4 +1,4 @@
-#define AppVersion "1.0.20261012.1"
+#define AppVersion "1.0.20261012.2"
 [Setup]
 AppId={{8972A52B-C337-48F8-9E74-82CE6AD51A29}
 AppName=OpenRGB Custom

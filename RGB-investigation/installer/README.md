@@ -45,7 +45,7 @@ Set-Location 'C:\Users\valerian\git-repos\OpenRGB-KFA2\RGB-investigation\install
 ```
 
 Use the actual ISCC.exe location if Inno Setup was installed elsewhere.
-The installer is written to `output\OpenRGB-Custom-Setup-1.0.20261012.1.exe`.
+The installer is written to `output\OpenRGB-Custom-Setup-1.0.20261012.2.exe`.
 Before a new release, increment AppVersion in OpenRGB-Custom.iss; retain AppId
 so Windows recognizes it as the same application. The payload directory is a
 staging area; inspect it for stale files when changing the packaged file set.
@@ -63,7 +63,7 @@ staging area; inspect it for stale files when changing the packaged file set.
 5. Confirm the Windows Installed Apps entry, two RAM entries, keyboard, fans,
    mouse, ASUS logo and KFA2 GPU. Check ValWhite and an animated profile.
 
-An upgrade preserves existing profiles and OpenRGB.json byte-for-byte. Therefore
+An upgrade preserves existing profiles byte-for-byte and keeps existing OpenRGB.json settings, except it disables the built-in AutoStart flag to prevent a competing non-elevated launch. Therefore
 it does not automatically replace an existing effect profile with a newer default.
 Install a revised profile separately after backing up the old one when required.
 If the app is already running, open it from its tray icon; the launcher avoids
@@ -96,3 +96,9 @@ installation stopped before changing files. The retained installer uses
 
 Installer sources and build scripts are versioned in this repository. Keep
 personal payloads, recovery copies and installer binaries out of Git.
+
+## Reboot startup repair — 12 October 2026
+
+OpenRGB’s own AutoStart setting created a non-elevated launch without the custom settings path. That instance started before the administrator task, which then skipped launch because OpenRGB was already running. Configure-Startup.ps1 now disables this flag and backs up any matching direct startup shortcut. Keep OpenRGB Custom (valerian) as the startup task. The obsolete OpenRGB task pointing to the removed official installation can be deleted manually.
+
+The repaired launch successfully initialized PawnIO and loaded ValWhite without permission-denied errors. Installer version 1.0.20261012.2 includes this prevention; the live installation was repaired directly.
