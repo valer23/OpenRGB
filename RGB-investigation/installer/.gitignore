@@ -1,0 +1,6 @@
+payload/
+output/
+tools/
+*.log
+recovery/
+payload-manifest.json

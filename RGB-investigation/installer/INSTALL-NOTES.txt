@@ -1,0 +1,11 @@
+OpenRGB Custom - personal build for valerian
+
+Includes the tested KFA2 GPU, Lian Li fan and ASUS logo support, the Effects Plugin and your saved lighting profiles.
+
+Installs in the existing C:\Users\valerian\Apps\OpenRGB-Custom folder. Existing settings and profiles are retained. The current PawnIO installation is reused; this installer does not install or remove the shared PawnIO kernel driver.
+
+Creates a Start menu shortcut, an elevated logon startup task and a Windows Installed Apps entry. Startup uses ValWhite. ASUS LightingService is paused for the OpenRGB session and restored when the app exits. Fan Control is unaffected.
+
+Uninstall removes packaged application files and the startup task, and keeps settings, profiles and existing backups. Close OpenRGB from its tray menu before installation, upgrade or uninstall.
+
+This unsigned installer contains your personal device layouts. It is intended for your PC, not public distribution.
