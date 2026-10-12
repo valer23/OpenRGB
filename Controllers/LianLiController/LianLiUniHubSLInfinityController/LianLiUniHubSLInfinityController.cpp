@@ -13,11 +13,27 @@
 \*---------------------------------------------------------*/
 
 #include <string.h>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include "LianLiUniHubSLInfinityController.h"
 #include "StringUtils.h"
 #include "LogManager.h"
 
 using namespace std::chrono_literals;
+
+namespace
+{
+void LightingPause(unsigned int milliseconds)
+{
+#ifdef _WIN32
+    // MinGW's C++ timed wait rounds short delays to the default timer tick.
+    Sleep(milliseconds);
+#else
+    std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
+#endif
+}
+}
 
 LianLiUniHubSLInfinityController::LianLiUniHubSLInfinityController(hid_device* dev_handle, const char* path, std::string dev_name)
 {
@@ -244,8 +260,18 @@ bool LianLiUniHubSLInfinityController::SendStartAction(unsigned char channel, un
             LOG_ERROR("[Lian Li SL Infinity] Unable to disable motherboard lighting sync");
             return false;
         }
-        std::this_thread::sleep_for(20ms);
+        LightingPause(20);
         direct_lighting_enabled = true;
+    }
+    unsigned int port = channel / 2;
+    if(port >= 4 || num_fans == 0 || num_fans > 6)
+    {
+        LOG_ERROR("[Lian Li SL Infinity] Invalid lighting port or fan count");
+        return false;
+    }
+    if(configured_fan_counts[port] == num_fans)
+    {
+        return true;
     }
     unsigned char usb_buf[7];
 
@@ -271,7 +297,8 @@ bool LianLiUniHubSLInfinityController::SendStartAction(unsigned char channel, un
         LOG_ERROR("[Lian Li SL Infinity] Lighting setup report failed");
         return false;
     }
-    std::this_thread::sleep_for(5ms);
+    LightingPause(5);
+    configured_fan_counts[port] = num_fans;
     return true;
 
 }
@@ -303,8 +330,17 @@ void LianLiUniHubSLInfinityController::SendColorData(unsigned char   channel, un
     /*-----------------------------------------------------*\
     | Send packet                                           |
     \*-----------------------------------------------------*/
-    hid_write(dev, usb_buf, sizeof(usb_buf));
-    std::this_thread::sleep_for(5ms);
+#ifdef _WIN32
+    // Match the control SET_REPORT transport used by the verified vendor replay.
+    int result = hid_send_output_report(dev, usb_buf, sizeof(usb_buf));
+#else
+    int result = hid_write(dev, usb_buf, sizeof(usb_buf));
+#endif
+    if(result != static_cast<int>(sizeof(usb_buf)))
+    {
+        LOG_ERROR("[Lian Li SL Infinity] Lighting colour report failed");
+    }
+    LightingPause(5);
 }
 
 void LianLiUniHubSLInfinityController::SendCommitAction(unsigned char channel, unsigned char effect, unsigned char speed, unsigned int direction, unsigned int brightness)
@@ -330,5 +366,5 @@ void LianLiUniHubSLInfinityController::SendCommitAction(unsigned char channel, u
     | Send packet                                           |
     \*-----------------------------------------------------*/
     hid_send_feature_report(dev, usb_buf, sizeof(usb_buf));
-    std::this_thread::sleep_for(5ms);
+    LightingPause(5);
 }
