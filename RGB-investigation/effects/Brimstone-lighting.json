@@ -1,0 +1,454 @@
+{
+  "profile": "Brimstone",
+  "exporter_version": "5.9.105",
+  "sha256": "a8e3965e393636fd2245517a46a523f0df3f624db9baf72763350b81f965b9e1",
+  "layers": [
+    {
+      "fields": {
+        "brightness": "10",
+        "colors_argb": [
+          "#ffff3800",
+          "#ff0a0300"
+        ],
+        "direction": "4",
+        "duration": "1000",
+        "opacity": "255",
+        "random": "false",
+        "speed": "2"
+      },
+      "name": "BrimstoneRain 1",
+      "transitions": [],
+      "type": "RainLighting",
+      "serialized_definitions": 140
+    },
+    {
+      "fields": {
+        "brightness": "10",
+        "colors_argb": [
+          "#ffff2b00",
+          "#ffe13700"
+        ],
+        "direction": "2",
+        "duration": "1000",
+        "random": "false",
+        "speed": "3"
+      },
+      "name": "BrimstoneWave 1",
+      "transitions": [],
+      "type": "ColorWaveLighting",
+      "serialized_definitions": 140
+    },
+    {
+      "fields": {
+        "brightness": "10",
+        "duration": "1000",
+        "opacity": "255"
+      },
+      "name": "BrimstoneBG",
+      "transitions": [
+        {
+          "argb": "#ff461800",
+          "time": 0.0
+        }
+      ],
+      "type": "StaticLighting",
+      "serialized_definitions": 140
+    },
+    {
+      "fields": {
+        "brightness": "10",
+        "colors_argb": [
+          "#ffff4600",
+          "#ff0a0300"
+        ],
+        "direction": "1",
+        "duration": "1000",
+        "random": "false",
+        "speed": "2"
+      },
+      "name": "BrimstoneWave 2",
+      "transitions": [],
+      "type": "ColorWaveLighting",
+      "serialized_definitions": 139
+    },
+    {
+      "fields": {
+        "brightness": "10",
+        "colors_argb": [
+          "#ff522200",
+          "#ff070200"
+        ],
+        "direction": "4",
+        "duration": "1000",
+        "opacity": "255",
+        "random": "false",
+        "speed": "1"
+      },
+      "name": "BrimstoneRain 3",
+      "transitions": [],
+      "type": "RainLighting",
+      "serialized_definitions": 139
+    },
+    {
+      "fields": {
+        "brightness": "10",
+        "colors_argb": [
+          "#ff521700",
+          "#ff060200"
+        ],
+        "direction": "4",
+        "duration": "1000",
+        "opacity": "255",
+        "random": "false",
+        "speed": "1"
+      },
+      "name": "BrimstoneRain 4",
+      "transitions": [],
+      "type": "RainLighting",
+      "serialized_definitions": 112
+    },
+    {
+      "fields": {
+        "brightness": "10",
+        "colors_argb": [
+          "#ffff3a00",
+          "#ff0a0300"
+        ],
+        "direction": "4",
+        "duration": "1000",
+        "opacity": "255",
+        "random": "false",
+        "speed": "2"
+      },
+      "name": "BrimstoneRain 2",
+      "transitions": [],
+      "type": "RainLighting",
+      "serialized_definitions": 111
+    },
+    {
+      "fields": {
+        "brightness": "10",
+        "colors_argb": [
+          "#ffff5600",
+          "#ffe13700"
+        ],
+        "direction": "2",
+        "duration": "1000",
+        "random": "false",
+        "speed": "3"
+      },
+      "name": "BrimstoneWave1",
+      "transitions": [],
+      "type": "ColorWaveLighting",
+      "serialized_definitions": 29
+    },
+    {
+      "fields": {
+        "brightness": "10",
+        "colors_argb": [
+          "#ff522600",
+          "#ff3e1900"
+        ],
+        "direction": "4",
+        "duration": "1000",
+        "opacity": "255",
+        "random": "false",
+        "speed": "1"
+      },
+      "name": "BrimstoneRain",
+      "transitions": [],
+      "type": "RainLighting",
+      "serialized_definitions": 29
+    },
+    {
+      "fields": {
+        "brightness": "10",
+        "colors_argb": [
+          "#ffff6500",
+          "#ffa63b00"
+        ],
+        "direction": "1",
+        "duration": "1000",
+        "random": "false",
+        "speed": "3"
+      },
+      "name": "BrimstoneWave2",
+      "transitions": [],
+      "type": "ColorWaveLighting",
+      "serialized_definitions": 27
+    },
+    {
+      "fields": {
+        "brightness": "10",
+        "duration": "1000",
+        "opacity": "255"
+      },
+      "name": "BrimstoneBG",
+      "transitions": [
+        {
+          "argb": "#ff801c00",
+          "time": 0.0
+        }
+      ],
+      "type": "StaticLighting",
+      "serialized_definitions": 27
+    },
+    {
+      "fields": {
+        "brightness": "10",
+        "colors_argb": [
+          "#ffff3c00",
+          "#ff0a0300"
+        ],
+        "direction": "4",
+        "duration": "1000",
+        "opacity": "255",
+        "random": "false",
+        "speed": "2"
+      },
+      "name": "BrimstoneRain2",
+      "transitions": [],
+      "type": "RainLighting",
+      "serialized_definitions": 2
+    },
+    {
+      "fields": {
+        "brightness": "10",
+        "colors_argb": [
+          "#ffff6500",
+          "#ff0a0300"
+        ],
+        "direction": "1",
+        "duration": "1000",
+        "random": "false",
+        "speed": "2"
+      },
+      "name": "BrimstoneWave2",
+      "transitions": [],
+      "type": "ColorWaveLighting",
+      "serialized_definitions": 2
+    },
+    {
+      "fields": {
+        "brightness": "10",
+        "duration": "1000",
+        "opacity": "255"
+      },
+      "name": "BrimstoneBG",
+      "transitions": [
+        {
+          "argb": "#ff3f0c00",
+          "time": 0.0
+        }
+      ],
+      "type": "StaticLighting",
+      "serialized_definitions": 2
+    },
+    {
+      "fields": {
+        "angle": "90",
+        "brightness": "10",
+        "duration": "1400",
+        "isDoublesided": "false",
+        "tailLength": "30",
+        "velocity": "450"
+      },
+      "name": "Brimstone Wave 1",
+      "transitions": [
+        {
+          "argb": "#ffff3900",
+          "time": 0.0
+        },
+        {
+          "argb": "#00ff7000",
+          "time": 1.0
+        }
+      ],
+      "type": "WaveLighting",
+      "serialized_definitions": 1
+    },
+    {
+      "fields": {
+        "angle": "90",
+        "brightness": "10",
+        "duration": "1200",
+        "isDoublesided": "false",
+        "tailLength": "30",
+        "velocity": "450"
+      },
+      "name": "Brimstone Wave 2",
+      "transitions": [
+        {
+          "argb": "#ffff3900",
+          "time": 0.0
+        },
+        {
+          "argb": "#00ff7000",
+          "time": 1.0
+        }
+      ],
+      "type": "WaveLighting",
+      "serialized_definitions": 1
+    },
+    {
+      "fields": {
+        "angle": "90",
+        "brightness": "10",
+        "duration": "1600",
+        "isDoublesided": "false",
+        "tailLength": "30",
+        "velocity": "300"
+      },
+      "name": "Brimstone Wave 3",
+      "transitions": [
+        {
+          "argb": "#ffff3900",
+          "time": 0.0
+        },
+        {
+          "argb": "#00ff7000",
+          "time": 1.0
+        }
+      ],
+      "type": "WaveLighting",
+      "serialized_definitions": 1
+    },
+    {
+      "fields": {
+        "angle": "90",
+        "brightness": "10",
+        "duration": "1000",
+        "isDoublesided": "false",
+        "tailLength": "30",
+        "velocity": "300"
+      },
+      "name": "Brimstone Wave 4",
+      "transitions": [
+        {
+          "argb": "#ffff3900",
+          "time": 0.0
+        },
+        {
+          "argb": "#00ff7000",
+          "time": 1.0
+        }
+      ],
+      "type": "WaveLighting",
+      "serialized_definitions": 1
+    },
+    {
+      "fields": {
+        "angle": "90",
+        "brightness": "10",
+        "duration": "1500",
+        "isDoublesided": "false",
+        "tailLength": "30",
+        "velocity": "300"
+      },
+      "name": "Brimstone Wave 5",
+      "transitions": [
+        {
+          "argb": "#ffff3900",
+          "time": 0.0
+        },
+        {
+          "argb": "#00ff7000",
+          "time": 1.0
+        }
+      ],
+      "type": "WaveLighting",
+      "serialized_definitions": 1
+    },
+    {
+      "fields": {
+        "angle": "90",
+        "brightness": "10",
+        "duration": "1300",
+        "isDoublesided": "false",
+        "tailLength": "30",
+        "velocity": "300"
+      },
+      "name": "Brimstone Wave 6",
+      "transitions": [
+        {
+          "argb": "#ffff3900",
+          "time": 0.0
+        },
+        {
+          "argb": "#00ff7000",
+          "time": 1.0
+        }
+      ],
+      "type": "WaveLighting",
+      "serialized_definitions": 1
+    },
+    {
+      "fields": {
+        "angle": "90",
+        "brightness": "10",
+        "duration": "1100",
+        "isDoublesided": "false",
+        "tailLength": "30",
+        "velocity": "300"
+      },
+      "name": "Brimstone Wave 7",
+      "transitions": [
+        {
+          "argb": "#ffff3900",
+          "time": 0.0
+        },
+        {
+          "argb": "#00ff7000",
+          "time": 1.0
+        }
+      ],
+      "type": "WaveLighting",
+      "serialized_definitions": 1
+    },
+    {
+      "fields": {
+        "angle": "90",
+        "brightness": "10",
+        "duration": "1100",
+        "isDoublesided": "false",
+        "tailLength": "30",
+        "velocity": "450"
+      },
+      "name": "Brimstone Wave 8",
+      "transitions": [
+        {
+          "argb": "#ffff3900",
+          "time": 0.0
+        },
+        {
+          "argb": "#00ff7000",
+          "time": 1.0
+        }
+      ],
+      "type": "WaveLighting",
+      "serialized_definitions": 1
+    },
+    {
+      "fields": {
+        "brightness": "10",
+        "colors_argb": [
+          "#ffff4600",
+          "#ff0a0300"
+        ],
+        "direction": "2",
+        "duration": "1000",
+        "random": "false",
+        "speed": "2"
+      },
+      "name": "BrimstoneWave 2",
+      "transitions": [],
+      "type": "ColorWaveLighting",
+      "serialized_definitions": 1
+    }
+  ],
+  "notes": [
+    "ARGB includes opacity; it is not OpenRGB's packed colour order.",
+    "Definition counts describe exported device variants, not active simultaneous layers.",
+    "iCUE rain randomness, enum timing and spatial coordinates need rendering adaptation."
+  ]
+}
