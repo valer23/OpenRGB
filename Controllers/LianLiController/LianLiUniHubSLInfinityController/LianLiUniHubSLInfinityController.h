@@ -201,6 +201,7 @@ private:
 
 private:
     bool                    direct_lighting_enabled = false;
+    unsigned int            configured_fan_counts[4] = {};
     hid_device*             dev;
 
     /*---------------------------------------------------------*\
