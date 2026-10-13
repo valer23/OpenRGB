@@ -5,7 +5,7 @@ Adds a Windows Installed Apps entry and uninstaller with a stable AppId.
 
 Run `Build-Installer.ps1` with `-Compiler` pointing to ISCC.exe to rebuild.
 It packages the working installation via a file allowlist, including the Effects
-Plugin and seven saved profiles. Payloads and installer binaries are ignored by
+Plugin and all currently saved profiles. Payloads and installer binaries are ignored by
 Git because they include personal device layouts. Do not distribute this personal
 installer publicly. It is unsigned; Windows may show an unknown-publisher prompt.
 
@@ -45,7 +45,7 @@ Set-Location 'C:\Users\valerian\git-repos\OpenRGB-KFA2\RGB-investigation\install
 ```
 
 Use the actual ISCC.exe location if Inno Setup was installed elsewhere.
-The installer is written to `output\OpenRGB-Custom-Setup-1.0.20261012.2.exe`.
+The installer is written to `output\OpenRGB-Custom-Setup-1.0.20261013.1.exe`.
 Before a new release, increment AppVersion in OpenRGB-Custom.iss; retain AppId
 so Windows recognizes it as the same application. The payload directory is a
 staging area; inspect it for stale files when changing the packaged file set.
@@ -102,3 +102,16 @@ personal payloads, recovery copies and installer binaries out of Git.
 OpenRGBâ€™s own AutoStart setting created a non-elevated launch without the custom settings path. That instance started before the administrator task, which then skipped launch because OpenRGB was already running. Configure-Startup.ps1 now disables this flag and backs up any matching direct startup shortcut. Keep OpenRGB Custom (valerian) as the startup task. The obsolete OpenRGB task pointing to the removed official installation can be deleted manually.
 
 The repaired launch successfully initialized PawnIO and loaded ValWhite without permission-denied errors. Installer version 1.0.20261012.2 includes this prevention; the live installation was repaired directly.
+
+## Refreshed package — 13 October 2026
+
+Version 1.0.20261013.1 packages the installed, tested Effects Plugin with
+animated keyboard backgrounds for Brimstone, Firestorm and Titanium plus typing
+ripples. ValWhite + Keyboard Ripple keeps its white idle background. All eleven
+saved profiles are included as defaults for missing files. Existing profiles
+and startup selection are preserved during upgrades. The owner confirmed all
+three animated/ripple combinations on the keyboard before packaging.
+
+This refresh builds a replacement installer; the live plugin/profiles already
+contain the fix. Running the installer is not needed for the current session.
+Upgrade/uninstall testing remains separate from installer compilation.
