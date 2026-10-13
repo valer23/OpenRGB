@@ -13,9 +13,6 @@
 #include "LogManager.h"
 #include "RGBController_NVIDIAIllumination_Windows_Linux.h"
 #include "pci_ids.h"
-#ifdef _WIN32
-#include "RGBController_KFA2EX_Windows.h"
-#endif
 
 enum
 {
@@ -105,15 +102,6 @@ DetectedControllers DetectNVIDIAIllumGPUs()
         res = NvAPI_GPU_GetPCIIdentifiers(gpu_handles[gpu_idx], &device_id, &sub_system_id, &revision_id, &ext_device_id);
         if (res == 0)
         {
-#ifdef _WIN32
-            // This KFA2 card shares the FE PCI IDs. Claim it only when its
-            // separate I2C lighting controller matches the observed ID.
-            if(device_id == 0x220810DE && sub_system_id == 0x153510DE &&
-               RGBController_KFA2EX::Probe(gpu_handles[gpu_idx]))
-            {
-                continue;
-            }
-#endif
             uint16_t pci_device           = device_id >> 16;
             uint16_t pci_vendor           = device_id & 0xffff;
             uint16_t pci_subsystem_device = sub_system_id >> 16;
@@ -132,6 +120,16 @@ DetectedControllers DetectNVIDIAIllumGPUs()
                             {
                                 nvapi_accessor*                     new_nvapi      = new nvapi_accessor(gpu_handles[gpu_idx]);
                                 NVIDIAIlluminationV1Controller*     controller     = new NVIDIAIlluminationV1Controller(new_nvapi, device_list[dev_idx].treats_rgbw_as_rgb, device_list[dev_idx].name);
+                                /*-------------------------------------------------*\
+                                | Some partner cards share the FE PCI IDs but do  |
+                                | not expose NVIDIA illumination zones.           |
+                                \*-------------------------------------------------*/
+                                if(controller->getInfo().empty())
+                                {
+                                    delete controller;
+                                    delete new_nvapi;
+                                    break;
+                                }
                                 RGBController_NVIDIAIlluminationV1* rgb_controller = new RGBController_NVIDIAIlluminationV1(controller);
 
                                 detected_controllers.push_back(rgb_controller);

@@ -75,3 +75,22 @@ provided a screenshot showing the correctly named KFA2 GPU, GPU zone, Static
 mode and colour 0000FF. This confirms working native GUI colour control;
 it does not establish motherboard-sync operation, hardware persistence,
 other GPU models, or fan lighting support.
+
+## Shared I2C transport revision
+
+The active KFA2 controller now uses OpenRGB's i2c_smbus_interface, registered
+by exact PCI identity at 7-bit address 0x23. It no longer enumerates GPUs, calls
+NVAPI directly or depends on Windows-specific types. The existing shared
+Windows NVAPI backend successfully read signature/RGB/mode registers and the
+owner confirmed red/green/blue/purple through the replacement native driver.
+The diagnostic restored the prior colour and mode. Linux uses the same device
+controller but has not been physically verified.
+
+NVIDIA Illumination now skips controllers whose standard illumination query
+returns no zones, rather than directly probing the KFA2 protocol. This GPU
+returns NVAPI status -9 with zero zones from the standard illumination query.
+
+Location now follows the normal I2C bus-name/address convention. Local saved
+profiles need their GPU location updated from the former NVAPI PCI location.
+Tests and investigation material remain local and are removed from upstream
+MR diffs at the maintainer's request.

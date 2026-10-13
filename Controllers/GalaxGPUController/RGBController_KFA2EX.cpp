@@ -1,16 +1,17 @@
 /*---------------------------------------------------------*\
-| RGBController_KFA2EX_Windows.cpp                          |
+| RGBController_KFA2EX.cpp                                  |
 |                                                           |
-| KFA2 EX Gamer NVAPI lighting controller                   |
+| KFA2 EX Gamer I2C lighting controller                     |
 |                                                           |
 | valer23                                     13 Oct 2026   |
 |                                                           |
 | This file is part of the OpenRGB project                  |
 | SPDX-License-Identifier: GPL-2.0-or-later                 |
 \*---------------------------------------------------------*/
-#include "RGBController_KFA2EX_Windows.h"
+#include "RGBController_KFA2EX.h"
 #include "LogManager.h"
 #include <chrono>
+#include <cstdio>
 #include <stdexcept>
 #include <thread>
 
@@ -22,65 +23,48 @@
     @direct :white_check_mark:
     @effects :o:
     @detectors DetectKFA2EXControllers
-    @comment Windows NVAPI only. Static colour streaming is supported.
+    @comment Static colour streaming uses the shared I2C/SMBus interface.
              Hardware effects and persistent saving are unsupported.
              Motherboard Sync selects the captured flag; external colour
              following has not been verified. PCI 10DE:2208 / 10DE:1535.
 \*-------------------------------------------------------------------*/
 
-NV_STATUS RGBController_KFA2EX::Transfer(NV_PHYSICAL_GPU_HANDLE gpu, unsigned char reg,
-                                        unsigned char* data, unsigned int length, bool write)
+int RGBController_KFA2EX::Read(i2c_smbus_interface* bus, unsigned char address,
+                             unsigned char reg, unsigned char* data, unsigned int length)
 {
-    NV_I2C_INFO_V3 info;
-    info.display_mask    = 1;
-    info.is_ddc_port     = 2; // Exact vendor value; do not normalise to bool.
-    info.i2c_dev_address = 0x46;
-    info.i2c_reg_address = &reg;
-    info.reg_addr_size   = 1;
-    info.data            = data;
-    info.size            = length;
-    info.i2c_speed       = 0;
-    info.i2c_speed_khz   = static_cast<NV_I2C_SPEED>(0);
-    info.port_id         = 1;
-    info.is_port_id_set  = 1;
-    return write ? NvAPI_I2CWrite(gpu, &info) : NvAPI_I2CRead(gpu, &info);
-}
-
-NV_STATUS RGBController_KFA2EX::Read(NV_PHYSICAL_GPU_HANDLE gpu, unsigned char reg,
-                                    unsigned char* data, unsigned int length)
-{
-    NV_STATUS status = -1;
     for(unsigned int attempt = 0; attempt < 3; attempt++)
     {
-        status = Transfer(gpu, reg, data, length, false);
-        if(status != -1) break;
-        if(attempt < 2) std::this_thread::sleep_for(std::chrono::milliseconds(25));
+        int count = bus->i2c_smbus_read_i2c_block_data(address, reg, length, data);
+        if(count == (int)length)
+        {
+            return 0;
+        }
+        if(attempt < 2)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(25));
+        }
     }
-    return status;
+    return -1;
 }
 
-bool RGBController_KFA2EX::Probe(NV_PHYSICAL_GPU_HANDLE gpu)
+bool RGBController_KFA2EX::Probe(i2c_smbus_interface* bus, unsigned char address)
 {
     unsigned char id[2] = {};
-    return Read(gpu, 0x00, id, 2) == 0 && id[0] == 0x11 && id[1] == 0x00;
+    return Read(bus, address, 0x00, id, 2) == 0 && id[0] == 0x11 && id[1] == 0x00;
 }
 
-RGBController_KFA2EX::RGBController_KFA2EX(NV_PHYSICAL_GPU_HANDLE gpu_handle) : gpu(gpu_handle)
+RGBController_KFA2EX::RGBController_KFA2EX(i2c_smbus_interface* bus, unsigned char address, const std::string& device_name)
+    : bus(bus), address(address)
 {
     try
     {
-        name        = "KFA2 GeForce RTX 3080 Ti EX Gamer";
+        name        = device_name;
         vendor      = "KFA2";
         type        = DEVICE_TYPE_GPU;
-        description = "Captured KFA2 EX lighting protocol (Windows NVAPI)";
-        NV_U32 bus_id = 0;
-        NV_U32 slot_id = 0;
-        if(NvAPI_GPU_GetBusId(gpu, &bus_id) != 0 || NvAPI_GPU_GetBusSlotId(gpu, &slot_id) != 0)
-        {
-            throw std::runtime_error("Unable to read KFA2 PCI location");
-        }
-        location = "NVAPI: PCI bus " + std::to_string(bus_id) + ", slot " + std::to_string(slot_id)
-                 + ", I2C address 0x23, port 1";
+        description = "KFA2 EX Gamer I2C lighting controller";
+        char address_string[8];
+        snprintf(address_string, sizeof(address_string), "0x%02X", address);
+        location = "I2C: " + std::string(bus->info.device_name) + ", address " + address_string;
 
         mode static_mode;
         static_mode.name       = "Static";
@@ -98,7 +82,7 @@ RGBController_KFA2EX::RGBController_KFA2EX(NV_PHYSICAL_GPU_HANDLE gpu_handle) : 
 
         SetupZones();
         unsigned char sync = 0;
-        NV_STATUS sync_status = Read(gpu, 0x07, &sync, 1);
+        int sync_status = Read(bus, address, 0x07, &sync, 1);
         if(sync_status != 0 || sync > 1)
         {
             // PCI identity, controller signature and RGB registers already
@@ -137,7 +121,7 @@ void RGBController_KFA2EX::SetupZones()
     leds.push_back(gpu_led);
     SetupColors();
     unsigned char rgb[3] = {};
-    if(Read(gpu, 0x02, rgb, 3) != 0)
+    if(Read(bus, address, 0x02, rgb, 3) != 0)
     {
         throw std::runtime_error("Unable to read KFA2 colour");
     }
@@ -146,12 +130,18 @@ void RGBController_KFA2EX::SetupZones()
 
 void RGBController_KFA2EX::Write(unsigned char reg, unsigned char* data, unsigned int length)
 {
-    NV_STATUS status = -1;
+    int status = -1;
     for(unsigned int attempt = 0; attempt < 3; attempt++)
     {
-        status = Transfer(gpu, reg, data, length, true);
-        if(status != -1) break;
-        if(attempt < 2) std::this_thread::sleep_for(std::chrono::milliseconds(25));
+        status = bus->i2c_smbus_write_i2c_block_data(address, reg, length, data);
+        if(status != -1)
+        {
+            break;
+        }
+        if(attempt < 2)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(25));
+        }
     }
     if(status != 0)
     {
@@ -170,12 +160,12 @@ void RGBController_KFA2EX::SetSync(unsigned char value)
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
     for(unsigned int attempt = 0; attempt < 3; attempt++)
     {
-        NV_STATUS status = Transfer(gpu, 0x07, &value, 1, true);
+        int status = bus->i2c_smbus_write_byte_data(address, 0x07, value);
         if(status == 0)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(25));
             unsigned char actual = 0;
-            if(Read(gpu, 0x07, &actual, 1) == 0 && actual == value)
+            if(Read(bus, address, 0x07, &actual, 1) == 0 && actual == value)
             {
                 return;
             }
@@ -192,9 +182,9 @@ void RGBController_KFA2EX::SetSync(unsigned char value)
 
 void RGBController_KFA2EX::ApplyColour()
 {
-    unsigned char rgb[3] = { static_cast<unsigned char>(RGBGetRValue(colors[0])),
-                             static_cast<unsigned char>(RGBGetGValue(colors[0])),
-                             static_cast<unsigned char>(RGBGetBValue(colors[0])) };
+    unsigned char rgb[3] = { (unsigned char)RGBGetRValue(colors[0]),
+                             (unsigned char)RGBGetGValue(colors[0]),
+                             (unsigned char)RGBGetBValue(colors[0]) };
     Write(0x02, rgb, 3);
     WriteByte(0x05, 0x00);
     WriteByte(0x06, 0x20);
@@ -218,8 +208,20 @@ void RGBController_KFA2EX::DeviceUpdateLEDs()
     }
 }
 
-void RGBController_KFA2EX::DeviceUpdateZoneLEDs(int /*zone*/) { DeviceUpdateLEDs(); }
-void RGBController_KFA2EX::DeviceUpdateSingleLED(int /*led*/) { DeviceUpdateLEDs(); }
+void RGBController_KFA2EX::DeviceUpdateZoneLEDs(int zone)
+{
+    if(zone == 0)
+    {
+        DeviceUpdateLEDs();
+    }
+}
+void RGBController_KFA2EX::DeviceUpdateSingleLED(int led)
+{
+    if(led == 0)
+    {
+        DeviceUpdateLEDs();
+    }
+}
 
 void RGBController_KFA2EX::DeviceUpdateMode()
 {
