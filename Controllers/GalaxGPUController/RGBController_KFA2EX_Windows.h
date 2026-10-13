@@ -1,4 +1,13 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
+/*---------------------------------------------------------*\
+| RGBController_KFA2EX_Windows.h                            |
+|                                                           |
+| KFA2 EX Gamer NVAPI lighting controller interface         |
+|                                                           |
+| valer23                                     13 Oct 2026   |
+|                                                           |
+| This file is part of the OpenRGB project                  |
+| SPDX-License-Identifier: GPL-2.0-or-later                 |
+\*---------------------------------------------------------*/
 #pragma once
 
 #include "RGBController.h"

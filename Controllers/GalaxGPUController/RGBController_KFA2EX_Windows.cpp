@@ -1,9 +1,32 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
+/*---------------------------------------------------------*\
+| RGBController_KFA2EX_Windows.cpp                          |
+|                                                           |
+| KFA2 EX Gamer NVAPI lighting controller                   |
+|                                                           |
+| valer23                                     13 Oct 2026   |
+|                                                           |
+| This file is part of the OpenRGB project                  |
+| SPDX-License-Identifier: GPL-2.0-or-later                 |
+\*---------------------------------------------------------*/
 #include "RGBController_KFA2EX_Windows.h"
 #include "LogManager.h"
 #include <chrono>
 #include <stdexcept>
 #include <thread>
+
+/**------------------------------------------------------------------*\
+    @name KFA2 GeForce RTX 3080 Ti EX Gamer
+    @category GPU
+    @type I2C
+    @save :o:
+    @direct :white_check_mark:
+    @effects :o:
+    @detectors DetectKFA2EXControllers
+    @comment Windows NVAPI only. Static colour streaming is supported.
+             Hardware effects and persistent saving are unsupported.
+             Motherboard Sync selects the captured flag; external colour
+             following has not been verified. PCI 10DE:2208 / 10DE:1535.
+\*-------------------------------------------------------------------*/
 
 NV_STATUS RGBController_KFA2EX::Transfer(NV_PHYSICAL_GPU_HANDLE gpu, unsigned char reg,
                                         unsigned char* data, unsigned int length, bool write)

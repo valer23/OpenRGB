@@ -1,4 +1,13 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
+/*---------------------------------------------------------*\
+| KFA2EXControllerDetect_Windows.cpp                        |
+|                                                           |
+| KFA2 EX Gamer GPU detector                                |
+|                                                           |
+| valer23                                     13 Oct 2026   |
+|                                                           |
+| This file is part of the OpenRGB project                  |
+| SPDX-License-Identifier: GPL-2.0-or-later                 |
+\*---------------------------------------------------------*/
 #include "DetectionManager.h"
 #include "LogManager.h"
 #include "RGBController_KFA2EX_Windows.h"
