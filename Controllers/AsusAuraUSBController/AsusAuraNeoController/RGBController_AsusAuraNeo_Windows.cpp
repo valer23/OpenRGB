@@ -13,6 +13,19 @@
 #include <chrono>
 #include <thread>
 
+/**------------------------------------------------------------------*\
+    @name ASUS ROG STRIX B850-F GAMING WIFI7 NEO (logo)
+    @category Motherboard
+    @type USB
+    @save :o:
+    @direct :white_check_mark:
+    @effects :o:
+    @detectors DetectAsusAuraNeo
+    @comment Windows only. Static onboard-logo colour streaming is supported.
+             ARGB headers and hardware effects are unsupported.
+             Avoid simultaneous ASUS LightingService lighting control.
+\*-------------------------------------------------------------------*/
+
 RGBController_AsusAuraNeo::RGBController_AsusAuraNeo(hid_device* handle, const std::string& path)
     : device(handle)
 {
