@@ -21,6 +21,19 @@ def combine(base, ripple, name, red=False):
         raise ValueError('Ripple contains unexpected device assignments')
     effects = profile.get('plugins', {}).get('OpenRGB Effects Plugin', {}).get('Effects', [])
     effects = [e for e in effects if e['EffectClassName'] != 'KeyRipple']
+    keyboard['CustomSettings'].pop('base_effect', None)
+    backgrounds = [e for e in effects if e['EffectClassName'] in ('Brimstone', 'IcueLayers')
+                   and any(z['name'] == 'be quiet! Light Mount' for z in e['ControllerZones'])]
+    if len(backgrounds) > 1:
+        raise ValueError('Multiple keyboard background effects cannot be composed')
+    if backgrounds:
+        base_effect = backgrounds[0]
+        keyboard['CustomSettings']['base_effect'] = {
+            'EffectClassName': base_effect['EffectClassName'],
+            'Speed': base_effect['Speed'],
+            'CustomSettings': copy.deepcopy(base_effect.get('CustomSettings', {})),
+        }
+        keyboard['FPS'] = base_effect['FPS']
     for effect in effects:
         effect['ControllerZones'] = [z for z in effect['ControllerZones'] if z['name'] != 'be quiet! Light Mount']
     if red:

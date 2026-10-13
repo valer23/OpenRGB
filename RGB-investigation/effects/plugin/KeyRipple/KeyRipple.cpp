@@ -3,6 +3,7 @@
 #ifdef _WIN32
 #include "LightMountKeys.h"
 #include "RipplePattern.h"
+#include "BrimstonePattern.h"
 #include "OpenRGBEffectsPlugin.h"
 #include <map>
 
@@ -12,7 +13,7 @@ KeyRipple::KeyRipple() : RGBEffect()
 {
     EffectDetails.EffectName = UI_Name();
     EffectDetails.EffectClassName = ClassName();
-    EffectDetails.EffectDescription = "White/purple key-triggered ripples for the 135-lamp be quiet! Light Mount. First colour is the base; second is the ripple. Works while minimized.";
+    EffectDetails.EffectDescription = "Key-triggered ripples with an optional animated background for the 135-lamp be quiet! Light Mount. First colour is the base; second is the ripple. Works while minimized.";
     EffectDetails.SupportsRandom = false;
     EffectDetails.UserColors = 2;
     EffectDetails.MinSpeed = 10;
@@ -41,14 +42,39 @@ void KeyRipple::LoadCustomSettings(json settings)
         const double new_width = settings.value("width",1.8);
         if(!std::isfinite(new_hold) || !std::isfinite(new_duration) || !std::isfinite(new_width) ||
            new_hold < 0 || new_hold > 1 || new_duration < 0.1 || new_duration > 5 || new_width < 0.5 || new_width > 5) return;
+        std::unique_ptr<IcueLayers> parsed;
+        json descriptor = settings.value("base_effect", json::object());
+        std::string kind;
+        double base_speed = 100;
+        if(!descriptor.empty())
+        {
+            kind = descriptor.at("EffectClassName").get<std::string>();
+            base_speed = descriptor.value("Speed", 100.0);
+            if(!std::isfinite(base_speed) || base_speed < 10 || base_speed > 200) return;
+            if(kind == "IcueLayers")
+            {
+                parsed = std::make_unique<IcueLayers>();
+                const auto custom = descriptor.at("CustomSettings");
+                parsed->LoadCustomSettings(custom);
+                if(parsed->SaveCustomSettings() != custom) return;
+            }
+            else if(kind != "Brimstone") return;
+        }
         hold = new_hold; duration = new_duration; width = new_width;
+        background_layers = std::move(parsed);
+        background_settings = std::move(descriptor);
+        background_class = std::move(kind);
+        background_speed = base_speed;
+        background_seconds = 0;
     }
     catch(const std::exception&) {}
 }
 
 json KeyRipple::SaveCustomSettings()
 {
-    return {{"highlight_ms",hold*1000},{"duration_ms",duration*1000},{"width",width}};
+    json settings = {{"highlight_ms",hold*1000},{"duration_ms",duration*1000},{"width",width}};
+    if(!background_settings.empty()) settings["base_effect"] = background_settings;
+    return settings;
 }
 
 void KeyRipple::StepEffect(std::vector<ControllerZone*> zones)
@@ -65,7 +91,7 @@ void KeyRipple::StepEffect(std::vector<ControllerZone*> zones)
     waves.erase(std::remove_if(waves.begin(),waves.end(),[&](const auto& wave) {
         return std::chrono::duration<double>(now-wave.time).count()*timing >= std::max(hold,duration);
     }),waves.end());
-    const RGBColor base = UserColors.size() > 0 ? UserColors[0] : ToRGBColor(255,255,255);
+    const RGBColor static_base = UserColors.size() > 0 ? UserColors[0] : ToRGBColor(255,255,255);
     const RGBColor purple = UserColors.size() > 1 ? UserColors[1] : ToRGBColor(160,0,255);
     for(ControllerZone* zone : zones)
     {
@@ -99,9 +125,30 @@ void KeyRipple::StepEffect(std::vector<ControllerZone*> zones)
                 if((led==wave.origin || (wave.origin==54 && led==74)) && wave.age<hold) value=1;
                 intensity=std::max(intensity,value);
             }
+            RGBColor base = static_base;
+            // Match the base effect's keyboard geometry, then blend before
+            // ControllerZone applies brightness/tint once to the final colour.
+            double x = static_cast<double>(led) / 134, y = x;
+            if(target != positions.end())
+            {
+                x = target->second.first * 5 / 83;
+                y = target->second.second / 6;
+            }
+            if(zone->reverse) x = 1 - x;
+            if(background_class == "Brimstone")
+            {
+                const auto color = BrimstonePattern::Sample(background_seconds, x, led);
+                base = ToRGBColor(std::lround(color.red), std::lround(color.green), std::lround(color.blue));
+            }
+            else if(background_layers)
+            {
+                const auto color = background_layers->SampleAt(background_seconds, x, y, led);
+                base = ToRGBColor(std::lround(color[0]), std::lround(color[1]), std::lround(color[2]));
+            }
             const auto blend=[intensity](unsigned int a,unsigned int b){return static_cast<unsigned int>(std::lround(a+(static_cast<double>(b)-a)*intensity));};
             zone->SetLED(static_cast<int>(led),ToRGBColor(blend(RGBGetRValue(base),RGBGetRValue(purple)),blend(RGBGetGValue(base),RGBGetGValue(purple)),blend(RGBGetBValue(base),RGBGetBValue(purple))),Brightness,Temperature,Tint);
         }
     }
+    if(FPS) background_seconds += background_speed / (100.0 * FPS);
 }
 #endif

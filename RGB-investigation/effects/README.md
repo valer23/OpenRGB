@@ -65,7 +65,7 @@ including Halloween - The Dark and Titanium. The updated plugin adds IcueLayers.
 
 See [Keyboard Ripple](KEYBOARD-RIPPLE.md) for the tested white/purple keyboard effect, Windows input handling and Light Mount key mapping. The profile generator preserves ValWhite as the startup default.
 
-Combine a base profile with the keyboard effect using the helper below. It excludes the keyboard from the base effect to avoid overlapping writers and creates filenames using OpenRGB’s profile-name rules. The optional --red flag sets red ripples on a white keyboard.
+Combine a base profile with the keyboard effect using the helper below. It excludes the keyboard from the base effect to avoid overlapping writers and creates filenames using OpenRGB’s profile-name rules. The optional --red flag sets red ripples. Brimstone and imported iCUE layers continue underneath the ripples; static profiles keep their base colour.
 
 ```powershell
 python combine-keyboard-ripple.py "C:\path\Firestorm.json" "C:\path\Keyboard Ripple.json" "C:\path\output" --name "Firestorm + Keyboard Ripple" --red
