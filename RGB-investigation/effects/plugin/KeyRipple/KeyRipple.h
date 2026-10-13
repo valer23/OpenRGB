@@ -4,6 +4,8 @@
 #include "RGBEffect.h"
 #include "EffectRegisterer.h"
 #include "RawKeyboardInput.h"
+#include "IcueLayers.h"
+#include <memory>
 
 class KeyRipple : public RGBEffect
 {
@@ -18,6 +20,11 @@ public:
     void LoadCustomSettings(json settings) override;
     json SaveCustomSettings() override;
 private:
+    std::unique_ptr<IcueLayers> background_layers;
+    json background_settings;
+    std::string background_class;
+    double background_seconds = 0;
+    double background_speed = 100;
     RawKeyboardInput input;
     std::vector<RawKeyboardInput::Press> waves;
     double hold = 0.1;

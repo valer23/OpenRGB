@@ -36,3 +36,13 @@ MinGW 13.1 as described in the effects build instructions.
 
 Windows input API reference:
 https://learn.microsoft.com/en-us/windows/win32/inputdev/using-raw-input
+
+Animated combinations embed a bounded `base_effect` descriptor inside the
+keyboard ripple's CustomSettings. Brimstone and imported iCUE layers are sampled
+as the idle background; the ripple blends over that colour before brightness
+and tint adjustments. The keyboard belongs to one effect, so separate effect
+threads cannot overwrite each other. Background speed is independent of ripple
+speed (Firestorm retains 140%). ValWhite combinations retain their static base.
+The profile generator copies supported keyboard background settings and removes
+the keyboard from the standalone background assignment. Run
+`python test_combine_keyboard_ripple.py` to check composition and ownership.

@@ -15,6 +15,9 @@ public:
     void StepEffect(std::vector<ControllerZone*>) override;
     void LoadCustomSettings(json settings) override;
     json SaveCustomSettings() override;
+    // Sample validated layers without assigning zones or submitting hardware writes.
+    IcuePattern::Color SampleAt(double time, double x, double y, unsigned int led) const
+    { return IcuePattern::Sample(layers, time, x, y, led); }
 private:
     double seconds = 0;
     std::vector<IcuePattern::Layer> layers;
