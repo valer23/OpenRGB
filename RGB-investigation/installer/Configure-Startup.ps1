@@ -14,6 +14,26 @@ if($Remove){
     if($existing){Unregister-ScheduledTask -TaskName $taskName -Confirm:$false}
     exit 0
 }
+# Migrate this personal installation's former KFA2 location on upgrade.
+# Replace only its exact identifier strings; preserve every lighting setting.
+$profileRoot = Join-Path $appRoot 'Settings\profiles'
+$oldGpuLocation = 'NVAPI: PCI bus 1, slot 0, I2C address 0x23, port 1'
+$newGpuLocation = 'I2C: Nvidia NvAPI I2C on GPU 0, address 0x23'
+foreach($profileFile in @(Get-ChildItem -LiteralPath $profileRoot -Filter '*.json' -File -ErrorAction SilentlyContinue)) {
+    $profileText = [IO.File]::ReadAllText($profileFile.FullName)
+    if($profileText.Contains('KFA2 GeForce RTX 3080 Ti EX Gamer') -and $profileText.Contains($oldGpuLocation)) {
+        $backupRoot = Join-Path $appRoot 'Settings\profile-backups\before-shared-i2c-upgrade'
+        New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
+        $backupFile = Join-Path $backupRoot $profileFile.Name
+        if(-not (Test-Path -LiteralPath $backupFile)) {
+            Copy-Item -LiteralPath $profileFile.FullName -Destination $backupFile
+        }
+        $profileText = $profileText.Replace($oldGpuLocation, $newGpuLocation).Replace(
+            'Captured KFA2 EX lighting protocol (Windows NVAPI)', 'KFA2 EX Gamer I2C lighting controller')
+        [IO.File]::WriteAllText($profileFile.FullName, $profileText, [Text.UTF8Encoding]::new($false))
+    }
+}
+
 # The application's own Startup shortcut runs without elevation and can beat
 # this task to logon. Keep the task as this installation's startup entry.
 $configPath = Join-Path $appRoot 'Settings\OpenRGB.json'

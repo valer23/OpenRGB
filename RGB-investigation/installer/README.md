@@ -45,7 +45,7 @@ Set-Location 'C:\Users\valerian\git-repos\OpenRGB-KFA2\RGB-investigation\install
 ```
 
 Use the actual ISCC.exe location if Inno Setup was installed elsewhere.
-The installer is written to `output\OpenRGB-Custom-Setup-1.0.20261013.1.exe`.
+The installer is written to `output\OpenRGB-Custom-Setup-1.0.20261013.2.exe`.
 Before a new release, increment AppVersion in OpenRGB-Custom.iss; retain AppId
 so Windows recognizes it as the same application. The payload directory is a
 staging area; inspect it for stale files when changing the packaged file set.
@@ -63,7 +63,7 @@ staging area; inspect it for stale files when changing the packaged file set.
 5. Confirm the Windows Installed Apps entry, two RAM entries, keyboard, fans,
    mouse, ASUS logo and KFA2 GPU. Check ValWhite and an animated profile.
 
-An upgrade preserves existing profiles byte-for-byte and keeps existing OpenRGB.json settings, except it disables the built-in AutoStart flag to prevent a competing non-elevated launch. Therefore
+An upgrade preserves existing lighting settings. Version 1.0.20261013.2 migrates only the former KFA2 NVAPI location/description to the standard I2C identifier, with a backup outside the profile directory. It keeps existing OpenRGB.json settings, except it disables the built-in AutoStart flag to prevent a competing non-elevated launch. Therefore
 it does not automatically replace an existing effect profile with a newer default.
 Install a revised profile separately after backing up the old one when required.
 If the app is already running, open it from its tray icon; the launcher avoids
@@ -115,3 +115,13 @@ three animated/ripple combinations on the keyboard before packaging.
 This refresh builds a replacement installer; the live plugin/profiles already
 contain the fix. Running the installer is not needed for the current session.
 Upgrade/uninstall testing remains separate from installer compilation.
+
+## Shared-I2C package refresh
+
+Version 1.0.20261013.2 packages the owner-verified shared-I2C GPU build. The
+GPU controller now uses i2c_smbus_interface and the standard PCI/I2C detector.
+Local fake-bus checks, native shared-backend red/green/blue/purple/restoration
+and the full Windows GUI/profile checks passed. The installer migrates exact
+old GPU identifiers on this personal GPU-0 installation, after preserving a
+backup; effect settings are unchanged. Installer compilation does not verify
+Linux or end-to-end upgrade/uninstall behavior.
