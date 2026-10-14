@@ -12,7 +12,6 @@
 #include "RGBController.h"
 #include <hidapi.h>
 #include <array>
-#include <mutex>
 
 /* Only the onboard logo of 0B05:1CD2 has a confirmed colour response.
  * This controller never sends addressable-header configuration or colours. */
@@ -31,7 +30,7 @@ public:
 private:
     using Report = std::array<unsigned char, 64>;
     hid_device* device;
-    std::mutex io_mutex;
+    bool write_failed = false;
     bool initialized = false;
     bool Send(const Report& report);
     bool Initialize();
