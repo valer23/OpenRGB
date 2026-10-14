@@ -8,6 +8,7 @@ std::vector<Report> reports;
 unsigned int logged_errors=0;
 bool fail_feature=false;
 bool fail_output=false;
+bool fail_commit=false;
 unsigned int control_outputs=0;
 extern "C" int hid_write(hid_device*, const unsigned char* data, size_t size) {
 #ifdef _WIN32
@@ -21,7 +22,7 @@ extern "C" int hid_send_output_report(hid_device*, const unsigned char* data, si
     return fail_output ? static_cast<int>(size-1) : static_cast<int>(size);
 }
 extern "C" int hid_send_feature_report(hid_device*, const unsigned char* data, size_t size) {
-    reports.push_back({true,{data,data+size}}); return fail_feature ? -1 : static_cast<int>(size);
+    reports.push_back({true,{data,data+size}}); return (fail_feature || (fail_commit && data[1]==0x10 && data[2]==1)) ? -1 : static_cast<int>(size);
 }
 extern "C" void hid_close(hid_device*) {}
 extern "C" int hid_get_product_string(hid_device*, wchar_t*, size_t) {return -1;}
@@ -74,6 +75,8 @@ int main() {
     fail_feature=true;
     failing.SetChannelLEDs(0,green.data(),48,1.0f);
     assert(reports.size()==1 && reports[0].data[2]==0x61 && logged_errors==1);
+    reports.clear(); failing.SetChannelLEDs(0,green.data(),48,1.0f);
+    assert(reports.size()==1 && logged_errors==1);
     fail_feature=false;
     reports.clear();
     {
@@ -109,7 +112,22 @@ int main() {
     unsigned int errors_before=logged_errors;
     fail_output=true;
     driver.SetChannelLEDs(0,green.data(),48,1.0f);
-    assert(logged_errors==errors_before+1);
+    assert(logged_errors==errors_before+1 && reports.size()==1 && !reports[0].feature);
+    reports.clear();driver.SetChannelLEDs(0,green.data(),48,1.0f);
+    assert(reports.size()==1 && logged_errors==errors_before+1); // No commit or repeated error.
+    fail_output=false;
+    reports.clear();driver.SetChannelLEDs(1,green.data(),48,1.0f);
+    fail_output=true;reports.clear();driver.SetChannelLEDs(0,green.data(),48,1.0f);
+    assert(logged_errors==errors_before+1); // Another channel cannot clear this failure.
+    fail_output=false;reports.clear();driver.SetChannelLEDs(0,green.data(),48,1.0f);
+    assert(reports.size()==2); // Successful colour and commit recover the channel.
+    fail_commit=true;reports.clear();driver.SetChannelLEDs(0,green.data(),48,1.0f);
+    assert(reports.size()==2 && logged_errors==errors_before+2);
+    reports.clear();driver.SetChannelLEDs(0,green.data(),48,1.0f);
+    assert(logged_errors==errors_before+2);
+    fail_commit=false;driver.SetChannelLEDs(0,green.data(),48,1.0f);
+    fail_output=true;reports.clear();driver.SetChannelLEDs(0,green.data(),48,1.0f);
+    assert(reports.size()==1 && logged_errors==errors_before+3);
     fail_output=false;
     std::cout<<"Native SL-Infinity lighting feature/output transport and RBG colour checks passed.\n";
 }
