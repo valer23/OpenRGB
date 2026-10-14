@@ -8,7 +8,7 @@ New-Item -ItemType Directory -Path $buildRoot -Force | Out-Null
 $mbedArchive = (Join-Path $PSScriptRoot 'mbedtls-mingw\libmbedall.a').Replace('\','/')
 Push-Location $buildRoot
 try {
-    & (Join-Path $qtBin 'qmake.exe') (Join-Path $repoRoot 'OpenRGB.pro') CONFIG-=debug_and_release CONFIG+=release CONFIG+=custom_full "KFA2_MBEDTLS_ARCHIVE=$mbedArchive" *> configure.log
+    & (Join-Path $qtBin 'qmake.exe') (Join-Path $repoRoot 'OpenRGB.pro') CONFIG-=debug_and_release CONFIG+=release CONFIG+=custom_full "KFA2_MBEDTLS_ARCHIVE=$mbedArchive" -after CONFIG-=precompile_header PRECOMPILED_HEADER= *> configure.log
     if($LASTEXITCODE -ne 0){throw 'Full configuration failed; see configure.log.'}
     & (Join-Path $compilerBin 'mingw32-make.exe') -j6 *> build.log
     if($LASTEXITCODE -ne 0){throw 'Full compilation failed; see build.log.'}

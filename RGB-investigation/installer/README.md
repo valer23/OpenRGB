@@ -125,3 +125,12 @@ and the full Windows GUI/profile checks passed. The installer migrates exact
 old GPU identifiers on this personal GPU-0 installation, after preserving a
 backup; effect settings are unchanged. Installer compilation does not verify
 Linux or end-to-end upgrade/uninstall behavior.
+
+## Galax v1 package refresh - 15 October 2026
+
+Version 1.0.20261015.1 packages the owner-verified Galax v1 integration for the
+KFA2 RTX 3080 Ti EX Gamer. The standalone controller is removed. Existing saved
+profile identity and mode indices are retained, so this revision requires no
+additional profile migration. Native colour/restoration and full GUI profile
+checks passed on Windows. Linux hardware and end-to-end upgrade/uninstall
+behavior remain unverified.

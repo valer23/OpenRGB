@@ -94,3 +94,17 @@ Location now follows the normal I2C bus-name/address convention. Local saved
 profiles need their GPU location updated from the former NVAPI PCI location.
 Tests and investigation material remain local and are removed from upstream
 MR diffs at the maintainer's request.
+
+## Existing Galax v1 integration - 15 October 2026
+
+The RTX 3080 Ti EX Gamer is now a variant of GalaxGPUv1Controller; the separate
+KFA2 controller and detector have been removed. The existing address/RGB/mode
+register layout is shared, while the EX variant uses signature 11 00, static
+mode 00/20, commit register 08=5A and sync register 07. Existing devices retain
+their original byte writes and four mode command pairs.
+
+Local tests cover both legacy and EX paths. The owner confirmed the integrated
+native shared-I2C red/green/blue/purple test and restoration, followed by one GPU
+entry and working ValWhite, Brimstone and Rainbow Wave in the full application.
+Other devices remained working. The profile identity and mode indices are
+preserved from the previous shared-I2C build. Linux hardware remains untested.

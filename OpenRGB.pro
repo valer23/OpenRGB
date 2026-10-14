@@ -853,32 +853,6 @@ message("HID Hotplug: Enabled")
 message("HID Hotplug: Disabled")
 }
 
-# Local hardware verification build: register only the captured KFA2 driver.
-# Normal builds retain every controller and detector.
-win32:contains(CONFIG, kfa2_capture_test) {
-    win32-g++ {
-        isEmpty(KFA2_MBEDTLS_ARCHIVE): error("Supply KFA2_MBEDTLS_ARCHIVE built with MinGW")
-        LIBS -= -lmbedcrypto -lmbedtls -lmbedx509
-        LIBS += $$quote($$KFA2_MBEDTLS_ARCHIVE)
-    }
-    SOURCES -= $$files("Controllers/*.cpp", true)
-    SOURCES += Controllers/GalaxGPUController/RGBController_KFA2EX.cpp \
-               Controllers/GalaxGPUController/KFA2EXControllerDetect.cpp \
-               Controllers/NanoleafController/NanoleafController.cpp
-    HEADERS -= $$files("Controllers/*.h", true)
-    HEADERS += Controllers/GalaxGPUController/RGBController_KFA2EX.h
-    contains(CONFIG, slinf_capture_test) {
-        DEFINES += SLINF_LOCAL_TEST
-        SOURCES += Controllers/LianLiController/LianLiUniHubSLInfinityController/LianLiUniHubSLInfinityController.cpp \
-                   Controllers/LianLiController/LianLiUniHubSLInfinityController/RGBController_LianLiUniHubSLInfinity.cpp \
-                   Controllers/LianLiController/LianLiUniHubSLInfinityController/LianLiSLInfinityTestDetect_Windows.cpp
-        HEADERS += Controllers/LianLiController/LianLiUniHubSLInfinityController/LianLiUniHubSLInfinityController.h \
-                   Controllers/LianLiController/LianLiUniHubSLInfinityController/RGBController_LianLiUniHubSLInfinity.h
-    }
-    TARGET = OpenRGB-Custom
-}
-
-# Full personal build: retain standard detectors and the verified local fan setup.
 win32:contains(CONFIG, custom_full) {
     DEFINES += SLINF_LOCAL_TEST
     TARGET = OpenRGB-Custom
