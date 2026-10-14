@@ -10,6 +10,8 @@
 \*---------------------------------------------------------*/
 
 #include "DetectionManager.h"
+#include "LogManager.h"
+#include <memory>
 #include "GalaxGPUv1Controller.h"
 #include "GalaxGPUv2Controller.h"
 #include "i2c_smbus.h"
@@ -84,7 +86,11 @@ DetectedControllers DetectGalaxGPUControllers(i2c_smbus_interface* bus, uint8_t 
 {
     DetectedControllers detected_controllers;
 
-    if(TestForGalaxGPUController(bus, i2c_addr))
+    bool ex_gamer = i2c_addr == 0x23 && bus->info.pci_vendor == NVIDIA_VEN &&
+                    bus->info.pci_device == NVIDIA_RTX3080TI_DEV &&
+                    bus->info.pci_subsystem_vendor == NVIDIA_SUB_VEN &&
+                    bus->info.pci_subsystem_device == NVIDIA_RTX3080TI_FE_SUB_DEV;
+    if(ex_gamer ? GalaxGPUv1Controller::TestForEXGamer(bus, i2c_addr) : TestForGalaxGPUController(bus, i2c_addr))
     {
         switch(i2c_addr)
         {
@@ -94,10 +100,26 @@ DetectedControllers DetectGalaxGPUControllers(i2c_smbus_interface* bus, uint8_t 
             case 0x32:
             case 0x23:
                 {
-                    GalaxGPUv1Controller*     controller     = new GalaxGPUv1Controller(bus, i2c_addr, name);
-                    RGBController_GalaxGPUv1* rgb_controller = new RGBController_GalaxGPUv1(controller);
-
-                    DetectionManager::get()->RegisterRGBController(rgb_controller);
+                    try
+                    {
+                        std::unique_ptr<GalaxGPUv1Controller> controller = std::make_unique<GalaxGPUv1Controller>(bus, i2c_addr, name, ex_gamer);
+                        std::unique_ptr<RGBController_GalaxGPUv1> rgb_controller = std::make_unique<RGBController_GalaxGPUv1>(controller.get());
+                        controller.release();
+                        if(ex_gamer)
+                        {
+                            detected_controllers.push_back(rgb_controller.get());
+                            LOG_INFO("[%s] Galax v1 EX Gamer variant detected", name.c_str());
+                        }
+                        else
+                        {
+                            DetectionManager::get()->RegisterRGBController(rgb_controller.get());
+                        }
+                        rgb_controller.release();
+                    }
+                    catch(const std::exception& error)
+                    {
+                        LOG_ERROR("[%s] Galax v1 detection failed: %s", name.c_str(), error.what());
+                    }
                 }
                 break;
 
@@ -129,3 +151,5 @@ REGISTER_I2C_PCI_DETECTOR("GALAX GeForce RTX 3070 1-Click OC",              Dete
 REGISTER_I2C_PCI_DETECTOR("GALAX GeForce RTX 3080 SG",                      DetectGalaxGPUControllers,  NVIDIA_VEN, NVIDIA_RTX3080_DEV,     NVIDIA_SUB_VEN, GALAX_RTX_3080_SG_SUB_DEV,              0x23);
 REGISTER_I2C_PCI_DETECTOR("KFA2 GeForce RTX 4080 SG 1-Click OC",            DetectGalaxGPUControllers,  NVIDIA_VEN, NVIDIA_RTX4080_DEV,     NVIDIA_SUB_VEN, KFA2_RTX_4080_SG_OC_SUB_DEV,            0x50);
 REGISTER_I2C_PCI_DETECTOR("GALAX GeForce RTX 5070 Ti EX Gamer 1-Click OC",  DetectGalaxGPUControllers,  NVIDIA_VEN, NVIDIA_RTX5070TI_DEV,   NVIDIA_SUB_VEN, GALAX_RTX_5070TI_EX_OC_SUB_DEV,         0x51);
+
+REGISTER_I2C_PCI_DETECTOR("KFA2 GeForce RTX 3080 Ti EX Gamer", DetectGalaxGPUControllers, NVIDIA_VEN, NVIDIA_RTX3080TI_DEV, NVIDIA_SUB_VEN, NVIDIA_RTX3080TI_FE_SUB_DEV, 0x23);

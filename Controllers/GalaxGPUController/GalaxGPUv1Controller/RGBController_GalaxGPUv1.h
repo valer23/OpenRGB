@@ -30,6 +30,7 @@ public:
 
 private:
     GalaxGPUv1Controller* controller;
+    std::mutex io_mutex;
 
     int        GetDeviceMode();
 };

@@ -27,6 +27,7 @@ public:
     virtual void DeviceUpdateMode()=0;
     inline static unsigned int shutdown_calls=0;
     void Shutdown() {++shutdown_calls;}
+    int GetActiveMode() {return active_mode;}
     void SetupColors() { colors.resize(leds.size()); size_t offset=0; for(auto& z: zones) { z.colors=colors.empty()?nullptr:colors.data()+offset; offset+=z.leds_count; } }
     std::string name,vendor,description,location,version,serial;
     int type,active_mode=0;
