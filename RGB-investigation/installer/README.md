@@ -134,3 +134,9 @@ profile identity and mode indices are retained, so this revision requires no
 additional profile migration. Native colour/restoration and full GUI profile
 checks passed on Windows. Linux hardware and end-to-end upgrade/uninstall
 behavior remain unverified.
+
+Version 1.0.20261015.2 contains the small Galax EX cleanup: detection is logged
+at debug level, repeated write errors are suppressed until a complete update
+succeeds, and controller callbacks rely on the base device lock. Register
+commands and timing are unchanged. Local failure/recovery regression checks
+and the full Windows build passed.
