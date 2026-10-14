@@ -140,3 +140,10 @@ at debug level, repeated write errors are suppressed until a complete update
 succeeds, and controller callbacks rely on the base device lock. Register
 commands and timing are unchanged. Local failure/recovery regression checks
 and the full Windows build passed.
+
+Version 1.0.20261015.3 includes the fan and ASUS cleanup. Fan colour failures
+stop before commit; commit delivery is checked. Fan errors are suppressed per
+channel until a complete update succeeds. ASUS uses the base device lock and
+suppresses repeated errors until a complete logo update succeeds. Successful
+lighting commands and waits are unchanged. Local failure/recovery checks and
+the complete Windows build passed.
