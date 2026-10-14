@@ -108,7 +108,7 @@ DetectedControllers DetectGalaxGPUControllers(i2c_smbus_interface* bus, uint8_t 
                         if(ex_gamer)
                         {
                             detected_controllers.push_back(rgb_controller.get());
-                            LOG_INFO("[%s] Galax v1 EX Gamer variant detected", name.c_str());
+                            LOG_DEBUG("[%s] Galax v1 EX Gamer variant detected", name.c_str());
                         }
                         else
                         {
