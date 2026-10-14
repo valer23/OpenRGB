@@ -86,7 +86,11 @@ bool RGBController_AsusAuraNeo::Send(const Report& report)
     // The capture uses control SET_REPORT. hid_write uses a different endpoint.
     if(hid_send_output_report(device, report.data(), report.size()) != static_cast<int>(report.size()))
     {
-        LOG_ERROR("[ASUS Aura NEO] Output report 0x%02X failed", report[1]);
+        if(!write_failed)
+        {
+            LOG_ERROR("[ASUS Aura NEO] Output report 0x%02X failed", report[1]);
+        }
+        write_failed = true;
         initialized = false;
         return false;
     }
@@ -97,7 +101,7 @@ bool RGBController_AsusAuraNeo::Send(const Report& report)
 bool RGBController_AsusAuraNeo::Initialize()
 {
     // Exact captured onboard setup packets, frames 369 and 371. Header setup
-    // packets are deliberately excluded; this subset needs physical validation.
+    // packets are deliberately excluded; only the onboard logo is supported.
     if(!Send(OnboardReport(0, true, 0)) || !Send(OnboardReport(1, true, 0)))
     {
         return false;
@@ -118,7 +122,6 @@ bool RGBController_AsusAuraNeo::Initialize()
 
 void RGBController_AsusAuraNeo::DeviceUpdateLEDs()
 {
-    std::lock_guard<std::mutex> lock(io_mutex);
     if(colors.empty() || active_mode != 0 || (!initialized && !Initialize()))
     {
         return;
@@ -129,7 +132,10 @@ void RGBController_AsusAuraNeo::DeviceUpdateLEDs()
     {
         return;
     }
-    Send(OnboardReport(1, false, colors[0]));
+    if(Send(OnboardReport(1, false, colors[0])))
+    {
+        write_failed = false;
+    }
 }
 
 void RGBController_AsusAuraNeo::DeviceUpdateZoneLEDs(int zone)
