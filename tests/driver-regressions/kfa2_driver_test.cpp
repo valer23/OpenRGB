@@ -46,8 +46,16 @@ int main(){
  bus.writes.clear();gpu.colors[0]=ToRGBColor(0,255,0);gpu.DeviceUpdateLEDs();assert(bus.writes.size()==4);
  write_is(bus.writes[0],2,{0,255,0});write_is(bus.writes[1],5,{0});write_is(bus.writes[2],6,{0x20});write_is(bus.writes[3],8,{0x5a});
  bus.writes.clear();gpu.DeviceUpdateZoneLEDs(-1);gpu.DeviceUpdateSingleLED(1);assert(bus.writes.empty());
- bus.write_failures[2]=3;gpu.DeviceUpdateLEDs();assert(bus.writes.empty() && logged_errors);
- bus.write_failures[7]=3;gpu.DeviceUpdateMode();assert(bus.writes.empty());
+ // A failure is logged once until a complete update succeeds.
+ logged_errors=0;
+ bus.write_failures[2]=6;gpu.DeviceUpdateLEDs();gpu.DeviceUpdateLEDs();
+ assert(bus.writes.empty() && logged_errors==1);
+ bus.write_failures[7]=3;gpu.DeviceUpdateMode();assert(bus.writes.empty() && logged_errors==1);
+ gpu.DeviceUpdateLEDs();assert(bus.writes.size()==4 && logged_errors==1);bus.writes.clear();
+ bus.write_failures[2]=3;gpu.DeviceUpdateLEDs();assert(bus.writes.empty() && logged_errors==2);
+ gpu.DeviceUpdateMode();assert(bus.writes.size()==5 && logged_errors==2);bus.writes.clear();
+ bus.write_failures[7]=6;gpu.DeviceUpdateMode();gpu.DeviceUpdateMode();
+ assert(bus.writes.empty() && logged_errors==3);
  for(int state:{0,1,0xac}){bus.regs[7]=state;RGBController_GalaxGPUv1 fallback(new GalaxGPUv1Controller(&bus,0x23,"GPU",true));assert(fallback.active_mode==(state==1?1:0));}
  bus.failures[7]=3;{RGBController_GalaxGPUv1 fallback(new GalaxGPUv1Controller(&bus,0x23,"GPU",true));assert(fallback.active_mode==0);}
  bus.failures[2]=3;auto low=std::make_unique<GalaxGPUv1Controller>(&bus,0x23,"GPU",true);bool rejected=false;unsigned int shutdown=RGBController::shutdown_calls;

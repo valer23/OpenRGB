@@ -167,7 +167,6 @@ void RGBController_GalaxGPUv1::SetupZones()
 
 void RGBController_GalaxGPUv1::DeviceUpdateLEDs()
 {
-    std::lock_guard<std::mutex> lock(io_mutex);
     if(controller->IsEXGamer())
     {
         if(active_mode != 0 || colors.empty())
@@ -177,10 +176,15 @@ void RGBController_GalaxGPUv1::DeviceUpdateLEDs()
         try
         {
             controller->SetLEDColorsDirect(RGBGetRValue(colors[0]), RGBGetGValue(colors[0]), RGBGetBValue(colors[0]));
+            write_failed = false;
         }
         catch(const std::exception& error)
         {
-            LOG_ERROR("[KFA2 EX] %s", error.what());
+            if(!write_failed)
+            {
+                LOG_ERROR("[KFA2 EX] %s", error.what());
+            }
+            write_failed = true;
         }
         return;
     }
@@ -221,7 +225,6 @@ void RGBController_GalaxGPUv1::DeviceUpdateSingleLED(int led)
 
 void RGBController_GalaxGPUv1::DeviceUpdateMode()
 {
-    std::lock_guard<std::mutex> lock(io_mutex);
     int new_mode = modes[active_mode].value;
     if(controller->IsEXGamer())
     {
@@ -232,10 +235,15 @@ void RGBController_GalaxGPUv1::DeviceUpdateMode()
             {
                 controller->SetLEDColorsDirect(RGBGetRValue(colors[0]), RGBGetGValue(colors[0]), RGBGetBValue(colors[0]));
             }
+            write_failed = false;
         }
         catch(const std::exception& error)
         {
-            LOG_ERROR("[KFA2 EX] %s", error.what());
+            if(!write_failed)
+            {
+                LOG_ERROR("[KFA2 EX] %s", error.what());
+            }
+            write_failed = true;
         }
         return;
     }
