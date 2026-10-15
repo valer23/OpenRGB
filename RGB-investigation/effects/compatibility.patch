@@ -1,0 +1,180 @@
+diff --git a/ControllerZone.cpp b/ControllerZone.cpp
+--- a/ControllerZone.cpp
++++ b/ControllerZone.cpp
+@@ -1,3 +1,4 @@
++#include "EffectFrameBatch.h"
+ /*---------------------------------------------------------*\
+ | ControllerZone.cpp                                        |
+ |                                                           |
+@@ -149,7 +150,7 @@
+ 
+ void ControllerZone::SetAllZoneLEDs(RGBColor color, int brightness, int temperature, int tint)
+ {
+-    if(is_segment)
++    if(is_segment || EffectFrameBatch::Active())
+     {
+         for(unsigned int i = 0; i < leds_count(); i ++)
+         {
+@@ -166,7 +167,9 @@
+ {
+     if(idx != (int)0xFFFFFFFF)
+     {
+-        controller->SetColor(start_idx() + idx, ColorUtils::apply_adjustments(color, (self_brightness / 100.f) * (brightness / 100.f), temperature, tint));
++        RGBColor adjusted_color = ColorUtils::apply_adjustments(color, (self_brightness / 100.f) * (brightness / 100.f), temperature, tint);
++        if(EffectFrameBatch::Stage(controller, start_idx() + idx, adjusted_color)) return;
++        controller->SetColor(start_idx() + idx, adjusted_color);
+     }
+ }
+ 
+diff --git a/EffectManager.cpp b/EffectManager.cpp
+--- a/EffectManager.cpp
++++ b/EffectManager.cpp
+@@ -1,3 +1,6 @@
++#include "EffectFrameBatch.h"
++#include "EffectTimerResolution.h"
++#include "CompatibleDirectMode.h"
+ /*---------------------------------------------------------*\
+ | EffectManager.cpp                                         |
+ |                                                           |
+@@ -302,13 +305,14 @@
+ 
+     for(RGBControllerInterface* controller : controllers)
+     {
+-        for(unsigned int i = 0 ; i < controller->GetModeCount(); i++)
+-        {
+-            if(controller->GetModeName(i) == "Direct")
+-            {
+-                controller->SetActiveMode(i);
+-                break;
+-            }
++        const int direct = CompatibleDirectMode(controller);
++        if(direct >= 0)
++        {
++            if((controller->GetModeFlags(direct) & MODE_FLAG_HAS_BRIGHTNESS) && controller->GetModeBrightnessMax(direct) > 0)
++            {
++                controller->SetModeBrightness(direct, controller->GetModeBrightnessMax(direct));
++            }
++            controller->SetActiveMode(direct);
+         }
+     }
+ 
+@@ -338,6 +342,9 @@
+ 
+ void EffectManager::EffectThreadFunction(RGBEffect* effect)
+ {
++    const EffectTimerResolution timer_resolution;
++    EffectFrameQueue frame_queue;
++
+     LOG_VERBOSE("[OpenRGBEffectsPlugin] Effect %s thread started", effect->EffectDetails.EffectName.c_str());
+ 
+     TCount  effect_start        = clock->now();
+@@ -360,27 +367,29 @@
+             | Create a list of zones used by this effect    |
+             \*---------------------------------------------*/
+             std::vector<ControllerZone*>                    controller_zones    = effect_zones[effect];
++            // A queued writer also delays shared geometry reads in the core.
++            // Skip busy devices before querying their zone metadata.
++            if(EffectSupportsPartialZones(effect->EffectDetails.EffectClassName))
++            {
++                controller_zones.erase(std::remove_if(controller_zones.begin(), controller_zones.end(),
++                    [&frame_queue](ControllerZone* zone) { return frame_queue.Busy(zone->controller); }), controller_zones.end());
++            }
+ 
+             /*---------------------------------------------*\
+             | Step the effect, which updates the controller |
+             | internal states                               |
+             \*---------------------------------------------*/
+-            effect->StepEffect(controller_zones);
+-
+-            /*---------------------------------------------*\
+-            | Update the LEDs for all selected zones, which |
+-            | writes the updates to hardware                |
+-            \*---------------------------------------------*/
+-            std::set<RGBControllerInterface*> controllers;
+-
+-            for(ControllerZone* controller_zone: controller_zones)
+-            {
+-                controllers.insert(controller_zone->controller);
+-            }
+-
+-            for(RGBControllerInterface* controller : controllers)
+-            {
+-                controller->UpdateLEDs();
++            {
++                EffectFrameBatch frame;
++                effect->StepEffect(controller_zones);
++                frame.Submit(frame_queue, [](RGBControllerInterface* controller, const EffectDeviceFrame& colors) {
++                    std::shared_lock<std::shared_mutex> lifetime_guard(OpenRGBEffectsPlugin::controller_zones_mutex, std::try_to_lock);
++                    if(!lifetime_guard.owns_lock() || OpenRGBEffectsPlugin::controllers_updating) return;
++                    const auto& zones = OpenRGBEffectsPlugin::controller_zones;
++                    if(std::none_of(zones.begin(), zones.end(), [controller](ControllerZone* zone) { return zone->controller == controller; })) return;
++                    for(const auto& led : colors) controller->SetColor(led.first, led.second);
++                    controller->UpdateLEDs();
++                });
+             }
+ 
+             /*---------------------------------------------*\
+@@ -423,6 +432,7 @@
+             {
+                 last_total_duration = total_duration;
+                 effect->EmitMeasure(duration * 0.001, total_duration);
++
+             }
+ 
+             if(delta > 0)
+@@ -482,3 +492,4 @@
+ 
+     effect->OnControllerZonesListChanged(new_zones);
+ }
++
+diff --git a/OpenRGBEffectsPlugin.cpp b/OpenRGBEffectsPlugin.cpp
+--- a/OpenRGBEffectsPlugin.cpp
++++ b/OpenRGBEffectsPlugin.cpp
+@@ -1,3 +1,4 @@
++#include "CompatibleDirectMode.h"
+ /*---------------------------------------------------------*\
+ | OpenRGBEffectsPlugin.cpp                                  |
+ |                                                           |
+@@ -356,16 +357,7 @@
+         /*-------------------------------------------------*\
+         | Check if controller supports Direct mode          |
+         \*-------------------------------------------------*/
+-        bool has_direct = false;
+-
+-        for(unsigned int i = 0; i < controller->GetModeCount(); i++)
+-        {
+-            if(controller->GetModeName(i) == "Direct")
+-            {
+-                has_direct = true;
+-                break;
+-            }
+-        }
++        bool has_direct = CompatibleDirectMode(controller) >= 0;
+ 
+         /*-------------------------------------------------*\
+         | Skip this controller if it doesn't have Direct    |
+diff --git a/OpenRGBEffectsPlugin.pro b/OpenRGBEffectsPlugin.pro
+--- a/OpenRGBEffectsPlugin.pro
++++ b/OpenRGBEffectsPlugin.pro
+@@ -637,3 +637,21 @@
+ 
+ RESOURCES +=                                                                                    \
+     resources.qrc
++
++HEADERS += CompatibleDirectMode.h Effects/Brimstone/Brimstone.h Effects/Brimstone/BrimstonePattern.h
++SOURCES += Effects/Brimstone/Brimstone.cpp
++INCLUDEPATH += Effects/Brimstone
++
++
++# Qt6 MinGW may leave QMAKE_TARGET.arch empty; always link required Win32 APIs.
++win32:LIBS += -lws2_32 -lole32 -lOpenGL32 -luser32 -lgdi32 -luuid
++
++HEADERS += Effects/IcueLayers/IcueLayers.h Effects/IcueLayers/IcuePattern.h
++SOURCES += Effects/IcueLayers/IcueLayers.cpp
++INCLUDEPATH += Effects/IcueLayers
++
++win32 {
++HEADERS += Effects/KeyRipple/KeyRipple.h Effects/KeyRipple/RawKeyboardInput.h Effects/KeyRipple/RipplePattern.h Effects/KeyRipple/LightMountKeys.h
++SOURCES += Effects/KeyRipple/KeyRipple.cpp
++INCLUDEPATH += Effects/KeyRipple
++}

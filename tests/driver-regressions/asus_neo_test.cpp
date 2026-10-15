@@ -103,7 +103,16 @@ int main()
         fail_at = 1;
         controller.DeviceUpdateLEDs();
         assert(sent.size() == 1 && sent[0] == fixtures[0]); // Retry re-initializes.
-        --logged_errors;
+        assert(logged_errors == static_cast<unsigned int>(failure));
+    }
+    // A complete update re-enables reporting for a new failure period.
+    {
+        sent.clear();fail_at=1;
+        RGBController_AsusAuraNeo controller(handle, "test-path");
+        unsigned int before=logged_errors;
+        controller.DeviceUpdateLEDs();assert(logged_errors==before+1);
+        sent.clear();fail_at=-1;controller.DeviceUpdateLEDs();assert(sent.size()==5);
+        sent.clear();fail_at=1;controller.DeviceUpdateLEDs();assert(logged_errors==before+2);
     }
     // The fixtures and all generated writes target onboard selector1 or the
     // captured activation command. No selector0 ARGB setup/colour is emitted.

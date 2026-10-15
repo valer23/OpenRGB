@@ -1,0 +1,6 @@
+.build/
+profiles/
+*.exe
+*.png
+__pycache__/
+tmp*/

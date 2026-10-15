@@ -8,7 +8,7 @@ try {
     $common = @('-std=c++17', '-Itests/driver-regressions/stubs', '-I.', '-Idependencies/NVFC', '-Idependencies/hidapi-win/include')
     if(Test-Path -LiteralPath (Join-Path $PSScriptRoot 'kfa2_driver_test.cpp')) {
         $exe = Join-Path $testOutput 'kfa2.exe'
-        & $Compiler @common -IControllers/GalaxGPUController tests/driver-regressions/kfa2_driver_test.cpp Controllers/GalaxGPUController/RGBController_KFA2EX_Windows.cpp -o $exe
+        & $Compiler @common -Ii2c_smbus -IControllers/GalaxGPUController/GalaxGPUv1Controller tests/driver-regressions/kfa2_driver_test.cpp Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.cpp Controllers/GalaxGPUController/GalaxGPUv1Controller/RGBController_GalaxGPUv1.cpp i2c_smbus/i2c_smbus.cpp -o $exe
         if($LASTEXITCODE -ne 0) {throw 'GPU regression test compilation failed.'}
         & $exe
         if($LASTEXITCODE -ne 0) {throw 'GPU regression tests failed.'}
@@ -22,7 +22,7 @@ try {
     }
     if(Test-Path -LiteralPath (Join-Path $PSScriptRoot 'lianli_lighting_test.cpp')) {
         $exe = Join-Path $testOutput 'lianli.exe'
-        & $Compiler @common -IControllers/LianLiController/LianLiUniHubSLInfinityController tests/driver-regressions/lianli_lighting_test.cpp Controllers/LianLiController/LianLiUniHubSLInfinityController/LianLiUniHubSLInfinityController.cpp Controllers/LianLiController/LianLiUniHubSLInfinityController/RGBController_LianLiUniHubSLInfinity.cpp -o $exe
+        & $Compiler -Idependencies/hidapi-hotplug-win/include @common -IControllers/LianLiController/LianLiUniHubSLInfinityController tests/driver-regressions/lianli_lighting_test.cpp Controllers/LianLiController/LianLiUniHubSLInfinityController/LianLiUniHubSLInfinityController.cpp Controllers/LianLiController/LianLiUniHubSLInfinityController/RGBController_LianLiUniHubSLInfinity.cpp -o $exe
         if($LASTEXITCODE -ne 0) {throw 'Fan regression test compilation failed.'}
         & $exe
         if($LASTEXITCODE -ne 0) {throw 'Fan regression tests failed.'}

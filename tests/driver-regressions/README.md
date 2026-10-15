@@ -24,3 +24,12 @@ GRB bytes, lazy setup order, no writes during construction, short/failed
 transfers at every setup/colour stage, retry setup, and callback bounds.
 The Windows hotplug HIDAPI include supplies the control output-report API.
 No tests access lighting devices.
+
+The separate `pawnio_port_test.py` takes the production PawnIO source path,
+MinGW compiler path and temporary output directory as its three arguments.
+It compiles the actual PIIX4 port selection and registration blocks against
+mock mutex/PawnIO APIs. It checks mutex ownership, abandoned/failed waits,
+selection failures, handle cleanup and registration only after successful
+selection. No PawnIO module is loaded and no hardware is accessed.
+
+The KFA2 check now compiles the platform-independent controller with the real i2c_smbus interface and a fake bus. It covers exact captured commits, read-only probing, truncated reads, sync changes, bounded failures, constructor shutdown and callback indices. These diagnostics remain in the personal fork and are deliberately excluded from upstream MR diffs.

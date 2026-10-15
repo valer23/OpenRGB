@@ -142,7 +142,7 @@ public:
                                 unsigned int    num_fans
                                 );
 
-    void                SendColorData
+    bool                SendColorData
                                 (
                                 unsigned char   channel,            // Zone index
                                 unsigned int    num_leds,
@@ -200,7 +200,10 @@ private:
     };
 
 private:
+    void                    LogLightingFailure(unsigned char channel, const char* message);
+    bool                    lighting_failed[8] = {};
     bool                    direct_lighting_enabled = false;
+    unsigned int            configured_fan_counts[4] = {};
     hid_device*             dev;
 
     /*---------------------------------------------------------*\
