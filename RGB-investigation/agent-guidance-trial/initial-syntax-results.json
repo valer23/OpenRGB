@@ -1,0 +1,22 @@
+[
+  {
+    "task": "asus",
+    "file": "Controllers/AsusROGLogoController/AsusROGLogoControllerDetect_Windows.cpp",
+    "exit_code": 0
+  },
+  {
+    "task": "asus",
+    "file": "Controllers/AsusROGLogoController/AsusROGLogoController_Windows.cpp",
+    "exit_code": 0
+  },
+  {
+    "task": "asus",
+    "file": "Controllers/AsusROGLogoController/RGBController_AsusROGLogo_Windows.cpp",
+    "exit_code": 0
+  },
+  {
+    "task": "ram",
+    "file": "i2c_smbus/Windows/i2c_smbus_pawnio.cpp",
+    "exit_code": 0
+  }
+]

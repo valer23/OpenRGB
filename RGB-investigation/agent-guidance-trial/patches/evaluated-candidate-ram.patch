@@ -1,0 +1,109 @@
+diff --git a/i2c_smbus/Windows/i2c_smbus_pawnio.cpp b/i2c_smbus/Windows/i2c_smbus_pawnio.cpp
+--- a/i2c_smbus/Windows/i2c_smbus_pawnio.cpp
++++ b/i2c_smbus/Windows/i2c_smbus_pawnio.cpp
+@@ -47,9 +47,38 @@
+     HRESULT         status;
+ 
+     /*-----------------------------------------------------*\
+-    | Execute PIIX4 port_sel ioctl                          |
+-    \*-----------------------------------------------------*/
+-    status = pawnio_execute(pawnio_handle, "ioctl_piix4_port_sel", in, in_size, out, 1, &return_size);
++    | Serialize port selection with other SMBus users       |
++    \*-----------------------------------------------------*/
++    HANDLE smbus_mutex = CreateMutexA(NULL, FALSE, GLOBAL_SMBUS_MUTEX_NAME);
++
++    if(smbus_mutex == NULL)
++    {
++        LOG_ERROR("PawnIO PIIX4 port %d: failed to create SMBus mutex", port);
++        return(-EIO);
++    }
++
++    DWORD wait_status = WaitForSingleObject(smbus_mutex, INFINITE);
++
++    if(wait_status != WAIT_OBJECT_0 && wait_status != WAIT_ABANDONED)
++    {
++        LOG_ERROR("PawnIO PIIX4 port %d: failed to acquire SMBus mutex", port);
++        CloseHandle(smbus_mutex);
++        return(-EIO);
++    }
++
++    /*-----------------------------------------------------*\
++    | Execute PIIX4 port_sel ioctl while owning the mutex   |
++    | WAIT_ABANDONED also grants ownership                  |
++    \*-----------------------------------------------------*/
++    status = pawnio_execute(pawnio_handle, "ioctl_piix4_port_sel", in, in_size, out, out_size, &return_size);
++
++    if(!ReleaseMutex(smbus_mutex))
++    {
++        LOG_ERROR("PawnIO PIIX4 port %d: failed to release SMBus mutex", port);
++        status = E_FAIL;
++    }
++
++    CloseHandle(smbus_mutex);
+ 
+     return(status ? -EIO : 0);
+ }
+@@ -388,15 +417,24 @@
+     \*-----------------------------------------------------*/
+     if(i2c_smbus_pawnio::start_pawnio("SmbusPIIX4.bin", &pawnio_handle) == S_OK)
+     {
+-        bus_detected = true;
+-
+         /*-------------------------------------------------*\
+-        | Select port 0                                     |
++        | Only register a successfully selected port        |
+         \*-------------------------------------------------*/
+-        piix4_port_sel(pawnio_handle, 0);
+-
+-        bus = new i2c_smbus_pawnio(pawnio_handle, "piix4_0", 0);
+-        DetectionManager::get()->RegisterI2CBus(bus);
++        if(piix4_port_sel(pawnio_handle, 0) == 0)
++        {
++            bus = new i2c_smbus_pawnio(pawnio_handle, "piix4_0", 0);
++            DetectionManager::get()->RegisterI2CBus(bus);
++            bus_detected = true;
++        }
++        else
++        {
++            LOG_WARNING("PawnIO PIIX4 port 0 selection failed, skipping bus");
++
++            if(pawnio_close(pawnio_handle))
++            {
++                LOG_ERROR("PawnIO failed to close");
++            }
++        }
+     }
+ 
+     /*-----------------------------------------------------*\
+@@ -404,15 +442,24 @@
+     \*-----------------------------------------------------*/
+     if(i2c_smbus_pawnio::start_pawnio("SmbusPIIX4.bin", &pawnio_handle) == S_OK)
+     {
+-        bus_detected = true;
+-
+         /*-------------------------------------------------*\
+-        | Select port 1                                     |
++        | Only register a successfully selected port        |
+         \*-------------------------------------------------*/
+-        piix4_port_sel(pawnio_handle, 1);
+-
+-        bus = new i2c_smbus_pawnio(pawnio_handle, "piix4_1", 1);
+-        DetectionManager::get()->RegisterI2CBus(bus);
++        if(piix4_port_sel(pawnio_handle, 1) == 0)
++        {
++            bus = new i2c_smbus_pawnio(pawnio_handle, "piix4_1", 1);
++            DetectionManager::get()->RegisterI2CBus(bus);
++            bus_detected = true;
++        }
++        else
++        {
++            LOG_WARNING("PawnIO PIIX4 port 1 selection failed, skipping bus");
++
++            if(pawnio_close(pawnio_handle))
++            {
++                LOG_ERROR("PawnIO failed to close");
++            }
++        }
+     }
+ 
+     /*-----------------------------------------------------*\

@@ -1,0 +1,29 @@
+{
+  "gpu": {
+    "Controllers/GalaxGPUController/GalaxGPUControllerDetect.cpp": "758d1ee524a8394b8caeef95417d5d185e26e966a6929f51f081747b285f5082",
+    "Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.cpp": "5054e7f7803d45b831ceee238b4525ed91edc22776ba25f1726a49216ca28834",
+    "Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.h": "1697953689af76cf941f7b7f99ae518d6f643b2ab1ade8f4b51f4331807a692d",
+    "Controllers/GalaxGPUController/GalaxGPUv1Controller/RGBController_GalaxGPUv1.cpp": "6e3a29b1f823aa8297bdefbb4526d49d488277334e19209fe743ecf32e939716",
+    "Controllers/NVIDIAIlluminationController/NVIDIAIlluminationControllerDetect_Windows_Linux.cpp": "c221fa71ec024b42691019aa5be247e56c212bc703964d4ec0a572343b1aa3d1",
+    "TRIAL-RESULT.md": "9f8c5601fafdd6524c5b291b9a8a2e8f8757f184fc077dc0d1a0fb8d2acefcb5"
+  },
+  "fans": {
+    "Controllers/LianLiController/LianLiUniHubSLInfinityController/LianLiUniHubSLInfinityController.cpp": "99ea3da0ec0cb6e94cf0e08fd466e8b76b5e5ea0589320f14dffdc05dea3e635",
+    "Controllers/LianLiController/LianLiUniHubSLInfinityController/LianLiUniHubSLInfinityController.h": "fc0ef2468fd6ae57a2b415c9feb3a54e9226cb44b692536189bc6571bd95f939",
+    "Controllers/LianLiController/LianLiUniHubSLInfinityController/RGBController_LianLiUniHubSLInfinity.cpp": "78ece82ca3c0e94b034520515cc55fcd1dcc6cf2a1245a758b346fa2fedbea75",
+    "Controllers/LianLiController/LianLiUniHubSLInfinityController/RGBController_LianLiUniHubSLInfinity.h": "307a7b808774791121030ccc6a2758426219c695c59ac09879ec09f6ea0885ca",
+    "TRIAL-RESULT.md": "073bb9f63fb18aa9fe73f63915fbf54ca3d5c9b6a91b28f3af3f527632716715"
+  },
+  "asus": {
+    "Controllers/AsusROGLogoController/AsusROGLogoControllerDetect_Windows.cpp": "45a3997dfe00f240fb96be7616b7cbe3b0489f4b583b0b7ff096ac38313a1c4c",
+    "Controllers/AsusROGLogoController/AsusROGLogoController_Windows.cpp": "58fb0436724ea594d766c41422f0d67667f1ab7e2279e988a8518dba85a6096f",
+    "Controllers/AsusROGLogoController/AsusROGLogoController_Windows.h": "a5b98925f15d4960ffa7bce98341de187999e0438056630d8d64a796a1db06ea",
+    "Controllers/AsusROGLogoController/RGBController_AsusROGLogo_Windows.cpp": "bf5ec533b55022eb7df4db6b2b5a748ba30476ef169bd84446f38137caa72490",
+    "Controllers/AsusROGLogoController/RGBController_AsusROGLogo_Windows.h": "933ad7551733345252478f0a5030910eb84e5b348122bff2dd202c5ca60a6b08",
+    "TRIAL-RESULT.md": "76fb17ebe5070555a9068569d98ca92c8342d974e3ea747b3c2478199363c3b7"
+  },
+  "ram": {
+    "i2c_smbus/Windows/i2c_smbus_pawnio.cpp": "1d8847fd3bf0ad273ee15bfd1fe8fbc35bb7b9c11d9628081e77f930db7b8e34",
+    "TRIAL-RESULT.md": "fa0a6f3ca3d770bbe7c9d3023d4330760e8026f93f132d2fdffcd37728cd86c5"
+  }
+}

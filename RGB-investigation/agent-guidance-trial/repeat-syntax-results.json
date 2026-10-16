@@ -1,0 +1,32 @@
+[
+  {
+    "task": "gpu",
+    "file": "Controllers/GalaxGPUController/GalaxGPUControllerDetect.cpp",
+    "exit_code": 0
+  },
+  {
+    "task": "gpu",
+    "file": "Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.cpp",
+    "exit_code": 0
+  },
+  {
+    "task": "gpu",
+    "file": "Controllers/GalaxGPUController/GalaxGPUv1Controller/RGBController_GalaxGPUv1.cpp",
+    "exit_code": 0
+  },
+  {
+    "task": "gpu",
+    "file": "Controllers/NVIDIAIlluminationController/NVIDIAIlluminationControllerDetect_Windows_Linux.cpp",
+    "exit_code": 1
+  },
+  {
+    "task": "fans",
+    "file": "Controllers/LianLiController/LianLiUniHubSLInfinityController/LianLiUniHubSLInfinityController.cpp",
+    "exit_code": 0
+  },
+  {
+    "task": "fans",
+    "file": "Controllers/LianLiController/LianLiUniHubSLInfinityController/RGBController_LianLiUniHubSLInfinity.cpp",
+    "exit_code": 0
+  }
+]

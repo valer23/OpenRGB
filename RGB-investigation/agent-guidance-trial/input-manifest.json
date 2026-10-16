@@ -1,0 +1,20 @@
+{
+  "gpu": {
+    "AGENTS.md": "c1c3bb407aff47c1c689db48a4b072c92b88d99fa6a0de7672ff6a57d0fd676a",
+    "TASK.md": "22d77822650bfdadaf52f335f1e8d049285f9c21d2335b0f9adcb679f3846c82"
+  },
+  "fans": {
+    "AGENTS.md": "c1c3bb407aff47c1c689db48a4b072c92b88d99fa6a0de7672ff6a57d0fd676a",
+    "TASK.md": "bfb7935fa891d173b6f2a830252076ed9c05a468d36ce0705ba952f695921d59"
+  },
+  "asus": {
+    "AGENTS.md": "c1c3bb407aff47c1c689db48a4b072c92b88d99fa6a0de7672ff6a57d0fd676a",
+    "TASK.md": "b90e3a07996f3bbc2f8099f200e96a1623ba5a9f3e56fd31502267c2e4b836d0"
+  },
+  "ram": {
+    "AGENTS.md": "c1c3bb407aff47c1c689db48a4b072c92b88d99fa6a0de7672ff6a57d0fd676a",
+    "TASK.md": "871f0f024b9c008190fd8b633bfddeab0cbcf28038d646beb43ae18f74b63cf6"
+  },
+  "acceptance_sha256": "ea139877625996b7f0271c6eb94f20f2a8786fb81b920585ac0f6b24420ad53f",
+  "upstream_baseline": "4d17bac5b8f34746847e25bd42189cde8014f0cc"
+}

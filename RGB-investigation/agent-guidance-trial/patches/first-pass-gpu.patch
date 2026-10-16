@@ -1,0 +1,268 @@
+diff --git a/Controllers/GalaxGPUController/GalaxGPUControllerDetect.cpp b/Controllers/GalaxGPUController/GalaxGPUControllerDetect.cpp
+--- a/Controllers/GalaxGPUController/GalaxGPUControllerDetect.cpp
++++ b/Controllers/GalaxGPUController/GalaxGPUControllerDetect.cpp
+@@ -16,6 +16,30 @@
+ #include "pci_ids.h"
+ #include "RGBController_GalaxGPUv1.h"
+ #include "RGBController_GalaxGPUv2.h"
++
++DetectedControllers DetectGalaxEXGamerGPUController(i2c_smbus_interface* bus, uint8_t i2c_addr, const std::string& name)
++{
++    DetectedControllers detected_controllers;
++    unsigned char signature[I2C_SMBUS_BLOCK_MAX];
++    unsigned char rgb[I2C_SMBUS_BLOCK_MAX];
++
++    /*-----------------------------------------------------*\
++    | PCI IDs are shared with the Founders Edition. Require |
++    | the observed signature and a complete RGB read. Sync |
++    | readback is unreliable and is not an identity check. |
++    \*-----------------------------------------------------*/
++    if(bus->i2c_smbus_read_i2c_block_data(i2c_addr, 0x00, 2, signature) == 2 &&
++       signature[0] == 0x11 && signature[1] == 0x00 &&
++       bus->i2c_smbus_read_i2c_block_data(i2c_addr, GALAX_V1_RED_REGISTER, 3, rgb) == 3)
++    {
++        GalaxGPUv1Controller* controller = new GalaxGPUv1Controller(bus, i2c_addr, name, true);
++        detected_controllers.push_back(new RGBController_GalaxGPUv1(controller));
++    }
++
++    return(detected_controllers);
++}
++
++REGISTER_I2C_PCI_DETECTOR("KFA2 GeForce RTX 3080 Ti EX Gamer", DetectGalaxEXGamerGPUController, NVIDIA_VEN, NVIDIA_RTX3080TI_DEV, NVIDIA_SUB_VEN, NVIDIA_RTX3080TI_FE_SUB_DEV, 0x23);
+ 
+ bool TestForGalaxGPUController(i2c_smbus_interface* bus, unsigned char address)
+ {
+diff --git a/Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.cpp b/Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.cpp
+--- a/Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.cpp
++++ b/Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.cpp
+@@ -10,13 +10,17 @@
+ \*---------------------------------------------------------*/
+ 
+ #include <cstring>
++#include <chrono>
++#include <thread>
+ #include "GalaxGPUv1Controller.h"
++#include "LogManager.h"
+ 
+-GalaxGPUv1Controller::GalaxGPUv1Controller(i2c_smbus_interface* bus, galax_gpu_dev_id dev, std::string dev_name)
++GalaxGPUv1Controller::GalaxGPUv1Controller(i2c_smbus_interface* bus, galax_gpu_dev_id dev, std::string dev_name, bool ex_gamer)
+ {
+     this->bus   = bus;
+     this->dev   = dev;
+     this->name  = dev_name;
++    this->ex_gamer = ex_gamer;
+ }
+ 
+ GalaxGPUv1Controller::~GalaxGPUv1Controller()
+@@ -106,3 +110,86 @@
+ {
+     bus->i2c_smbus_write_byte_data(dev, reg, val);
+ }
++
++/*---------------------------------------------------------*\
++| EX Gamer uses the v1 register layout with an apply command |
++| and a different static-mode value.                        |
++\*---------------------------------------------------------*/
++bool GalaxGPUv1Controller::IsEXGamer()
++{
++    return(ex_gamer);
++}
++
++bool GalaxGPUv1Controller::GetLEDColors(unsigned char* rgb)
++{
++    return(bus->i2c_smbus_read_i2c_block_data(dev, GALAX_V1_RED_REGISTER, 3, rgb) == 3);
++}
++
++bool GalaxGPUv1Controller::SetEXGamerSync(unsigned char value)
++{
++    for(unsigned int attempt = 0; attempt < 3; attempt++)
++    {
++        int result = bus->i2c_smbus_write_byte_data(dev, GALAX_V1_EX_GAMER_SYNC_REGISTER, value);
++        std::this_thread::sleep_for(std::chrono::milliseconds(200));
++
++        /*-------------------------------------------------*\
++        | Only proceed after a successful confirmed write.  |
++        \*-------------------------------------------------*/
++        int sync = bus->i2c_smbus_read_byte_data(dev, GALAX_V1_EX_GAMER_SYNC_REGISTER);
++        if(result == 0 && sync == value)
++        {
++            return(true);
++        }
++    }
++
++    return(false);
++}
++
++bool GalaxGPUv1Controller::WriteEXGamerColor(unsigned char red, unsigned char green, unsigned char blue)
++{
++    unsigned char rgb[3] = { red, green, blue };
++
++    if(!SetEXGamerSync(0x00))
++    {
++        return(false);
++    }
++
++    if(bus->i2c_smbus_write_i2c_block_data(dev, GALAX_V1_RED_REGISTER, 3, rgb) != 0)
++    {
++        return(false);
++    }
++    std::this_thread::sleep_for(std::chrono::milliseconds(25));
++
++    if(bus->i2c_smbus_write_byte_data(dev, GALAX_V1_MODE_REGISTER_1, GALAX_V1_MODE_STATIC_VALUE_1) != 0)
++    {
++        return(false);
++    }
++    std::this_thread::sleep_for(std::chrono::milliseconds(25));
++
++    if(bus->i2c_smbus_write_byte_data(dev, GALAX_V1_MODE_REGISTER_2, GALAX_V1_EX_GAMER_STATIC_VALUE_2) != 0)
++    {
++        return(false);
++    }
++    std::this_thread::sleep_for(std::chrono::milliseconds(25));
++
++    if(bus->i2c_smbus_write_byte_data(dev, GALAX_V1_EX_GAMER_APPLY_REGISTER, GALAX_V1_EX_GAMER_APPLY_VALUE) != 0)
++    {
++        return(false);
++    }
++    std::this_thread::sleep_for(std::chrono::milliseconds(25));
++
++    return(SetEXGamerSync(0x01));
++}
++
++bool GalaxGPUv1Controller::SetEXGamerColors(unsigned char red, unsigned char green, unsigned char blue)
++{
++    bool success = WriteEXGamerColor(red, green, blue);
++
++    if(!success && !update_failed)
++    {
++        LOG_WARNING("[%s] EX Gamer colour update failed", name.c_str());
++    }
++    update_failed = !success;
++
++    return(success);
++}
+diff --git a/Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.h b/Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.h
+--- a/Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.h
++++ b/Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.h
+@@ -15,6 +15,11 @@
+ #include "i2c_smbus.h"
+ 
+ typedef unsigned char galax_gpu_dev_id;
++
++#define GALAX_V1_EX_GAMER_SYNC_REGISTER       0x07
++#define GALAX_V1_EX_GAMER_APPLY_REGISTER      0x08
++#define GALAX_V1_EX_GAMER_STATIC_VALUE_2      0x20
++#define GALAX_V1_EX_GAMER_APPLY_VALUE         0x5A
+ 
+ enum
+ {
+@@ -46,9 +51,12 @@
+ class GalaxGPUv1Controller
+ {
+ public:
+-    GalaxGPUv1Controller(i2c_smbus_interface* bus, galax_gpu_dev_id, std::string dev_name);
++    GalaxGPUv1Controller(i2c_smbus_interface* bus, galax_gpu_dev_id, std::string dev_name, bool ex_gamer = false);
+     ~GalaxGPUv1Controller();
+ 
++    bool          IsEXGamer();
++    bool          GetLEDColors(unsigned char* rgb);
++    bool          SetEXGamerColors(unsigned char red, unsigned char green, unsigned char blue);
+     std::string   GetDeviceLocation();
+     std::string   GetDeviceName();
+     unsigned char GetLEDRed();
+@@ -64,6 +72,10 @@
+     bool          direct = false;                                                // Temporary solution to check if we are in "Direct" mode
+ 
+ private:
++    bool                   SetEXGamerSync(unsigned char value);
++    bool                   WriteEXGamerColor(unsigned char red, unsigned char green, unsigned char blue);
++    bool                   ex_gamer;
++    bool                   update_failed = false;
+     i2c_smbus_interface *   bus;
+     galax_gpu_dev_id        dev;
+     std::string             name;
+diff --git a/Controllers/GalaxGPUController/GalaxGPUv1Controller/RGBController_GalaxGPUv1.cpp b/Controllers/GalaxGPUController/GalaxGPUv1Controller/RGBController_GalaxGPUv1.cpp
+--- a/Controllers/GalaxGPUController/GalaxGPUv1Controller/RGBController_GalaxGPUv1.cpp
++++ b/Controllers/GalaxGPUController/GalaxGPUv1Controller/RGBController_GalaxGPUv1.cpp
+@@ -54,6 +54,17 @@
+     @comment
+ \*-------------------------------------------------------------------*/
+ 
++/**------------------------------------------------------------------*\
++    @name KFA2 GeForce RTX 3080 Ti EX Gamer
++    @category GPU
++    @type I2C
++    @save :x:
++    @direct :white_check_mark:
++    @effects :x:
++    @detectors DetectGalaxEXGamerGPUController
++    @comment Static colour and software updates only
++\*-------------------------------------------------------------------*/
++
+ RGBController_GalaxGPUv1::RGBController_GalaxGPUv1(GalaxGPUv1Controller* controller_ptr)
+ {
+     controller                  = controller_ptr;
+@@ -70,6 +81,20 @@
+     Direct.flags                = MODE_FLAG_HAS_PER_LED_COLOR;
+     Direct.color_mode           = MODE_COLORS_PER_LED;
+     modes.push_back(Direct);
++
++    if(controller->IsEXGamer())
++    {
++        mode Static;
++        Static.name            = "Static";
++        Static.value           = 1;
++        Static.flags           = MODE_FLAG_HAS_PER_LED_COLOR;
++        Static.color_mode      = MODE_COLORS_PER_LED;
++        modes.push_back(Static);
++
++        SetupZones();
++        active_mode = 1;
++        return;
++    }
+ 
+     mode Breathing;
+     Breathing.name              = "Breathing";
+@@ -129,6 +154,16 @@
+     /*---------------------------------------------------------*\
+     | Initialize color                                          |
+     \*---------------------------------------------------------*/
++    if(controller->IsEXGamer())
++    {
++        unsigned char rgb[I2C_SMBUS_BLOCK_MAX];
++        if(controller->GetLEDColors(rgb))
++        {
++            colors[0] = ToRGBColor(rgb[0], rgb[1], rgb[2]);
++        }
++        return;
++    }
++
+     unsigned char red = controller->GetLEDRed();
+     unsigned char grn = controller->GetLEDGreen();
+     unsigned char blu = controller->GetLEDBlue();
+@@ -138,6 +173,12 @@
+ 
+ void RGBController_GalaxGPUv1::DeviceUpdateLEDs()
+ {
++    if(controller->IsEXGamer())
++    {
++        controller->SetEXGamerColors(RGBGetRValue(colors[0]), RGBGetGValue(colors[0]), RGBGetBValue(colors[0]));
++        return;
++    }
++
+     for(std::size_t led = 0; led < colors.size(); led++)
+     {
+         unsigned char red = RGBGetRValue(colors[led]);
+@@ -167,6 +208,12 @@
+ 
+ void RGBController_GalaxGPUv1::DeviceUpdateMode()
+ {
++    if(controller->IsEXGamer())
++    {
++        DeviceUpdateLEDs();
++        return;
++    }
++
+     int new_mode = modes[active_mode].value;
+ 
+     controller->SetMode(new_mode);

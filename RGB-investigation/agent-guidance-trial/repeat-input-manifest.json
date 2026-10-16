@@ -1,0 +1,10 @@
+{
+  "gpu": {
+    "task_sha256": "1b637158228867fd2cd63374c7818c58f64d2d1f666319697d29f2de03f87530",
+    "guidance_sha256": "c1c3bb407aff47c1c689db48a4b072c92b88d99fa6a0de7672ff6a57d0fd676a"
+  },
+  "fans": {
+    "task_sha256": "0a14e7ab2bfe9e9c530dbe4276b2c22d287180da7328d9eb0d66278192f52e89",
+    "guidance_sha256": "c1c3bb407aff47c1c689db48a4b072c92b88d99fa6a0de7672ff6a57d0fd676a"
+  }
+}

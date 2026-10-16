@@ -1,0 +1,291 @@
+diff --git a/Controllers/GalaxGPUController/GalaxGPUControllerDetect.cpp b/Controllers/GalaxGPUController/GalaxGPUControllerDetect.cpp
+--- a/Controllers/GalaxGPUController/GalaxGPUControllerDetect.cpp
++++ b/Controllers/GalaxGPUController/GalaxGPUControllerDetect.cpp
+@@ -13,6 +13,7 @@
+ #include "GalaxGPUv1Controller.h"
+ #include "GalaxGPUv2Controller.h"
+ #include "i2c_smbus.h"
++#include "LogManager.h"
+ #include "pci_ids.h"
+ #include "RGBController_GalaxGPUv1.h"
+ #include "RGBController_GalaxGPUv2.h"
+@@ -129,3 +130,29 @@
+ REGISTER_I2C_PCI_DETECTOR("GALAX GeForce RTX 3080 SG",                      DetectGalaxGPUControllers,  NVIDIA_VEN, NVIDIA_RTX3080_DEV,     NVIDIA_SUB_VEN, GALAX_RTX_3080_SG_SUB_DEV,              0x23);
+ REGISTER_I2C_PCI_DETECTOR("KFA2 GeForce RTX 4080 SG 1-Click OC",            DetectGalaxGPUControllers,  NVIDIA_VEN, NVIDIA_RTX4080_DEV,     NVIDIA_SUB_VEN, KFA2_RTX_4080_SG_OC_SUB_DEV,            0x50);
+ REGISTER_I2C_PCI_DETECTOR("GALAX GeForce RTX 5070 Ti EX Gamer 1-Click OC",  DetectGalaxGPUControllers,  NVIDIA_VEN, NVIDIA_RTX5070TI_DEV,   NVIDIA_SUB_VEN, GALAX_RTX_5070TI_EX_OC_SUB_DEV,         0x51);
++
++DetectedControllers DetectGalaxEXGamerControllers(i2c_smbus_interface* bus, uint8_t i2c_addr, const std::string& name)
++{
++    DetectedControllers detected_controllers;
++    unsigned char signature[2];
++    unsigned char rgb[3];
++
++    /*-----------------------------------------------------*\
++    | PCI IDs are shared with the Founders Edition. Require |
++    | the observed signature and a complete RGB read. Sync  |
++    | readback is unreliable and is not an identity check.  |
++    \*-----------------------------------------------------*/
++    if(bus->i2c_smbus_read_i2c_block_data(i2c_addr, 0x00, 2, signature) != 2 ||
++       signature[0] != 0x11 || signature[1] != 0x00 ||
++       bus->i2c_smbus_read_i2c_block_data(i2c_addr, GALAX_V1_RED_REGISTER, 3, rgb) != 3)
++    {
++        return(detected_controllers);
++    }
++
++    GalaxGPUv1Controller* controller = new GalaxGPUv1Controller(bus, i2c_addr, name, true);
++    detected_controllers.push_back(new RGBController_GalaxGPUv1(controller));
++    LOG_INFO("[%s] Verified EX Gamer register signature at 0x%02X", name.c_str(), i2c_addr);
++    return(detected_controllers);
++}
++
++REGISTER_I2C_PCI_DETECTOR("KFA2 GeForce RTX 3080 Ti EX Gamer", DetectGalaxEXGamerControllers, NVIDIA_VEN, NVIDIA_RTX3080TI_DEV, NVIDIA_SUB_VEN, NVIDIA_RTX3080TI_FE_SUB_DEV, 0x23);diff --git a/Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.cpp b/Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.cpp
+--- a/Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.cpp
++++ b/Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.cpp
+@@ -10,13 +10,17 @@
+ \*---------------------------------------------------------*/
+ 
+ #include <cstring>
++#include <chrono>
++#include <thread>
++#include "LogManager.h"
+ #include "GalaxGPUv1Controller.h"
+ 
+-GalaxGPUv1Controller::GalaxGPUv1Controller(i2c_smbus_interface* bus, galax_gpu_dev_id dev, std::string dev_name)
++GalaxGPUv1Controller::GalaxGPUv1Controller(i2c_smbus_interface* bus, galax_gpu_dev_id dev, std::string dev_name, bool ex_gamer)
+ {
+-    this->bus   = bus;
+-    this->dev   = dev;
+-    this->name  = dev_name;
++    this->bus       = bus;
++    this->dev       = dev;
++    this->name      = dev_name;
++    this->ex_gamer  = ex_gamer;
+ }
+ 
+ GalaxGPUv1Controller::~GalaxGPUv1Controller()
+@@ -106,3 +110,88 @@
+ {
+     bus->i2c_smbus_write_byte_data(dev, reg, val);
+ }
++
++bool GalaxGPUv1Controller::IsEXGamer()
++{
++    return(ex_gamer);
++}
++
++bool GalaxGPUv1Controller::GetEXGamerColors(unsigned char* rgb)
++{
++    return(bus->i2c_smbus_read_i2c_block_data(dev, GALAX_V1_RED_REGISTER, 3, rgb) == 3);
++}
++
++bool GalaxGPUv1Controller::DisableEXGamerSync()
++{
++    /*-----------------------------------------------------*\
++    | Retry only this observed, intermittently failing      |
++    | transition. Never re-enable sync after a colour frame.|
++    \*-----------------------------------------------------*/
++    sync_attempted = true;
++    for(unsigned int attempt = 0; attempt < 3; attempt++)
++    {
++        std::this_thread::sleep_for(std::chrono::milliseconds(200));
++        int result = bus->i2c_smbus_write_byte_data(dev, GALAX_EX_GAMER_SYNC_REGISTER, 0x00);
++        std::this_thread::sleep_for(std::chrono::milliseconds(200));
++        int sync = bus->i2c_smbus_read_byte_data(dev, GALAX_EX_GAMER_SYNC_REGISTER);
++        if(result == 0 && sync == 0)
++        {
++            sync_disabled = true;
++            return(true);
++        }
++    }
++
++    LOG_WARNING("[%s] Could not confirm motherboard sync disabled; reselect Direct or Static to retry", name.c_str());
++    return(false);
++}
++
++void GalaxGPUv1Controller::BeginEXGamerMode()
++{
++    sync_attempted = false;
++    sync_disabled  = false;
++}
++
++bool GalaxGPUv1Controller::WriteEXGamerColor(unsigned char red, unsigned char green, unsigned char blue)
++{
++    unsigned char rgb[3] = { red, green, blue };
++    int result = bus->i2c_smbus_write_i2c_block_data(dev, GALAX_V1_RED_REGISTER, 3, rgb);
++    std::this_thread::sleep_for(std::chrono::milliseconds(25));
++    if(result != 0)
++    {
++        return(false);
++    }
++    result = bus->i2c_smbus_write_byte_data(dev, GALAX_V1_MODE_REGISTER_1, GALAX_V1_MODE_STATIC_VALUE_1);
++    std::this_thread::sleep_for(std::chrono::milliseconds(25));
++    if(result != 0)
++    {
++        return(false);
++    }
++    result = bus->i2c_smbus_write_byte_data(dev, GALAX_V1_MODE_REGISTER_2, GALAX_EX_GAMER_STATIC_VALUE_2);
++    std::this_thread::sleep_for(std::chrono::milliseconds(25));
++    if(result != 0)
++    {
++        return(false);
++    }
++    result = bus->i2c_smbus_write_byte_data(dev, GALAX_EX_GAMER_APPLY_REGISTER, GALAX_EX_GAMER_APPLY_VALUE);
++    std::this_thread::sleep_for(std::chrono::milliseconds(25));
++    return(result == 0);
++}
++
++void GalaxGPUv1Controller::SetEXGamerColors(unsigned char red, unsigned char green, unsigned char blue)
++{
++    if(!sync_attempted)
++    {
++        DisableEXGamerSync();
++    }
++    if(!sync_disabled)
++    {
++        return;
++    }
++
++    bool success = WriteEXGamerColor(red, green, blue);
++    if(!success && !color_failed)
++    {
++        LOG_WARNING("[%s] Static colour transfer failed; remaining commands skipped", name.c_str());
++    }
++    color_failed = !success;
++}diff --git a/Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.h b/Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.h
+--- a/Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.h
++++ b/Controllers/GalaxGPUController/GalaxGPUv1Controller/GalaxGPUv1Controller.h
+@@ -43,14 +43,23 @@
+     GALAX_V1_MODE_CYCLE_BREATHING_VALUE_2      = 0x40,
+ };
+ 
++#define GALAX_EX_GAMER_SYNC_REGISTER       0x07
++#define GALAX_EX_GAMER_APPLY_REGISTER      0x08
++#define GALAX_EX_GAMER_STATIC_VALUE_2      0x20
++#define GALAX_EX_GAMER_APPLY_VALUE         0x5A
++
+ class GalaxGPUv1Controller
+ {
+ public:
+-    GalaxGPUv1Controller(i2c_smbus_interface* bus, galax_gpu_dev_id, std::string dev_name);
++    GalaxGPUv1Controller(i2c_smbus_interface* bus, galax_gpu_dev_id, std::string dev_name, bool ex_gamer = false);
+     ~GalaxGPUv1Controller();
+ 
+     std::string   GetDeviceLocation();
+     std::string   GetDeviceName();
++    bool          IsEXGamer();
++    bool          GetEXGamerColors(unsigned char* rgb);
++    void          BeginEXGamerMode();
++    void          SetEXGamerColors(unsigned char red, unsigned char green, unsigned char blue);
+     unsigned char GetLEDRed();
+     unsigned char GetLEDGreen();
+     unsigned char GetLEDBlue();
+@@ -64,6 +73,12 @@
+     bool          direct = false;                                                // Temporary solution to check if we are in "Direct" mode
+ 
+ private:
++    bool                   ex_gamer;
++    bool                   sync_attempted = false;
++    bool                   sync_disabled  = false;
++    bool                   color_failed   = false;
++    bool                   DisableEXGamerSync();
++    bool                   WriteEXGamerColor(unsigned char red, unsigned char green, unsigned char blue);
+     i2c_smbus_interface *   bus;
+     galax_gpu_dev_id        dev;
+     std::string             name;
+diff --git a/Controllers/GalaxGPUController/GalaxGPUv1Controller/RGBController_GalaxGPUv1.cpp b/Controllers/GalaxGPUController/GalaxGPUv1Controller/RGBController_GalaxGPUv1.cpp
+--- a/Controllers/GalaxGPUController/GalaxGPUv1Controller/RGBController_GalaxGPUv1.cpp
++++ b/Controllers/GalaxGPUController/GalaxGPUv1Controller/RGBController_GalaxGPUv1.cpp
+@@ -50,8 +50,8 @@
+     @save :x:
+     @direct :white_check_mark:
+     @effects :white_check_mark:
+-    @detectors DetectGalaxGPUv1Controllers
+-    @comment
++    @detectors DetectGalaxGPUControllers, DetectGalaxEXGamerControllers
++    @comment RTX 3080 Ti EX Gamer exposes only Direct and Static, using the verified static colour sequence.
+ \*-------------------------------------------------------------------*/
+ 
+ RGBController_GalaxGPUv1::RGBController_GalaxGPUv1(GalaxGPUv1Controller* controller_ptr)
+@@ -70,6 +70,16 @@
+     Direct.flags                = MODE_FLAG_HAS_PER_LED_COLOR;
+     Direct.color_mode           = MODE_COLORS_PER_LED;
+     modes.push_back(Direct);
++
++    if(controller->IsEXGamer())
++    {
++        mode Static = Direct;
++        Static.name = "Static";
++        modes.push_back(Static);
++        SetupZones();
++        active_mode = 0;
++        return;
++    }
+ 
+     mode Breathing;
+     Breathing.name              = "Breathing";
+@@ -129,6 +139,16 @@
+     /*---------------------------------------------------------*\
+     | Initialize color                                          |
+     \*---------------------------------------------------------*/
++    if(controller->IsEXGamer())
++    {
++        unsigned char rgb[3];
++        if(controller->GetEXGamerColors(rgb))
++        {
++            colors[0] = ToRGBColor(rgb[0], rgb[1], rgb[2]);
++        }
++        return;
++    }
++
+     unsigned char red = controller->GetLEDRed();
+     unsigned char grn = controller->GetLEDGreen();
+     unsigned char blu = controller->GetLEDBlue();
+@@ -138,6 +158,11 @@
+ 
+ void RGBController_GalaxGPUv1::DeviceUpdateLEDs()
+ {
++    if(controller->IsEXGamer())
++    {
++        controller->SetEXGamerColors(RGBGetRValue(colors[0]), RGBGetGValue(colors[0]), RGBGetBValue(colors[0]));
++        return;
++    }
+     for(std::size_t led = 0; led < colors.size(); led++)
+     {
+         unsigned char red = RGBGetRValue(colors[led]);
+@@ -167,6 +192,12 @@
+ 
+ void RGBController_GalaxGPUv1::DeviceUpdateMode()
+ {
++    if(controller->IsEXGamer())
++    {
++        controller->BeginEXGamerMode();
++        DeviceUpdateLEDs();
++        return;
++    }
+     int new_mode = modes[active_mode].value;
+ 
+     controller->SetMode(new_mode);
+diff --git a/Controllers/NVIDIAIlluminationController/NVIDIAIlluminationControllerDetect_Windows_Linux.cpp b/Controllers/NVIDIAIlluminationController/NVIDIAIlluminationControllerDetect_Windows_Linux.cpp
+--- a/Controllers/NVIDIAIlluminationController/NVIDIAIlluminationControllerDetect_Windows_Linux.cpp
++++ b/Controllers/NVIDIAIlluminationController/NVIDIAIlluminationControllerDetect_Windows_Linux.cpp
+@@ -122,7 +122,19 @@
+                                 NVIDIAIlluminationV1Controller*     controller     = new NVIDIAIlluminationV1Controller(new_nvapi, device_list[dev_idx].treats_rgbw_as_rgb, device_list[dev_idx].name);
+                                 RGBController_NVIDIAIlluminationV1* rgb_controller = new RGBController_NVIDIAIlluminationV1(controller);
+ 
+-                                detected_controllers.push_back(rgb_controller);
++                                if(pci_device == NVIDIA_RTX3080TI_DEV &&
++                                   pci_subsystem_vendor == NVIDIA_SUB_VEN &&
++                                   pci_subsystem_device == NVIDIA_RTX3080TI_FE_SUB_DEV &&
++                                   rgb_controller->GetZoneCount() == 0)
++                                {
++                                    LOG_DEBUG("[%s] No illumination zones; skipping empty controller", device_list[dev_idx].name);
++                                    delete rgb_controller;
++                                    delete new_nvapi;
++                                }
++                                else
++                                {
++                                    detected_controllers.push_back(rgb_controller);
++                                }
+                             }
+                             break;
+                     }

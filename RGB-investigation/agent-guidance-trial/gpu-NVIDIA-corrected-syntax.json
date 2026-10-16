@@ -1,0 +1,6 @@
+{
+  "exit_code": 0,
+  "source_sha256": "c221fa71ec024b42691019aa5be247e56c212bc703964d4ec0a572343b1aa3d1",
+  "log": "gpu-NVIDIA-corrected-syntax.log",
+  "result_origin": "Evaluator compiler invocation recorded in tool output; empty log means no diagnostics."
+}

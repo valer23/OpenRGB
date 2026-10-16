@@ -1,0 +1,359 @@
+diff --git a/Controllers/AsusROGLogoController/AsusROGLogoController_Windows.cpp b/Controllers/AsusROGLogoController/AsusROGLogoController_Windows.cpp
+new file mode 100644
+--- /dev/null
++++ b/Controllers/AsusROGLogoController/AsusROGLogoController_Windows.cpp
+@@ -0,0 +1,141 @@
++/*---------------------------------------------------------*\
++| AsusROGLogoController_Windows.cpp                         |
++|                                                           |
++|   ASUS ROG STRIX B850-F GAMING WIFI7 NEO logo              |
++|                                                           |
++|   OpenRGB contributors                       15 Oct 2026 |
++|                                                           |
++|   This file is part of the OpenRGB project                |
++|   SPDX-License-Identifier: GPL-2.0-or-later               |
++\*---------------------------------------------------------*/
++
++#include <chrono>
++#include <thread>
++#include "AsusROGLogoController_Windows.h"
++#include "LogManager.h"
++
++AsusROGLogoController::AsusROGLogoController(hid_device* dev_handle, const char* path)
++{
++    dev             = dev_handle;
++    location        = path;
++    initialized     = false;
++    transfer_failed = false;
++}
++
++AsusROGLogoController::~AsusROGLogoController()
++{
++    hid_close(dev);
++}
++
++std::string AsusROGLogoController::GetDeviceLocation()
++{
++    return("HID: " + location);
++}
++
++bool AsusROGLogoController::SendReport(const unsigned char* report)
++{
++    /*-----------------------------------------------------*\
++    | The capture uses control SET_REPORT, not hid_write.   |
++    | The 64 bytes include report ID 0x41.                  |
++    \*-----------------------------------------------------*/
++    int result = hid_send_output_report(dev, report, ASUS_ROG_LOGO_REPORT_SIZE);
++
++    std::this_thread::sleep_for(std::chrono::milliseconds(30));
++
++    if(result != ASUS_ROG_LOGO_REPORT_SIZE)
++    {
++        initialized = false;
++
++        if(!transfer_failed)
++        {
++            LOG_WARNING("[ASUS ROG Logo] Control output report failed or short (%d/64); a later update can retry", result);
++        }
++
++        transfer_failed = true;
++        return(false);
++    }
++
++    return(true);
++}
++
++bool AsusROGLogoController::Initialize()
++{
++    /*-----------------------------------------------------*\
++    | These are the two observed onboard output selectors. |
++    | Their independent physical mapping is unknown.        |
++    \*-----------------------------------------------------*/
++    for(unsigned char output = 0; output < 2; output++)
++    {
++        unsigned char report[ASUS_ROG_LOGO_REPORT_SIZE] = {};
++
++        report[0] = 0x41;
++        report[1] = 0x05;
++        report[2] = 0x01;
++        report[6] = output;
++        report[8] = 0x01;
++
++        if(!SendReport(report))
++        {
++            return(false);
++        }
++    }
++
++    std::this_thread::sleep_for(std::chrono::milliseconds(2200));
++
++    /*-----------------------------------------------------*\
++    | This packet restored response in capture replay.     |
++    | Its wider meaning is unknown.                        |
++    \*-----------------------------------------------------*/
++    unsigned char report[ASUS_ROG_LOGO_REPORT_SIZE] = {};
++
++    report[0] = 0x41;
++    report[1] = 0x21;
++    report[3] = 0x01;
++
++    if(!SendReport(report))
++    {
++        return(false);
++    }
++
++    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
++    initialized = true;
++    return(true);
++}
++
++void AsusROGLogoController::SetColor(RGBColor color)
++{
++    /*-----------------------------------------------------*\
++    | Initialize on the first update, never at detection.   |
++    | No immediate retries: abort on any failed report.     |
++    | A later update restarts initialization for recovery.  |
++    \*-----------------------------------------------------*/
++    if(!initialized && !Initialize())
++    {
++        return;
++    }
++
++    for(unsigned char output = 0; output < 2; output++)
++    {
++        unsigned char report[ASUS_ROG_LOGO_REPORT_SIZE] = {};
++
++        report[0]  = 0x41;
++        report[1]  = 0x05;
++        report[2]  = 0x01;
++        report[6]  = output;
++        report[16] = 0x01;
++        report[18] = RGBGetGValue(color);
++        report[19] = RGBGetRValue(color);
++        report[20] = RGBGetBValue(color);
++
++        if(!SendReport(report))
++        {
++            return;
++        }
++    }
++
++    /*-----------------------------------------------------*\
++    | Clear the diagnostic latch only after a full update.  |
++    | API success does not establish physical confirmation. |
++    \*-----------------------------------------------------*/
++    transfer_failed = false;
++}
+diff --git a/Controllers/AsusROGLogoController/AsusROGLogoController_Windows.h b/Controllers/AsusROGLogoController/AsusROGLogoController_Windows.h
+new file mode 100644
+--- /dev/null
++++ b/Controllers/AsusROGLogoController/AsusROGLogoController_Windows.h
+@@ -0,0 +1,37 @@
++/*---------------------------------------------------------*\
++| AsusROGLogoController_Windows.h                           |
++|                                                           |
++|   ASUS ROG STRIX B850-F GAMING WIFI7 NEO logo              |
++|                                                           |
++|   OpenRGB contributors                       15 Oct 2026 |
++|                                                           |
++|   This file is part of the OpenRGB project                |
++|   SPDX-License-Identifier: GPL-2.0-or-later               |
++\*---------------------------------------------------------*/
++
++#pragma once
++
++#include <hidapi.h>
++#include <string>
++#include "RGBController.h"
++
++#define ASUS_ROG_LOGO_REPORT_SIZE 64
++
++class AsusROGLogoController
++{
++public:
++    AsusROGLogoController(hid_device* dev_handle, const char* path);
++    ~AsusROGLogoController();
++
++    std::string GetDeviceLocation();
++    void SetColor(RGBColor color);
++
++private:
++    hid_device* dev;
++    std::string location;
++    bool        initialized;
++    bool        transfer_failed;
++
++    bool Initialize();
++    bool SendReport(const unsigned char* report);
++};
+diff --git a/Controllers/AsusROGLogoController/AsusROGLogoControllerDetect_Windows.cpp b/Controllers/AsusROGLogoController/AsusROGLogoControllerDetect_Windows.cpp
+new file mode 100644
+--- /dev/null
++++ b/Controllers/AsusROGLogoController/AsusROGLogoControllerDetect_Windows.cpp
+@@ -0,0 +1,35 @@
++/*---------------------------------------------------------*\
++| AsusROGLogoControllerDetect_Windows.cpp                   |
++|                                                           |
++|   ASUS ROG STRIX B850-F GAMING WIFI7 NEO logo              |
++|                                                           |
++|   OpenRGB contributors                       15 Oct 2026 |
++|                                                           |
++|   This file is part of the OpenRGB project                |
++|   SPDX-License-Identifier: GPL-2.0-or-later               |
++\*---------------------------------------------------------*/
++
++#include "DetectionManager.h"
++#include "AsusROGLogoController_Windows.h"
++#include "RGBController_AsusROGLogo_Windows.h"
++
++#define ASUS_ROG_LOGO_VID 0x0B05
++#define ASUS_ROG_LOGO_PID 0x1CD2
++
++DetectedControllers DetectAsusROGLogo(hid_device_info* info, const std::string& /*name*/)
++{
++    DetectedControllers detected_controllers;
++    hid_device*         dev = hid_open_path(info->path);
++
++    if(dev)
++    {
++        AsusROGLogoController*     controller     = new AsusROGLogoController(dev, info->path);
++        RGBController_AsusROGLogo* rgb_controller = new RGBController_AsusROGLogo(controller);
++
++        detected_controllers.push_back(rgb_controller);
++    }
++
++    return(detected_controllers);
++}
++
++REGISTER_HID_DETECTOR_IPU("ASUS ROG STRIX B850-F GAMING WIFI7 NEO Logo", DetectAsusROGLogo, ASUS_ROG_LOGO_VID, ASUS_ROG_LOGO_PID, 1, 0xFF0A, 0x0001);
+diff --git a/Controllers/AsusROGLogoController/RGBController_AsusROGLogo_Windows.cpp b/Controllers/AsusROGLogoController/RGBController_AsusROGLogo_Windows.cpp
+new file mode 100644
+--- /dev/null
++++ b/Controllers/AsusROGLogoController/RGBController_AsusROGLogo_Windows.cpp
+@@ -0,0 +1,90 @@
++/*---------------------------------------------------------*\
++| RGBController_AsusROGLogo_Windows.cpp                     |
++|                                                           |
++|   ASUS ROG STRIX B850-F GAMING WIFI7 NEO logo              |
++|                                                           |
++|   OpenRGB contributors                       15 Oct 2026 |
++|                                                           |
++|   This file is part of the OpenRGB project                |
++|   SPDX-License-Identifier: GPL-2.0-or-later               |
++\*---------------------------------------------------------*/
++
++#include "RGBController_AsusROGLogo_Windows.h"
++
++/**------------------------------------------------------------------*\
++    @name ASUS ROG STRIX B850-F GAMING WIFI7 NEO Logo
++    @category Motherboard
++    @type USB
++    @save :x:
++    @direct :white_check_mark:
++    @effects :x:
++    @detectors DetectAsusROGLogo
++    @comment Windows only. Logo only; ASUS LightingService must not
++        control lighting concurrently. ARGB headers are not supported.
++\*-------------------------------------------------------------------*/
++
++RGBController_AsusROGLogo::RGBController_AsusROGLogo(AsusROGLogoController* controller_ptr)
++{
++    controller                  = controller_ptr;
++    name                        = "ASUS ROG STRIX B850-F GAMING WIFI7 NEO Logo";
++    vendor                      = "ASUS";
++    type                        = DEVICE_TYPE_MOTHERBOARD;
++    description                 = "ASUS onboard ROG logo";
++    location                    = controller->GetDeviceLocation();
++
++    mode Direct;
++    Direct.name                 = "Direct";
++    Direct.value                = 0;
++    Direct.flags                = MODE_FLAG_HAS_PER_LED_COLOR;
++    Direct.color_mode           = MODE_COLORS_PER_LED;
++    modes.push_back(Direct);
++
++    SetupZones();
++}
++
++RGBController_AsusROGLogo::~RGBController_AsusROGLogo()
++{
++    Shutdown();
++    delete controller;
++}
++
++void RGBController_AsusROGLogo::SetupZones()
++{
++    /*-----------------------------------------------------*\
++    | Both observed outputs receive the same colour.       |
++    | Replay observations justify only one combined logo.  |
++    \*-----------------------------------------------------*/
++    zone logo;
++    logo.name                   = "ROG Logo";
++    logo.type                   = ZONE_TYPE_SINGLE;
++    logo.leds_min               = 1;
++    logo.leds_max               = 1;
++    logo.leds_count             = 1;
++    zones.push_back(logo);
++
++    led logo_led;
++    logo_led.name               = "ROG Logo";
++    leds.push_back(logo_led);
++
++    SetupColors();
++}
++
++void RGBController_AsusROGLogo::DeviceUpdateLEDs()
++{
++    controller->SetColor(colors[0]);
++}
++
++void RGBController_AsusROGLogo::DeviceUpdateZoneLEDs(int /*zone*/)
++{
++    DeviceUpdateLEDs();
++}
++
++void RGBController_AsusROGLogo::DeviceUpdateSingleLED(int /*led*/)
++{
++    DeviceUpdateLEDs();
++}
++
++void RGBController_AsusROGLogo::DeviceUpdateMode()
++{
++    DeviceUpdateLEDs();
++}
+diff --git a/Controllers/AsusROGLogoController/RGBController_AsusROGLogo_Windows.h b/Controllers/AsusROGLogoController/RGBController_AsusROGLogo_Windows.h
+new file mode 100644
+--- /dev/null
++++ b/Controllers/AsusROGLogoController/RGBController_AsusROGLogo_Windows.h
+@@ -0,0 +1,31 @@
++/*---------------------------------------------------------*\
++| RGBController_AsusROGLogo_Windows.h                       |
++|                                                           |
++|   ASUS ROG STRIX B850-F GAMING WIFI7 NEO logo              |
++|                                                           |
++|   OpenRGB contributors                       15 Oct 2026 |
++|                                                           |
++|   This file is part of the OpenRGB project                |
++|   SPDX-License-Identifier: GPL-2.0-or-later               |
++\*---------------------------------------------------------*/
++
++#pragma once
++
++#include "RGBController.h"
++#include "AsusROGLogoController_Windows.h"
++
++class RGBController_AsusROGLogo : public RGBController
++{
++public:
++    RGBController_AsusROGLogo(AsusROGLogoController* controller_ptr);
++    ~RGBController_AsusROGLogo();
++
++    void SetupZones();
++    void DeviceUpdateLEDs();
++    void DeviceUpdateZoneLEDs(int zone);
++    void DeviceUpdateSingleLED(int led);
++    void DeviceUpdateMode();
++
++private:
++    AsusROGLogoController* controller;
++};
