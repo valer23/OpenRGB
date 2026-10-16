@@ -120,9 +120,17 @@ DetectedControllers DetectNVIDIAIllumGPUs()
                             {
                                 nvapi_accessor*                     new_nvapi      = new nvapi_accessor(gpu_handles[gpu_idx]);
                                 NVIDIAIlluminationV1Controller*     controller     = new NVIDIAIlluminationV1Controller(new_nvapi, device_list[dev_idx].treats_rgbw_as_rgb, device_list[dev_idx].name);
-                                RGBController_NVIDIAIlluminationV1* rgb_controller = new RGBController_NVIDIAIlluminationV1(controller);
+                                if(!controller->getInfo().empty())
+                                {
+                                    RGBController_NVIDIAIlluminationV1* rgb_controller = new RGBController_NVIDIAIlluminationV1(controller);
 
-                                detected_controllers.push_back(rgb_controller);
+                                    detected_controllers.push_back(rgb_controller);
+                                }
+                                else
+                                {
+                                    delete controller;
+                                    delete new_nvapi;
+                                }
                             }
                             break;
                     }

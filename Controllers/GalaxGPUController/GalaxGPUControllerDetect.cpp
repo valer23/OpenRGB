@@ -84,7 +84,11 @@ DetectedControllers DetectGalaxGPUControllers(i2c_smbus_interface* bus, uint8_t 
 {
     DetectedControllers detected_controllers;
 
-    if(TestForGalaxGPUController(bus, i2c_addr))
+    bool sg = i2c_addr == 0x23 && bus->info.pci_vendor == NVIDIA_VEN &&
+                    bus->info.pci_device == NVIDIA_RTX3080TI_DEV &&
+                    bus->info.pci_subsystem_vendor == NVIDIA_SUB_VEN &&
+                    bus->info.pci_subsystem_device == NVIDIA_RTX3080TI_FE_SUB_DEV;
+    if(sg ? GalaxGPUv1Controller::TestForSG(bus, i2c_addr) : TestForGalaxGPUController(bus, i2c_addr))
     {
         switch(i2c_addr)
         {
@@ -94,7 +98,7 @@ DetectedControllers DetectGalaxGPUControllers(i2c_smbus_interface* bus, uint8_t 
             case 0x32:
             case 0x23:
                 {
-                    GalaxGPUv1Controller*     controller     = new GalaxGPUv1Controller(bus, i2c_addr, name);
+                    GalaxGPUv1Controller*     controller     = new GalaxGPUv1Controller(bus, i2c_addr, name, sg);
                     RGBController_GalaxGPUv1* rgb_controller = new RGBController_GalaxGPUv1(controller);
 
                     DetectionManager::get()->RegisterRGBController(rgb_controller);
@@ -129,3 +133,5 @@ REGISTER_I2C_PCI_DETECTOR("GALAX GeForce RTX 3070 1-Click OC",              Dete
 REGISTER_I2C_PCI_DETECTOR("GALAX GeForce RTX 3080 SG",                      DetectGalaxGPUControllers,  NVIDIA_VEN, NVIDIA_RTX3080_DEV,     NVIDIA_SUB_VEN, GALAX_RTX_3080_SG_SUB_DEV,              0x23);
 REGISTER_I2C_PCI_DETECTOR("KFA2 GeForce RTX 4080 SG 1-Click OC",            DetectGalaxGPUControllers,  NVIDIA_VEN, NVIDIA_RTX4080_DEV,     NVIDIA_SUB_VEN, KFA2_RTX_4080_SG_OC_SUB_DEV,            0x50);
 REGISTER_I2C_PCI_DETECTOR("GALAX GeForce RTX 5070 Ti EX Gamer 1-Click OC",  DetectGalaxGPUControllers,  NVIDIA_VEN, NVIDIA_RTX5070TI_DEV,   NVIDIA_SUB_VEN, GALAX_RTX_5070TI_EX_OC_SUB_DEV,         0x51);
+
+REGISTER_I2C_PCI_DETECTOR("KFA2 GeForce RTX 3080 Ti SG 1-Click OC", DetectGalaxGPUControllers, NVIDIA_VEN, NVIDIA_RTX3080TI_DEV, NVIDIA_SUB_VEN, NVIDIA_RTX3080TI_FE_SUB_DEV, 0x23);

@@ -30,6 +30,7 @@ public:
 
 private:
     GalaxGPUv1Controller* controller;
+    bool write_failed = false;
 
     int        GetDeviceMode();
 };
