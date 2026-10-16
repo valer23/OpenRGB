@@ -180,3 +180,12 @@ compiler feedback, corrections and physical testing. It does not demonstrate
 that the guidance alone is sufficient, that it improves quality, or that the
 reconstructed implementation is ready for upstream submission. A guidance-only
 proposal should report these limits and remains separate from driver MRs.
+
+## Final trial shutdown
+
+After the user exited the final trial through its tray menu, the launcher
+recorded candidate exit, ASUS LightingService restoration and a request to
+start the normal installation. Verification observed only OpenRGB-Custom
+(no trial OpenRGB process), the normal OpenRGB Custom (valerian) scheduled
+task running, and LightingService running. This confirms trial shutdown and
+normal startup, not a further physical profile check or a reboot test.
