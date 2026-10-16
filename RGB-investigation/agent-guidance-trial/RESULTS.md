@@ -122,3 +122,61 @@ reported separately. A baseline/toolchain failure is not a worker code failure.
 
 Both full-build gates have now passed after the documented local MinGW
 adaptations. No Linux/macOS build or candidate hardware result is implied.
+
+## First physical trial, 16 October 2026
+
+The user confirmed individual green, red, yellow and blue selections worked on
+all enumerated devices. The app showed two RAM entries and one KFA2 GPU.
+Copied profiles did not apply as expected and animations were not available.
+The trial log showed the Effects Plugin could not load; its Qt6Core5Compat and
+Qt6OpenGL runtime dependencies were missing from the evaluator deployment.
+They have now been supplied, and a hardware-free native library load passes.
+A profile saved by the user in the candidate confirmed matching device
+identities, but different candidate mode and fan zone definitions from the
+installed custom build. Trial profiles were regenerated from that private
+snapshot, retaining effect settings and adapting effect device identities.
+These are evaluator deployment/profile changes, not worker driver changes.
+GPU transfer warnings occurred in the first run and remain to be investigated
+if repeated with the snapshot-based profiles. Animation and profile validation
+remain pending. On exit the launcher recorded ASUS service restoration and
+requested normal startup; the installed OpenRGB-Custom process was observed.
+
+## Snapshot-profile retry and Effects Plugin adapter
+
+With snapshot-based profiles and the missing runtime dependencies supplied,
+the user reported that all devices except the fans responded to the profiles
+and animations; fans remained white. The installed plugin's
+CompatibleDirectMode helper accepts Direct, or Static for three exact local
+driver names. It does not accept the existing upstream SL-Infinity controller's
+Custom per-LED mode. This explains why that controller was absent from effect
+submission timing records, despite manual per-LED colour control working.
+An evaluator plugin adapter now accepts Custom with HAS_PER_LED_COLOR for
+the exact Lian Li Uni Hub - SL Infinity name. Existing Direct preference and
+Static allowlist remain intact; unrelated Custom modes remain rejected.
+Selection tests pass and the full existing plugin build succeeds. Only the
+trial settings' plugin DLL was replaced. No reconstructed driver, installed
+app/plugin or upstream MR was modified. Physical fan animation retry pending.
+The GPU physically responds according to the user, but still logs transfer
+failures, so transport reliability is not yet a clean pass.
+
+## Physical animation result after plugin adaptation
+
+The user confirmed Trial Brimstone and Trial Rainbow Wave now work across all
+devices, including all fan centres and side strips. This follows the earlier
+manual colour confirmation for all devices, two RAM entries and one GPU.
+The combined reconstructed drivers therefore have a Windows physical
+functionality pass with evaluator profile/deployment/plugin adaptation.
+This is not an unassisted first-pass result or a clean reliability pass: the
+trial still emits repeated GPU static-colour transfer warnings while the
+user observes working animation. Their cause has not been established.
+Do not hide those warnings or claim error-free operation.
+The installed production app, startup and upstream device MRs were not changed.
+Closing/restoring the final trial remains pending at this point.
+No reboot, Linux/macOS hardware or cross-platform build result is implied.
+
+The experiment supports a limited feasibility conclusion: agents can extend
+existing controllers from supplied decoded evidence and guidance, with review,
+compiler feedback, corrections and physical testing. It does not demonstrate
+that the guidance alone is sufficient, that it improves quality, or that the
+reconstructed implementation is ready for upstream submission. A guidance-only
+proposal should report these limits and remains separate from driver MRs.
