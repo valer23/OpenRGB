@@ -24,5 +24,18 @@ int main()
     assert(CompatibleDirectMode(&controller) == 1); // Native Direct always wins.
     controller.name = "Unrelated motherboard";
     assert(CompatibleDirectMode(&controller) == 1);
+    controller.modes = {"Custom"};
+    controller.flags = {32};
+    controller.name = "Lian Li Uni Hub - SL Infinity";
+    assert(CompatibleDirectMode(&controller) == 0);
+    controller.flags[0] = 0;
+    assert(CompatibleDirectMode(&controller) == -1);
+    controller.flags[0] = 32;
+    controller.name = "Unknown device";
+    assert(CompatibleDirectMode(&controller) == -1);
+    controller.name = "Lian Li Uni Hub - SL Infinity";
+    controller.modes.push_back("Direct");
+    controller.flags.push_back(32);
+    assert(CompatibleDirectMode(&controller) == 1);
     std::cout << "Direct selection whitelist, per-LED requirement and native Direct preference pass\n";
 }

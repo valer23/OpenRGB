@@ -26,6 +26,40 @@ installer publicly. It is unsigned; Windows may show an unknown-publisher prompt
 
 The default profile remains ValWhite. Fan Control is not modified.
 
+## SG upgrade - 16 October 2026
+
+Version 1.0.20261016.1 packages the reviewed Galax v1 correction for the
+KFA2 GeForce RTX 3080 Ti SG 1-Click OC, SKU 38IOM5MD99DK. The former EX Gamer
+name was incorrect. The source was independently reviewed, built on Windows
+and physically verified in an isolated app before packaging.
+
+The upgrade backs up changed profiles before replacing their old GPU identity
+and Static mode label with SG and Direct. It also migrates the former local fan
+test controller to the standard SL-Infinity controller and its Custom streaming
+mode. Existing per-LED colours, effect parameters, channel counts and unrelated
+devices are retained. The plugin accepts that controller's per-LED Custom mode.
+
+Fan sizes are persistent controller configuration, not just lighting state. If
+Configuration.json lacks the migrated hub, its sizes are seeded from ValWhite,
+with configured-size flags. Existing unrelated controller configuration is kept.
+The post-install migration seeds this configuration on fresh installations too.
+It does not install a default configuration before migration, so the backup
+manifest accurately records whether Configuration.json originally existed.
+
+Migration parses all candidates before writing, verifies backups, uses atomic
+file replacement and rolls back files already written if a later write fails.
+Backups and an original-existence manifest are in
+Settings/profile-backups/before-sg-upgrade/<run-id>. A repeated run makes no
+further changes. For rollback, restore originally existing files from that run
+and remove only a Configuration.json marked originally absent in its manifest.
+
+Build-Installer.ps1 accepts -AppRoot for a prepared staging folder. This release
+stages the tested binary and plugin with copies of the current settings, migrates
+those copies, then packages them. It does not package an older installed EXE.
+Personal staging folders, backups and installer binaries remain excluded from Git.
+Persistence across a power cycle and Linux/macOS hardware are still unverified.
+
+
 Validation: installer compilation; PowerShell syntax parsing; payload SHA-256
 manifest; live install verification is performed after OpenRGB is closed.
 
@@ -45,7 +79,7 @@ Set-Location 'C:\Users\valerian\git-repos\OpenRGB-KFA2\RGB-investigation\install
 ```
 
 Use the actual ISCC.exe location if Inno Setup was installed elsewhere.
-The installer is written to `output\OpenRGB-Custom-Setup-1.0.20261013.2.exe`.
+The installer is written to `output\OpenRGB-Custom-Setup-1.0.20261016.1.exe`.
 Before a new release, increment AppVersion in OpenRGB-Custom.iss; retain AppId
 so Windows recognizes it as the same application. The payload directory is a
 staging area; inspect it for stale files when changing the packaged file set.
@@ -103,7 +137,7 @@ OpenRGBâ€™s own AutoStart setting created a non-elevated launch without the cust
 
 The repaired launch successfully initialized PawnIO and loaded ValWhite without permission-denied errors. Installer version 1.0.20261012.2 includes this prevention; the live installation was repaired directly.
 
-## Refreshed package — 13 October 2026
+## Refreshed package - 13 October 2026
 
 Version 1.0.20261013.1 packages the installed, tested Effects Plugin with
 animated keyboard backgrounds for Brimstone, Firestorm and Titanium plus typing

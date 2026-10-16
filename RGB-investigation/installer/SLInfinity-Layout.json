@@ -1,0 +1,330 @@
+{
+  "name": "Lian Li Uni Hub - SL Infinity",
+  "description": "Lian Li Uni Hub - SL Infinity",
+  "modes": [
+    {
+      "brightness": 37,
+      "brightness_max": 50,
+      "brightness_min": 0,
+      "color_mode": 1,
+      "colors_max": 0,
+      "colors_min": 0,
+      "direction": 0,
+      "flags": 48,
+      "name": "Custom",
+      "speed": 0,
+      "speed_max": 0,
+      "speed_min": 0
+    },
+    {
+      "brightness": 4,
+      "brightness_max": 4,
+      "brightness_min": 0,
+      "color_mode": 2,
+      "colors": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "colors_max": 6,
+      "colors_min": 0,
+      "direction": 0,
+      "flags": 80,
+      "name": "Static",
+      "speed": 0,
+      "speed_max": 0,
+      "speed_min": 0
+    },
+    {
+      "brightness": 4,
+      "brightness_max": 4,
+      "brightness_min": 0,
+      "color_mode": 2,
+      "colors": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "colors_max": 6,
+      "colors_min": 0,
+      "direction": 0,
+      "flags": 81,
+      "name": "Breathing",
+      "speed": 2,
+      "speed_max": 4,
+      "speed_min": 0
+    },
+    {
+      "brightness": 4,
+      "brightness_max": 4,
+      "brightness_min": 0,
+      "color_mode": 0,
+      "colors_max": 0,
+      "colors_min": 0,
+      "direction": 0,
+      "flags": 17,
+      "name": "Spectrum Cycle",
+      "speed": 2,
+      "speed_max": 4,
+      "speed_min": 0
+    },
+    {
+      "brightness": 4,
+      "brightness_max": 4,
+      "brightness_min": 0,
+      "color_mode": 0,
+      "colors_max": 0,
+      "colors_min": 0,
+      "direction": 0,
+      "flags": 19,
+      "name": "Rainbow Wave",
+      "speed": 2,
+      "speed_max": 4,
+      "speed_min": 0
+    },
+    {
+      "brightness": 4,
+      "brightness_max": 4,
+      "brightness_min": 0,
+      "color_mode": 2,
+      "colors": [
+        0,
+        0
+      ],
+      "colors_max": 2,
+      "colors_min": 0,
+      "direction": 0,
+      "flags": 81,
+      "name": "Staggered",
+      "speed": 2,
+      "speed_max": 4,
+      "speed_min": 0
+    },
+    {
+      "brightness": 4,
+      "brightness_max": 4,
+      "brightness_min": 0,
+      "color_mode": 2,
+      "colors": [
+        0,
+        0
+      ],
+      "colors_max": 2,
+      "colors_min": 0,
+      "direction": 0,
+      "flags": 81,
+      "name": "Tide",
+      "speed": 2,
+      "speed_max": 4,
+      "speed_min": 0
+    },
+    {
+      "brightness": 4,
+      "brightness_max": 4,
+      "brightness_min": 0,
+      "color_mode": 2,
+      "colors": [
+        0,
+        0
+      ],
+      "colors_max": 2,
+      "colors_min": 0,
+      "direction": 0,
+      "flags": 81,
+      "name": "Runway",
+      "speed": 2,
+      "speed_max": 4,
+      "speed_min": 0
+    },
+    {
+      "brightness": 4,
+      "brightness_max": 4,
+      "brightness_min": 0,
+      "color_mode": 2,
+      "colors": [
+        0,
+        0
+      ],
+      "colors_max": 2,
+      "colors_min": 0,
+      "direction": 0,
+      "flags": 81,
+      "name": "Mixing",
+      "speed": 2,
+      "speed_max": 4,
+      "speed_min": 0
+    },
+    {
+      "brightness": 4,
+      "brightness_max": 4,
+      "brightness_min": 0,
+      "color_mode": 2,
+      "colors": [
+        0
+      ],
+      "colors_max": 1,
+      "colors_min": 0,
+      "direction": 0,
+      "flags": 83,
+      "name": "Stack",
+      "speed": 2,
+      "speed_max": 4,
+      "speed_min": 0
+    },
+    {
+      "brightness": 4,
+      "brightness_max": 4,
+      "brightness_min": 0,
+      "color_mode": 0,
+      "colors": [
+        0
+      ],
+      "colors_max": 1,
+      "colors_min": 0,
+      "direction": 0,
+      "flags": 19,
+      "name": "Stack Multi Color",
+      "speed": 2,
+      "speed_max": 4,
+      "speed_min": 0
+    },
+    {
+      "brightness": 4,
+      "brightness_max": 4,
+      "brightness_min": 0,
+      "color_mode": 0,
+      "colors_max": 0,
+      "colors_min": 0,
+      "direction": 0,
+      "flags": 17,
+      "name": "Neon",
+      "speed": 2,
+      "speed_max": 4,
+      "speed_min": 0
+    },
+    {
+      "brightness": 4,
+      "brightness_max": 4,
+      "brightness_min": 0,
+      "color_mode": 2,
+      "colors": [
+        0,
+        0,
+        0
+      ],
+      "colors_max": 3,
+      "colors_min": 0,
+      "direction": 0,
+      "flags": 83,
+      "name": "ColorCycle",
+      "speed": 2,
+      "speed_max": 4,
+      "speed_min": 0
+    },
+    {
+      "brightness": 4,
+      "brightness_max": 4,
+      "brightness_min": 0,
+      "color_mode": 2,
+      "colors": [
+        0,
+        0
+      ],
+      "colors_max": 2,
+      "colors_min": 0,
+      "direction": 0,
+      "flags": 81,
+      "name": "Meteor",
+      "speed": 2,
+      "speed_max": 4,
+      "speed_min": 0
+    },
+    {
+      "brightness": 4,
+      "brightness_max": 4,
+      "brightness_min": 0,
+      "color_mode": 0,
+      "colors_max": 0,
+      "colors_min": 0,
+      "direction": 0,
+      "flags": 17,
+      "name": "Voice",
+      "speed": 2,
+      "speed_max": 4,
+      "speed_min": 0
+    },
+    {
+      "brightness": 4,
+      "brightness_max": 4,
+      "brightness_min": 0,
+      "color_mode": 2,
+      "colors": [
+        0
+      ],
+      "colors_max": 1,
+      "colors_min": 0,
+      "direction": 0,
+      "flags": 83,
+      "name": "Groove",
+      "speed": 2,
+      "speed_max": 4,
+      "speed_min": 0
+    },
+    {
+      "brightness": 4,
+      "brightness_max": 4,
+      "brightness_min": 0,
+      "color_mode": 2,
+      "colors": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "colors_max": 4,
+      "colors_min": 0,
+      "direction": 0,
+      "flags": 83,
+      "name": "Render",
+      "speed": 2,
+      "speed_max": 4,
+      "speed_min": 0
+    },
+    {
+      "brightness": 4,
+      "brightness_max": 4,
+      "brightness_min": 0,
+      "color_mode": 2,
+      "colors": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "colors_max": 4,
+      "colors_min": 0,
+      "direction": 0,
+      "flags": 83,
+      "name": "Tunnel",
+      "speed": 2,
+      "speed_max": 4,
+      "speed_min": 0
+    }
+  ],
+  "zone_names": [
+    "Channel 1",
+    "Channel 2",
+    "Channel 3",
+    "Channel 4",
+    "Channel 5",
+    "Channel 6",
+    "Channel 7",
+    "Channel 8"
+  ]
+}
