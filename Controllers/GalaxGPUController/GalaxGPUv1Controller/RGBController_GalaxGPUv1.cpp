@@ -14,12 +14,12 @@
 
 int RGBController_GalaxGPUv1::GetDeviceMode()
 {
-    if(controller->IsEXGamer())
+    if(controller->IsSG())
     {
-        int sync = controller->GetEXSync();
+        int sync = controller->GetSGSync();
         if(sync < 0 || sync > 1)
         {
-            LOG_WARNING("[KFA2 EX] Sync state unavailable (%d); presenting Static until a mode is selected", sync);
+            LOG_WARNING("[KFA2 SG] Sync state unavailable (%d); presenting Direct until a mode is selected", sync);
         }
         return sync == 1 ? 1 : 0;
     }
@@ -28,25 +28,25 @@ int RGBController_GalaxGPUv1::GetDeviceMode()
 
     if(modereg1 == GALAX_V1_MODE_STATIC_VALUE_1 && modereg2 == GALAX_V1_MODE_STATIC_VALUE_2)
     {
-        active_mode = 1;
+        active_mode = 0;
         modes[active_mode].color_mode = MODE_COLORS_PER_LED;
     }
 
     if(modereg1 == GALAX_V1_MODE_BREATHING_VALUE_1 && modereg2 == GALAX_V1_MODE_BREATHING_VALUE_2)
     {
-        active_mode = 2;
+        active_mode = 1;
         modes[active_mode].color_mode = MODE_COLORS_PER_LED;
     }
 
     if(modereg1 == GALAX_V1_MODE_RAINBOW_VALUE_1 && modereg2 == GALAX_V1_MODE_RAINBOW_VALUE_2)
     {
-        active_mode = 3;
+        active_mode = 2;
         modes[active_mode].color_mode = MODE_COLORS_NONE;
     }
 
     if(modereg1 == GALAX_V1_MODE_CYCLE_BREATHING_VALUE_1 && modereg2 == GALAX_V1_MODE_CYCLE_BREATHING_VALUE_2)
     {
-        active_mode = 4;
+        active_mode = 3;
         modes[active_mode].color_mode = MODE_COLORS_NONE;
     }
 
@@ -61,7 +61,7 @@ int RGBController_GalaxGPUv1::GetDeviceMode()
     @direct :white_check_mark:
     @effects :white_check_mark:
     @detectors DetectGalaxGPUControllers
-    @comment KFA2 RTX 3080 Ti EX Gamer exposes Static and Motherboard Sync only.
+    @comment KFA2 RTX 3080 Ti SG exposes Direct and Motherboard Sync only.
         Hardware effects and external motherboard-sync colour following are unverified.
 \*-------------------------------------------------------------------*/
 
@@ -70,25 +70,25 @@ RGBController_GalaxGPUv1::RGBController_GalaxGPUv1(GalaxGPUv1Controller* control
     controller                  = controller_ptr;
 
     name                        = controller->GetDeviceName();
-    vendor                      = controller->IsEXGamer() ? "KFA2" : "GALAX";
+    vendor                      = controller->IsSG() ? "KFA2" : "GALAX";
     type                        = DEVICE_TYPE_GPU;
-    description                 = controller->IsEXGamer() ? "KFA2 EX Gamer I2C lighting controller" : "GALAX / KFA2 RTX GPU";
+    description                 = controller->IsSG() ? "KFA2 SG I2C lighting controller" : "GALAX / KFA2 RTX GPU";
     location                    = controller->GetDeviceLocation();
 
     mode Direct;
-    Direct.name                 = controller->IsEXGamer() ? "Static" : "Direct";
+    Direct.name                 = "Direct";
     Direct.value                = 1;
     Direct.flags                = MODE_FLAG_HAS_PER_LED_COLOR;
     Direct.color_mode           = MODE_COLORS_PER_LED;
     modes.push_back(Direct);
 
-    if(controller->IsEXGamer())
+    if(controller->IsSG())
     {
         mode sync;
-        sync.name       = "Motherboard Sync";
-        sync.value      = GALAX_V1_EX_SYNC_MODE;
-        sync.flags      = 0;
-        sync.color_mode = MODE_COLORS_NONE;
+        sync.name                   = "Motherboard Sync";
+        sync.value                  = GALAX_V1_SG_SYNC_MODE;
+        sync.flags                  = 0;
+        sync.color_mode             = MODE_COLORS_NONE;
         modes.push_back(sync);
     }
     else
@@ -115,16 +115,8 @@ RGBController_GalaxGPUv1::RGBController_GalaxGPUv1(GalaxGPUv1Controller* control
         modes.push_back(Cycle_Breathing);
     }
 
-    try
-    {
-        SetupZones();
-        active_mode = GetDeviceMode();
-    }
-    catch(...)
-    {
-        Shutdown();
-        throw;
-    }
+    SetupZones();
+    active_mode = GetDeviceMode();
 }
 
 RGBController_GalaxGPUv1::~RGBController_GalaxGPUv1()
@@ -160,54 +152,33 @@ void RGBController_GalaxGPUv1::SetupZones()
     | Initialize color                                          |
     \*---------------------------------------------------------*/
     unsigned char red, grn, blu;
-    controller->GetLEDColors(red, grn, blu);
-
-    colors[0] = ToRGBColor(red, grn, blu);
+    if(controller->GetLEDColors(red, grn, blu))
+    {
+        colors[0] = ToRGBColor(red, grn, blu);
+    }
+    else
+    {
+        LOG_WARNING("[%s] Could not read the initial colour", name.c_str());
+    }
 }
 
 void RGBController_GalaxGPUv1::DeviceUpdateLEDs()
 {
-    if(controller->IsEXGamer())
+    if(colors.empty())
     {
-        if(active_mode != 0 || colors.empty())
-        {
-            return;
-        }
-        try
-        {
-            controller->SetLEDColorsDirect(RGBGetRValue(colors[0]), RGBGetGValue(colors[0]), RGBGetBValue(colors[0]));
-            write_failed = false;
-        }
-        catch(const std::exception& error)
-        {
-            if(!write_failed)
-            {
-                LOG_ERROR("[KFA2 EX] %s", error.what());
-            }
-            write_failed = true;
-        }
         return;
     }
-    for(std::size_t led = 0; led < colors.size(); led++)
+    bool success = controller->SetMode(modes[active_mode].value, RGBGetRValue(colors[0]), RGBGetGValue(colors[0]), RGBGetBValue(colors[0]));
+    if(!success && !write_failed)
     {
-        unsigned char red = RGBGetRValue(colors[led]);
-        unsigned char grn = RGBGetGValue(colors[led]);
-        unsigned char blu = RGBGetBValue(colors[led]);
-
-        if(GetActiveMode() == 1)
-        {
-            controller->SetLEDColorsDirect(red, grn, blu);
-        }
-        else
-        {
-            controller->SetLEDColorsEffect(red, grn, blu);
-        }
+        LOG_WARNING("[%s] Lighting update failed", name.c_str());
     }
+    write_failed = !success;
 }
 
 void RGBController_GalaxGPUv1::DeviceUpdateZoneLEDs(int zone)
 {
-    if(controller->IsEXGamer() && zone != 0)
+    if(controller->IsSG() && zone != 0)
     {
         return;
     }
@@ -216,7 +187,7 @@ void RGBController_GalaxGPUv1::DeviceUpdateZoneLEDs(int zone)
 
 void RGBController_GalaxGPUv1::DeviceUpdateSingleLED(int led)
 {
-    if(controller->IsEXGamer() && led != 0)
+    if(controller->IsSG() && led != 0)
     {
         return;
     }
@@ -225,27 +196,5 @@ void RGBController_GalaxGPUv1::DeviceUpdateSingleLED(int led)
 
 void RGBController_GalaxGPUv1::DeviceUpdateMode()
 {
-    int new_mode = modes[active_mode].value;
-    if(controller->IsEXGamer())
-    {
-        try
-        {
-            controller->SetMode(new_mode);
-            if(active_mode == 0 && !colors.empty())
-            {
-                controller->SetLEDColorsDirect(RGBGetRValue(colors[0]), RGBGetGValue(colors[0]), RGBGetBValue(colors[0]));
-            }
-            write_failed = false;
-        }
-        catch(const std::exception& error)
-        {
-            if(!write_failed)
-            {
-                LOG_ERROR("[KFA2 EX] %s", error.what());
-            }
-            write_failed = true;
-        }
-        return;
-    }
-    controller->SetMode(new_mode);
+    DeviceUpdateLEDs();
 }
