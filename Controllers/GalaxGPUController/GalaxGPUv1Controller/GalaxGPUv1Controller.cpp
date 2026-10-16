@@ -12,15 +12,14 @@
 #include <cstring>
 #include <chrono>
 #include <thread>
-#include <stdexcept>
 #include "GalaxGPUv1Controller.h"
 
-GalaxGPUv1Controller::GalaxGPUv1Controller(i2c_smbus_interface* bus, galax_gpu_dev_id dev, std::string dev_name, bool ex_gamer)
+GalaxGPUv1Controller::GalaxGPUv1Controller(i2c_smbus_interface* bus, galax_gpu_dev_id dev, std::string dev_name, bool sg)
 {
     this->bus   = bus;
     this->dev   = dev;
     this->name  = dev_name;
-    this->ex_gamer = ex_gamer;
+    this->sg    = sg;
 }
 
 GalaxGPUv1Controller::~GalaxGPUv1Controller()
@@ -28,7 +27,7 @@ GalaxGPUv1Controller::~GalaxGPUv1Controller()
 
 }
 
-int GalaxGPUv1Controller::ReadEX(i2c_smbus_interface* bus, galax_gpu_dev_id dev, unsigned char reg,
+int GalaxGPUv1Controller::ReadSG(i2c_smbus_interface* bus, galax_gpu_dev_id dev, unsigned char reg,
                                 unsigned char* data, unsigned int length)
 {
     for(unsigned int attempt = 0; attempt < 3; attempt++)
@@ -45,45 +44,47 @@ int GalaxGPUv1Controller::ReadEX(i2c_smbus_interface* bus, galax_gpu_dev_id dev,
     return -1;
 }
 
-bool GalaxGPUv1Controller::TestForEXGamer(i2c_smbus_interface* bus, galax_gpu_dev_id dev)
+bool GalaxGPUv1Controller::TestForSG(i2c_smbus_interface* bus, galax_gpu_dev_id dev)
 {
     unsigned char id[2] = {};
-    return ReadEX(bus, dev, 0x00, id, 2) == 0 && id[0] == 0x11 && id[1] == 0x00;
+    return ReadSG(bus, dev, 0x00, id, 2) == 0 && id[0] == 0x11 && id[1] == 0x00;
 }
 
-bool GalaxGPUv1Controller::IsEXGamer()
+bool GalaxGPUv1Controller::IsSG()
 {
-    return ex_gamer;
+    return sg;
 }
 
-void GalaxGPUv1Controller::GetLEDColors(unsigned char& red, unsigned char& green, unsigned char& blue)
+bool GalaxGPUv1Controller::GetLEDColors(unsigned char& red, unsigned char& green, unsigned char& blue)
 {
-    if(ex_gamer)
+    if(sg)
     {
         unsigned char rgb[3] = {};
-        if(ReadEX(bus, dev, GALAX_V1_RED_REGISTER, rgb, 3) != 0)
+        if(ReadSG(bus, dev, GALAX_V1_RED_REGISTER, rgb, 3) != 0)
         {
-            throw std::runtime_error("Unable to read KFA2 EX colour");
+            return(false);
         }
-        red = rgb[0];
-        green = rgb[1];
-        blue = rgb[2];
+        red     = rgb[0];
+        green   = rgb[1];
+        blue    = rgb[2];
     }
     else
     {
-        red = GetLEDRed();
-        green = GetLEDGreen();
-        blue = GetLEDBlue();
+        red     = GetLEDRed();
+        green   = GetLEDGreen();
+        blue    = GetLEDBlue();
     }
+    return(true);
 }
 
-int GalaxGPUv1Controller::GetEXSync()
+int GalaxGPUv1Controller::GetSGSync()
 {
     unsigned char sync = 0;
-    return ReadEX(bus, dev, GALAX_V1_EX_SYNC_REGISTER, &sync, 1) == 0 ? sync : -1;
+    sync_mode = ReadSG(bus, dev, GALAX_V1_SG_SYNC_REGISTER, &sync, 1) == 0 ? sync : -1;
+    return(sync_mode);
 }
 
-void GalaxGPUv1Controller::WriteEX(unsigned char reg, unsigned char* data, unsigned int length)
+bool GalaxGPUv1Controller::WriteSG(unsigned char reg, unsigned char* data, unsigned int length)
 {
     int status = -1;
     for(unsigned int attempt = 0; attempt < 3; attempt++)
@@ -100,38 +101,43 @@ void GalaxGPUv1Controller::WriteEX(unsigned char reg, unsigned char* data, unsig
     }
     if(status != 0)
     {
-        throw std::runtime_error("KFA2 EX write failed at register " + std::to_string(reg));
+        return(false);
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(25));
+    return(true);
 }
 
-void GalaxGPUv1Controller::WriteEXByte(unsigned char reg, unsigned char value)
+bool GalaxGPUv1Controller::WriteSGByte(unsigned char reg, unsigned char value)
 {
-    WriteEX(reg, &value, 1);
+    return(WriteSG(reg, &value, 1));
 }
 
-void GalaxGPUv1Controller::SetEXSync(unsigned char value)
+bool GalaxGPUv1Controller::SetSGSync(unsigned char value)
 {
+    if(sync_mode == value)
+    {
+        return(true);
+    }
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
     for(unsigned int attempt = 0; attempt < 3; attempt++)
     {
-        int status = bus->i2c_smbus_write_byte_data(dev, GALAX_V1_EX_SYNC_REGISTER, value);
+        int status = bus->i2c_smbus_write_byte_data(dev, GALAX_V1_SG_SYNC_REGISTER, value);
         if(status == 0)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(25));
-            if(GetEXSync() == value)
+            if(GetSGSync() == value)
             {
-                return;
+                return(true);
             }
-            throw std::runtime_error("KFA2 EX sync readback failed");
         }
-        if(status != -1)
+        if(status != 0 && status != -1)
         {
             break;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(200 * (attempt + 1)));
     }
-    throw std::runtime_error("KFA2 EX sync write failed");
+    sync_mode = -1;
+    return(false);
 }
 
 std::string GalaxGPUv1Controller::GetDeviceLocation()
@@ -164,64 +170,61 @@ unsigned char GalaxGPUv1Controller::GetLEDBlue()
     return(GalaxGPURegisterRead(GALAX_V1_BLUE_REGISTER));
 }
 
-void GalaxGPUv1Controller::SetLEDColorsDirect(unsigned char red, unsigned char green, unsigned char blue)                  // Direct Mode is just Static Mode without applying color changes
+bool GalaxGPUv1Controller::SetMode(unsigned char mode, unsigned char red, unsigned char green, unsigned char blue)
 {
-    if(ex_gamer)
+    if(sg)
     {
-        unsigned char rgb[3] = {red, green, blue};
-        WriteEX(GALAX_V1_RED_REGISTER, rgb, 3);
-        WriteEXByte(GALAX_V1_MODE_REGISTER_1, GALAX_V1_MODE_STATIC_VALUE_1);
-        WriteEXByte(GALAX_V1_MODE_REGISTER_2, GALAX_V1_EX_STATIC_VALUE_2);
-        WriteEXByte(GALAX_V1_EX_APPLY_REGISTER, GALAX_V1_EX_APPLY_VALUE);
-        return;
-    }
-    GalaxGPURegisterWrite(GALAX_V1_RED_REGISTER, red);
-    GalaxGPURegisterWrite(GALAX_V1_GREEN_REGISTER, green);
-    GalaxGPURegisterWrite(GALAX_V1_BLUE_REGISTER, blue);
-}
-
-void GalaxGPUv1Controller::SetLEDColorsEffect(unsigned char red, unsigned char green, unsigned char blue)
-{
-    GalaxGPURegisterWrite(GALAX_V1_RED_REGISTER, red);
-    GalaxGPURegisterWrite(GALAX_V1_GREEN_REGISTER, green);
-    GalaxGPURegisterWrite(GALAX_V1_BLUE_REGISTER, blue);
-}
-
-void GalaxGPUv1Controller::SetMode(unsigned char mode)
-{
-    if(ex_gamer)
-    {
-        if(mode == 1 || mode == GALAX_V1_EX_SYNC_MODE)
+        if(mode == GALAX_V1_SG_SYNC_MODE)
         {
-            SetEXSync(mode == GALAX_V1_EX_SYNC_MODE ? 1 : 0);
+            return(SetSGSync(1));
         }
-        return;
+        if(mode != 1 || !SetSGSync(0))
+        {
+            return(false);
+        }
+        unsigned char rgb[3] = { red, green, blue };
+        return(WriteSG(GALAX_V1_RED_REGISTER, rgb, 3)
+            && WriteSGByte(GALAX_V1_MODE_REGISTER_1, GALAX_V1_MODE_STATIC_VALUE_1)
+            && WriteSGByte(GALAX_V1_MODE_REGISTER_2, GALAX_V1_SG_STATIC_VALUE_2)
+            && WriteSGByte(GALAX_V1_SG_APPLY_REGISTER, GALAX_V1_SG_APPLY_VALUE));
     }
+
+    unsigned char mode_reg_1;
+    unsigned char mode_reg_2;
     switch(mode)
     {
     case 1:
-        GalaxGPURegisterWrite(GALAX_V1_MODE_REGISTER_1, GALAX_V1_MODE_STATIC_VALUE_1);
-        GalaxGPURegisterWrite(GALAX_V1_MODE_REGISTER_2, GALAX_V1_MODE_STATIC_VALUE_2);
+        mode_reg_1 = GALAX_V1_MODE_STATIC_VALUE_1;
+        mode_reg_2 = GALAX_V1_MODE_STATIC_VALUE_2;
         break;
 
     case 2:
-        GalaxGPURegisterWrite(GALAX_V1_MODE_REGISTER_1, GALAX_V1_MODE_BREATHING_VALUE_1);
-        GalaxGPURegisterWrite(GALAX_V1_MODE_REGISTER_2, GALAX_V1_MODE_BREATHING_VALUE_2);
+        mode_reg_1 = GALAX_V1_MODE_BREATHING_VALUE_1;
+        mode_reg_2 = GALAX_V1_MODE_BREATHING_VALUE_2;
         break;
 
     case 3:
-        GalaxGPURegisterWrite(GALAX_V1_MODE_REGISTER_1, GALAX_V1_MODE_RAINBOW_VALUE_1);
-        GalaxGPURegisterWrite(GALAX_V1_MODE_REGISTER_2, GALAX_V1_MODE_RAINBOW_VALUE_2);
+        mode_reg_1 = GALAX_V1_MODE_RAINBOW_VALUE_1;
+        mode_reg_2 = GALAX_V1_MODE_RAINBOW_VALUE_2;
         break;
 
     case 4:
-        GalaxGPURegisterWrite(GALAX_V1_MODE_REGISTER_1, GALAX_V1_MODE_CYCLE_BREATHING_VALUE_1);
-        GalaxGPURegisterWrite(GALAX_V1_MODE_REGISTER_2, GALAX_V1_MODE_CYCLE_BREATHING_VALUE_2);
+        mode_reg_1 = GALAX_V1_MODE_CYCLE_BREATHING_VALUE_1;
+        mode_reg_2 = GALAX_V1_MODE_CYCLE_BREATHING_VALUE_2;
         break;
 
     default:
-        break;
+        return(false);
     }
+
+    /*-----------------------------------------------------*\
+    | Apply the mode after each colour update.              |
+    \*-----------------------------------------------------*/
+    return(bus->i2c_smbus_write_byte_data(dev, GALAX_V1_RED_REGISTER, red) == 0
+        && bus->i2c_smbus_write_byte_data(dev, GALAX_V1_GREEN_REGISTER, green) == 0
+        && bus->i2c_smbus_write_byte_data(dev, GALAX_V1_BLUE_REGISTER, blue) == 0
+        && bus->i2c_smbus_write_byte_data(dev, GALAX_V1_MODE_REGISTER_1, mode_reg_1) == 0
+        && bus->i2c_smbus_write_byte_data(dev, GALAX_V1_MODE_REGISTER_2, mode_reg_2) == 0);
 }
 
 unsigned char GalaxGPUv1Controller::GalaxGPURegisterRead(unsigned char reg)

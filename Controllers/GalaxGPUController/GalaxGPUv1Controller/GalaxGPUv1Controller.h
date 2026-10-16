@@ -22,8 +22,8 @@ enum
     GALAX_V1_RED_REGISTER                      = 0x02, /* Red Register */
     GALAX_V1_GREEN_REGISTER                    = 0x03, /* Green Register */
     GALAX_V1_BLUE_REGISTER                     = 0x04, /* Blue Register */
-    GALAX_V1_EX_SYNC_REGISTER                  = 0x07,
-    GALAX_V1_EX_APPLY_REGISTER                 = 0x08,
+    GALAX_V1_SG_SYNC_REGISTER                  = 0x07,
+    GALAX_V1_SG_APPLY_REGISTER                 = 0x08,
     /* MODE Registers */
     GALAX_V1_MODE_REGISTER_1                   = 0x05, /* Mode Register 1 */
     GALAX_V1_MODE_REGISTER_2                   = 0x06, /* Mode Register 2 */
@@ -45,42 +45,39 @@ enum
     GALAX_V1_MODE_CYCLE_BREATHING_VALUE_2      = 0x40,
 };
 
-#define GALAX_V1_EX_STATIC_VALUE_2  0x20
-#define GALAX_V1_EX_APPLY_VALUE     0x5A
-#define GALAX_V1_EX_SYNC_MODE       5
+#define GALAX_V1_SG_STATIC_VALUE_2  0x20
+#define GALAX_V1_SG_APPLY_VALUE     0x5A
+#define GALAX_V1_SG_SYNC_MODE       5
 
 class GalaxGPUv1Controller
 {
 public:
-    GalaxGPUv1Controller(i2c_smbus_interface* bus, galax_gpu_dev_id, std::string dev_name, bool ex_gamer = false);
+    GalaxGPUv1Controller(i2c_smbus_interface* bus, galax_gpu_dev_id, std::string dev_name, bool sg = false);
     ~GalaxGPUv1Controller();
 
-    static bool   TestForEXGamer(i2c_smbus_interface* bus, galax_gpu_dev_id dev);
-    bool          IsEXGamer();
-    void          GetLEDColors(unsigned char& red, unsigned char& green, unsigned char& blue);
-    int           GetEXSync();
+    static bool   TestForSG(i2c_smbus_interface* bus, galax_gpu_dev_id dev);
+    bool          IsSG();
+    bool          GetLEDColors(unsigned char& red, unsigned char& green, unsigned char& blue);
+    int           GetSGSync();
     std::string   GetDeviceLocation();
     std::string   GetDeviceName();
     unsigned char GetLEDRed();
     unsigned char GetLEDGreen();
     unsigned char GetLEDBlue();
-    void          SetLEDColorsDirect(unsigned char red, unsigned char green, unsigned char blue);
-    void          SetLEDColorsEffect(unsigned char red, unsigned char green, unsigned char blue);
-    void          SetMode(unsigned char mode);
+    bool          SetMode(unsigned char mode, unsigned char red, unsigned char green, unsigned char blue);
 
     unsigned char GalaxGPURegisterRead(unsigned char reg);
     void          GalaxGPURegisterWrite(unsigned char reg, unsigned char val);
-
-    bool          direct = false;                                                // Temporary solution to check if we are in "Direct" mode
 
 private:
     i2c_smbus_interface *   bus;
     galax_gpu_dev_id        dev;
     std::string             name;
-    bool                    ex_gamer;
-    static int ReadEX(i2c_smbus_interface* bus, galax_gpu_dev_id dev, unsigned char reg,
+    bool                    sg;
+    int                     sync_mode = -1;
+    static int ReadSG(i2c_smbus_interface* bus, galax_gpu_dev_id dev, unsigned char reg,
                       unsigned char* data, unsigned int length);
-    void WriteEX(unsigned char reg, unsigned char* data, unsigned int length);
-    void WriteEXByte(unsigned char reg, unsigned char value);
-    void SetEXSync(unsigned char value);
+    bool WriteSG(unsigned char reg, unsigned char* data, unsigned int length);
+    bool WriteSGByte(unsigned char reg, unsigned char value);
+    bool SetSGSync(unsigned char value);
 };
