@@ -44,7 +44,7 @@ bool TestForGalaxGPUController(i2c_smbus_interface* bus, unsigned char address)
         \*-------------------------------------------------*/
         case 0x23:
             res = bus->i2c_smbus_read_byte_data(address, 0x00);
-            if(res == 0x27 || res == 0x30)
+            if(res == 0x27 || res == 0x30 || res == 0x11)
             {
                 pass = true;
             }
@@ -84,11 +84,7 @@ DetectedControllers DetectGalaxGPUControllers(i2c_smbus_interface* bus, uint8_t 
 {
     DetectedControllers detected_controllers;
 
-    bool sg = i2c_addr == 0x23 && bus->info.pci_vendor == NVIDIA_VEN &&
-                    bus->info.pci_device == NVIDIA_RTX3080TI_DEV &&
-                    bus->info.pci_subsystem_vendor == NVIDIA_SUB_VEN &&
-                    bus->info.pci_subsystem_device == NVIDIA_RTX3080TI_FE_SUB_DEV;
-    if(sg ? GalaxGPUv1Controller::TestForSG(bus, i2c_addr) : TestForGalaxGPUController(bus, i2c_addr))
+    if(TestForGalaxGPUController(bus, i2c_addr))
     {
         switch(i2c_addr)
         {
@@ -98,7 +94,7 @@ DetectedControllers DetectGalaxGPUControllers(i2c_smbus_interface* bus, uint8_t 
             case 0x32:
             case 0x23:
                 {
-                    GalaxGPUv1Controller*     controller     = new GalaxGPUv1Controller(bus, i2c_addr, name, sg);
+                    GalaxGPUv1Controller*     controller     = new GalaxGPUv1Controller(bus, i2c_addr, name);
                     RGBController_GalaxGPUv1* rgb_controller = new RGBController_GalaxGPUv1(controller);
 
                     DetectionManager::get()->RegisterRGBController(rgb_controller);

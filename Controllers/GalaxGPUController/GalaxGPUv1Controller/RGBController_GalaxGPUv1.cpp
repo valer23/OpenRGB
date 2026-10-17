@@ -14,15 +14,6 @@
 
 int RGBController_GalaxGPUv1::GetDeviceMode()
 {
-    if(controller->IsSG())
-    {
-        int sync = controller->GetSGSync();
-        if(sync < 0 || sync > 1)
-        {
-            LOG_WARNING("[KFA2 SG] Sync state unavailable (%d); presenting Direct until a mode is selected", sync);
-        }
-        return sync == 1 ? 1 : 0;
-    }
     int modereg1 = controller->GalaxGPURegisterRead(GALAX_V1_MODE_REGISTER_1);
     int modereg2 = controller->GalaxGPURegisterRead(GALAX_V1_MODE_REGISTER_2);
 
@@ -61,8 +52,7 @@ int RGBController_GalaxGPUv1::GetDeviceMode()
     @direct :white_check_mark:
     @effects :white_check_mark:
     @detectors DetectGalaxGPUControllers
-    @comment KFA2 RTX 3080 Ti SG exposes Direct and Motherboard Sync only.
-        Hardware effects and external motherboard-sync colour following are unverified.
+    @comment
 \*-------------------------------------------------------------------*/
 
 RGBController_GalaxGPUv1::RGBController_GalaxGPUv1(GalaxGPUv1Controller* controller_ptr)
@@ -70,9 +60,9 @@ RGBController_GalaxGPUv1::RGBController_GalaxGPUv1(GalaxGPUv1Controller* control
     controller                  = controller_ptr;
 
     name                        = controller->GetDeviceName();
-    vendor                      = controller->IsSG() ? "KFA2" : "GALAX";
+    vendor                      = "GALAX";
     type                        = DEVICE_TYPE_GPU;
-    description                 = controller->IsSG() ? "KFA2 SG I2C lighting controller" : "GALAX / KFA2 RTX GPU";
+    description                 = "GALAX / KFA2 RTX GPU";
     location                    = controller->GetDeviceLocation();
 
     mode Direct;
@@ -82,38 +72,26 @@ RGBController_GalaxGPUv1::RGBController_GalaxGPUv1(GalaxGPUv1Controller* control
     Direct.color_mode           = MODE_COLORS_PER_LED;
     modes.push_back(Direct);
 
-    if(controller->IsSG())
-    {
-        mode sync;
-        sync.name                   = "Motherboard Sync";
-        sync.value                  = GALAX_V1_SG_SYNC_MODE;
-        sync.flags                  = 0;
-        sync.color_mode             = MODE_COLORS_NONE;
-        modes.push_back(sync);
-    }
-    else
-    {
-        mode Breathing;
-        Breathing.name              = "Breathing";
-        Breathing.value             = 2;
-        Breathing.flags             = MODE_FLAG_HAS_PER_LED_COLOR;
-        Breathing.color_mode        = MODE_COLORS_PER_LED;
-        modes.push_back(Breathing);
+    mode Breathing;
+    Breathing.name              = "Breathing";
+    Breathing.value             = 2;
+    Breathing.flags             = MODE_FLAG_HAS_PER_LED_COLOR;
+    Breathing.color_mode        = MODE_COLORS_PER_LED;
+    modes.push_back(Breathing);
 
-        mode Rainbow;
-        Rainbow.name                = "Rainbow";
-        Rainbow.value               = 3;
-        Rainbow.flags               = 0;
-        Rainbow.color_mode          = MODE_COLORS_NONE;
-        modes.push_back(Rainbow);
+    mode Rainbow;
+    Rainbow.name                = "Rainbow";
+    Rainbow.value               = 3;
+    Rainbow.flags               = 0;
+    Rainbow.color_mode          = MODE_COLORS_NONE;
+    modes.push_back(Rainbow);
 
-        mode Cycle_Breathing;
-        Cycle_Breathing.name        = "Cycle Breathing";
-        Cycle_Breathing.value       = 4;
-        Cycle_Breathing.flags       = 0;
-        Cycle_Breathing.color_mode  = MODE_COLORS_NONE;
-        modes.push_back(Cycle_Breathing);
-    }
+    mode Cycle_Breathing;
+    Cycle_Breathing.name        = "Cycle Breathing";
+    Cycle_Breathing.value       = 4;
+    Cycle_Breathing.flags       = 0;
+    Cycle_Breathing.color_mode  = MODE_COLORS_NONE;
+    modes.push_back(Cycle_Breathing);
 
     SetupZones();
     active_mode = GetDeviceMode();
@@ -151,15 +129,11 @@ void RGBController_GalaxGPUv1::SetupZones()
     /*---------------------------------------------------------*\
     | Initialize color                                          |
     \*---------------------------------------------------------*/
-    unsigned char red, grn, blu;
-    if(controller->GetLEDColors(red, grn, blu))
-    {
-        colors[0] = ToRGBColor(red, grn, blu);
-    }
-    else
-    {
-        LOG_WARNING("[%s] Could not read the initial colour", name.c_str());
-    }
+    unsigned char red = controller->GetLEDRed();
+    unsigned char grn = controller->GetLEDGreen();
+    unsigned char blu = controller->GetLEDBlue();
+
+    colors[0] = ToRGBColor(red, grn, blu);
 }
 
 void RGBController_GalaxGPUv1::DeviceUpdateLEDs()
@@ -176,21 +150,13 @@ void RGBController_GalaxGPUv1::DeviceUpdateLEDs()
     write_failed = !success;
 }
 
-void RGBController_GalaxGPUv1::DeviceUpdateZoneLEDs(int zone)
+void RGBController_GalaxGPUv1::DeviceUpdateZoneLEDs(int /*zone*/)
 {
-    if(controller->IsSG() && zone != 0)
-    {
-        return;
-    }
     DeviceUpdateLEDs();
 }
 
-void RGBController_GalaxGPUv1::DeviceUpdateSingleLED(int led)
+void RGBController_GalaxGPUv1::DeviceUpdateSingleLED(int /*led*/)
 {
-    if(controller->IsSG() && led != 0)
-    {
-        return;
-    }
     DeviceUpdateLEDs();
 }
 
