@@ -59,6 +59,17 @@ those copies, then packages them. It does not package an older installed EXE.
 Personal staging folders, backups and installer binaries remain excluded from Git.
 Persistence across a power cycle and Linux/macOS hardware are still unverified.
 
+Live upgrade verified on 17 October 2026: Windows Installed Apps reports
+1.0.20261016.1, the installed application/plugin hashes match the tested package,
+and all eleven live profiles preserve their LED colours, effect settings and
+unrelated controllers compared with pre-install backups. OpenRGB detects one SG
+GPU and two RAM sticks; persistent fan sizes are 48/48, 32/32, 16/16 and 0/0.
+The user checked the requested static, animated and keyboard-ripple profiles and
+reported everything working without a zone-initialisation prompt. The scheduled
+launcher restarted successfully. A reboot of this release and uninstall remain
+untested; this does not establish device-side colour persistence.
+
+
 
 Validation: installer compilation; PowerShell syntax parsing; payload SHA-256
 manifest; live install verification is performed after OpenRGB is closed.
