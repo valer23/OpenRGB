@@ -71,8 +71,9 @@ untested; this does not establish device-side colour persistence.
 
 
 
-Validation: installer compilation; PowerShell syntax parsing; payload SHA-256
-manifest; live install verification is performed after OpenRGB is closed.
+Validation for this release: installer compilation, PowerShell syntax parsing,
+payload SHA-256 checks, live profile-preservation checks and the user-confirmed
+profile test after installation.
 
 ## Rebuild the installer
 
