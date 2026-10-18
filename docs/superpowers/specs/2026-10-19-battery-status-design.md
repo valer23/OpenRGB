@@ -1,6 +1,6 @@
 # Battery Status plugin design
 
-Date: 2026-10-19. Status: proposed, awaiting owner design approval.
+Date: 2026-10-19. Status: approved by owner in chat; implementation in progress.
 
 ## Purpose and scope
 
