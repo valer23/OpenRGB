@@ -17,13 +17,8 @@
 #include "LogManager.h"
 #include "RGBController.h"
 #include "CorsairPeripheralV2Devices.h"
-#ifdef _WIN32
-#include <guiddef.h>
-#include <memory>
 #include <mutex>
 #include "CorsairMouseIdlePolicy.h"
-class CorsairMouseActivity;
-#endif
 
 #define NA                              0xFFFFFFFF
 #define HID_MAX_STR                     255
@@ -40,6 +35,7 @@ class CorsairMouseActivity;
 #define CORSAIR_V2_LIGHT_CTRL2          34          /* 0x22                             */
 #define CORSAIR_V2_UPDATE_PERIOD        30000
 #define CORSAIR_V2_SLEEP_PERIOD         12500ms
+#define CORSAIR_V2_MOUSE_QUERY_PERIOD   1000
 #define CORSAIR_V2_WRITE_PACE           2
 
 #define CORSAIR_V2_BRIGHTNESS_MIN       0
@@ -126,17 +122,31 @@ protected:
 private:
     bool                            SetRenderModeChecked(corsair_v2_device_mode mode);
     bool                            LightingControlChecked(uint8_t opt1);
-#ifdef _WIN32
+    hid_device*                     OpenMouseEvents();
+    void                            ReadMouseEvents(unsigned long long now);
+    void                            SetMouseConnected(bool connected);
+    bool                            ReadMouseConnection();
+    bool                            ReadMouseInactivity();
     bool                            MouseIsIdle();
     bool                            ChangeMouseOwnership(bool software);
-    std::shared_ptr<CorsairMouseActivity> mouse_activity;
-    GUID                            mouse_container_id = {};
+    hid_device*                     mouse_events = nullptr;
+    unsigned int                    mouse_receiver_pid = 0;
+    bool                            mouse_idle_enabled = false;
+    bool                            mouse_connected = true;
+    bool                            mouse_connection_sync = false;
+    bool                            mouse_event_failure_reported = false;
+    bool                            mouse_inactivity_valid = false;
+    unsigned long long              mouse_inactivity_ms = 0;
+    unsigned long long              mouse_handoff_ms = 0;
+    unsigned long long              mouse_handoff_counter_ms = 0;
+    bool                            mouse_activity_after_handoff = false;
+    unsigned long long              mouse_next_query_ms = 0;
+    unsigned long long              mouse_event_retry_ms = 0;
     std::mutex                      mouse_lighting_mutex;
     CorsairMouseIdlePolicy          mouse_idle_policy;
     unsigned long long              mouse_idle_timeout_ms = 900000;
     unsigned long long              mouse_last_frame_ms = 0;
     bool                            mouse_transition_failed = false;
-#endif
     void                            ClearPacketBuffer();
     unsigned int                    GetAddress(uint8_t address);
     unsigned int                    GetAddressRetry(uint8_t address);

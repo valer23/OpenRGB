@@ -1,5 +1,43 @@
 # OpenRGB Custom personal installer
 
+## Native mouse idle revision - 19 October 2026
+
+The pending source revision replaces Windows Raw Input tracking with the
+Dark Core RGB Pro SE's firmware inactivity counter (GET 0x40) and Slipstream
+receiver connection notifications (0x36). It reuses the existing Corsair V2
+controller, render commands, update queue and keepalive workers. It adds no
+input listener or worker thread and does not change firmware sleep settings.
+The existing opt-in settings and personal installer's 60-second default remain.
+
+The event interface must belong to the controlled receiver. Windows uses the
+bundled HIDAPI container ID; other systems require a unique, nonempty receiver
+serial match. Capability or interface validation failure at startup leaves the
+original lighting path enabled. Counter reads are limited to once per second
+while connected; known-offline mice receive no lighting frames, queries or
+keepalives. Reader failures pause mouse traffic until receiver state is checked.
+Wake initialization is checked and retried at most once per second.
+
+Changing rendering mode resets the firmware inactivity counter. The driver
+keeps the idle handoff latched across this reset, and resumes on subsequent
+counter evidence of activity or a receiver reconnect. The counter has roughly
+one-second resolution. A very brief input immediately after handoff can be
+indistinguishable from the mode reset and may be missed; this is not equivalent
+to operating-system input tracking. The code allows two seconds for counter
+quantization and transport timing when comparing inferred activity times.
+
+The Windows build, independent correctness/reuse review and private actual-driver
+regressions passed. Those regressions include reset-to-zero, three minutes idle,
+sustained input, per-receiver matching, offline silence and bounded recovery.
+The owner confirmed a two-minute full-application handoff and movement resume,
+and all trial effects including the GPU after correcting copied GPU identities.
+The final full-application lights-off sleep/wake check is still pending. Earlier
+sleep/wake results below apply to the installed Raw Input version or to the
+standalone ten-second counter probe, not this one-second native app revision.
+A brief input immediately after handoff also restored effects in the owner's
+short check; this does not guarantee detection for every subsecond input.
+Linux/macOS builds and hardware and battery-life improvement remain unverified.
+The installed 1.0.20261018.1 package is unchanged.
+
 ## Mouse idle update - 18 October 2026
 
 Version 1.0.20261018.1 adds an opt-in Windows idle handoff for the Dark Core
