@@ -144,32 +144,26 @@ int main()
  identity_bad=true;{Device d;CHECK(!d.HasMouseIdleControl());}identity_bad=false;
  mask=2;fail_mask=true;{Device d;CHECK(!d.HasMouseIdleControl());}fail_mask=false;
  fail_counter=true;{Device d;CHECK(!d.HasMouseIdleControl());}fail_counter=false;
- { // Battery reads use the real owner, never a second reader.
+ { // Only keyed passive notifications may publish battery values.
   auto& cache=BatteryStatusManager::Get();
   mouse_test_now=1000;idle=0;mask=2;writes.clear();Device d;writes.clear();
-  d.Frame();CHECK(BatteryGets()==0); // no subscriber
-  auto token=cache.Acquire();d.Frame();CHECK(BatteryGets()==0); // validation off
+  d.Frame();CHECK(BatteryGets()==0);
+  auto token=cache.Acquire();d.Frame();CHECK(BatteryGets()==0);
+  events.push_back({1,1,0x0F,0,0xF8,2});d.Frame();CHECK(cache.Snapshots()[0]["percentage"].is_null());
   cache.SetCorsairValidated(true);writes.clear();
-  mouse_test_now=31000;idle=30;d.Frame();CHECK(BatteryGets()==0); // handed back
-  mouse_test_now=38000;idle=0;d.Frame();CHECK(Mode(2)==1 && BatteryGets()==1);
+  events.push_back({1,1,0x0F,0,0xF8,2});d.Frame();CHECK(BatteryGets()==0);
   CHECK(cache.Snapshots()[0]["percentage"]==76);writes.clear();
-  for(int i=0;i<100;i++) { d.Frame(); }CHECK(BatteryGets()==0); // same interval
-  mouse_test_now=99000;idle=5;d.Frame();CHECK(BatteryGets()==0); // not recent input
-  writes.clear();mouse_test_now=100000;idle=0;battery_length=3;d.Frame();CHECK(BatteryGets()==1);
-  CHECK(cache.Snapshots()[0]["percentage"]==76 && cache.Snapshots()[0]["quality"]!="current");
-  writes.clear();d.Frame();CHECK(BatteryGets()==0);battery_length=64;
-  mouse_test_now=161000;battery_child=2;d.Frame();CHECK(BatteryGets()==1);battery_child=1;
-  writes.clear();mouse_test_now=222000;battery_status=3;d.Frame();CHECK(BatteryGets()==1);battery_status=0;
-  CHECK(cache.Snapshots()[0]["percentage"]==76);
-  writes.clear();mouse_test_now=283000;battery_level=1001;d.Frame();CHECK(BatteryGets()==1);battery_level=760;
-  CHECK(cache.Snapshots()[0]["percentage"]==76);
-  writes.clear();Event(0);d.Frame();CHECK(writes.empty());
-  mouse_test_now=344000;Event(2);fail_init=true;d.Frame();CHECK(BatteryGets()==0);fail_init=false;
-  writes.clear();mouse_test_now=345000;d.Frame();CHECK(BatteryGets()==1);
-  writes.clear();mouse_test_now=406000;fail_counter=true;d.Frame();CHECK(BatteryGets()==0);fail_counter=false;
-  writes.clear();fail_events=true;d.Frame();CHECK(writes.empty());fail_events=false;
-  mouse_test_now=407000;mask=0;d.Frame();CHECK(BatteryGets()==0); // receiver resync first
-  writes.clear();cache.Release(token);cache.SetCorsairValidated(false);
+  events.push_back({1,2,0,0,0,0});d.Frame();CHECK(cache.Snapshots()[0]["percentage"]==76);
+  events.push_back({2,1,0x0F,0,0x20,3});d.Frame();CHECK(cache.Snapshots()[0]["percentage"]==76);
+  events.push_back({1,1,0x0F,0,0xFF,0xFF});d.Frame();CHECK(cache.Snapshots()[0]["percentage"]==76);
+  events.push_back({1,1,0x0F});d.Frame();CHECK(cache.Snapshots()[0]["percentage"]==76);
+  mouse_test_now=31000;idle=30;d.Frame();CHECK(BatteryGets()==0 && Mode(1)==1);writes.clear();
+  events.push_back({1,1,0x0F,0,0xEE,2});d.Frame();CHECK(BatteryGets()==0 && writes.empty());
+  CHECK(cache.Snapshots()[0]["percentage"]==75 && cache.Snapshots()[0]["availability"]=="idle");
+  Event(0);d.Frame();CHECK(BatteryGets()==0 && writes.empty());
+  events.push_back({1,1,0x0F,0,0x20,3});d.Frame();CHECK(cache.Snapshots()[0]["percentage"]==75);
+  CHECK(cache.Snapshots()[0]["availability"]=="disconnected");
+  cache.Release(token);cache.SetCorsairValidated(false);
  }
  std::cout<<"Native actual-driver checks passed: counter cadence/decoding, silent idle colours, offline zero writes, child mask isolation, checked wake recovery, listener recovery and startup/non-target guards.\n";
 }

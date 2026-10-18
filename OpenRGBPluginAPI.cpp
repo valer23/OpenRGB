@@ -333,8 +333,8 @@ uint64_t OpenRGBPluginAPI::AcquireBatteryMonitoring()
 {
     auto& battery = BatteryStatusManager::Get();
     const auto settings = settings_manager->GetSettings("BatteryStatusHardware");
-    battery.SetCorsairValidated(settings.is_object() && settings.contains("corsair_level_validated") &&
-        settings["corsair_level_validated"].is_boolean() && settings["corsair_level_validated"].get<bool>());
+    battery.SetCorsairValidated(settings.is_object() && settings.contains("corsair_notifications_validated") &&
+        settings["corsair_notifications_validated"].is_boolean() && settings["corsair_notifications_validated"].get<bool>());
     return battery.Acquire();
 }
 

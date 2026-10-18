@@ -12,6 +12,13 @@ inline std::optional<int> CorsairLevel(const unsigned char* data, size_t size)
     if(value > 1000) { return {}; }
     return value / 10;
 }
+inline std::optional<int> CorsairNotification(const unsigned char* data, size_t size)
+{
+    if(!data || size < 6 || data[0] != 1 || data[1] != 1 || data[2] != 0x0F || data[3] != 0) { return {}; }
+    const unsigned int value = data[4] | (data[5] << 8);
+    if(value > 1000) { return {}; }
+    return value / 10;
+}
 inline bool AsusReply(const unsigned char* data, size_t size, unsigned char key)
 {
     return data && size >= 6 && data[0] == 0xCC && data[1] == 0x12 && data[2] == key &&

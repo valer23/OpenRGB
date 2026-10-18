@@ -6,6 +6,8 @@ $qtBin=Join-Path $ToolchainRoot '6.8.3\mingw_64\bin'
 $env:PATH="$compilerBin;$qtBin;$env:PATH"
 $buildRoot=Join-Path $repoRoot 'build-battery\tests'
 New-Item -ItemType Directory -Path $buildRoot -Force | Out-Null
+Push-Location $repoRoot
+try {
 & (Join-Path $compilerBin 'g++.exe') -std=c++17 -Wall -Wextra '-I.' '-Idependencies/json' tests/battery-status/cache_test.cpp BatteryStatus/BatteryStatusManager.cpp -o "$buildRoot\cache_test.exe"
 if($LASTEXITCODE -ne 0){throw 'Cache test compilation failed'}
 & "$buildRoot\cache_test.exe"
@@ -21,7 +23,7 @@ if($LASTEXITCODE -ne 0){throw 'Presentation tests failed'}
 & "$compilerBin\g++.exe" -std=c++17 -frtti @includes tests/battery-status/plugin_test.cpp BatteryStatus/BatteryStatusManager.cpp @libs -o "$buildRoot\plugin_test.exe"
 if($LASTEXITCODE -ne 0){throw 'Plugin lifecycle test compilation failed'}
 $env:QT_QPA_PLATFORM='offscreen'
-& "$buildRoot\plugin_test.exe" "$repoRoot\build-battery\plugin\OpenRGBBatteryStatusPlugin.dll"
+& "$buildRoot\plugin_test.exe" "$repoRoot\build-battery\plugin\OpenRGBBatteryStatusPlugin.dll" "C:\Users\valerian\Apps\OpenRGB-Custom\Settings\plugins\OpenRGBEffectsPlugin.dll"
 if($LASTEXITCODE -ne 0){throw 'Plugin lifecycle or cross-DLL RTTI tests failed'}
 
 # Compile the actual controller, replacing only its clock for deterministic transport tests.
@@ -47,3 +49,12 @@ if($LASTEXITCODE -ne 0){throw 'Validation gate test compilation failed'}
 if($LASTEXITCODE -ne 0){throw 'Validation gate test failed'}
 & "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' '-Idependencies/json' scripts/BatteryStatusProbe.cpp BatteryStatus/AsusDeltaIIBattery.cpp -lhid -lsetupapi -o "$buildRoot\BatteryStatusProbe.exe"
 if($LASTEXITCODE -ne 0){throw 'Validation probe compilation failed'}
+
+& "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra @driverIncludes tests/battery-status/review_safety_test.cpp "$buildRoot\CorsairUnderTest.cpp" BatteryStatus/BatteryStatusManager.cpp -o "$buildRoot\review_safety_test.exe"
+if($LASTEXITCODE -ne 0){throw 'Review regression compilation failed'}
+foreach($case in @('state','late')) {
+    & "$buildRoot\review_safety_test.exe" $case
+    if($LASTEXITCODE -ne 0){throw "Review regression $case failed"}
+}
+
+} finally { Pop-Location }

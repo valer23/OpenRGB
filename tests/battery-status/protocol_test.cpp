@@ -8,6 +8,10 @@ int main()
     assert(!BatteryProtocol::CorsairLevel(corsair,4));
     corsair[0]=2;assert(!BatteryProtocol::CorsairLevel(corsair,5));corsair[0]=1;
     corsair[3]=0xE9;corsair[4]=3;assert(!BatteryProtocol::CorsairLevel(corsair,5));
+    unsigned char notification[]={1,1,0x0F,0,0xF8,2};
+    assert(BatteryProtocol::CorsairNotification(notification,6)==76);
+    assert(!BatteryProtocol::CorsairNotification(notification,5));
+    assert(!BatteryProtocol::CorsairNotification(corsair,5)); // GET replies cannot enter this path
     unsigned char level[]={0xCC,0x12,7,0,0,5,76};
     assert(BatteryProtocol::AsusLevel(level,7)==76);
     for(size_t n=0;n<7;++n) { assert(!BatteryProtocol::AsusLevel(level,n)); }

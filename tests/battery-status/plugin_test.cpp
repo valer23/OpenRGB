@@ -20,7 +20,18 @@ public:
 int main(int argc, char** argv)
 {
     QApplication app(argc,argv);
-    assert(argc == 2);
+    assert(argc == 2 || argc == 3);
+    if(argc == 3)
+    {
+        QPluginLoader existing_effects(QString::fromLocal8Bit(argv[2]));
+        const auto metadata = existing_effects.metaData()["MetaData"].toObject();
+        assert(metadata["OpenRGBPluginAPIVersion"].toInt() == 5);
+        auto* effects = qobject_cast<OpenRGBPluginInterface*>(existing_effects.instance());
+        assert(effects && effects->GetPluginAPIVersion() == 5);
+        assert(!effects->GetPluginInfo().Name.empty());
+        assert(existing_effects.unload());
+        std::cout<<"Installed effects DLL: API-v5 metadata, load, interface cast and unload passed (no hardware host supplied)\n";
+    }
     QPluginLoader loader(QString::fromLocal8Bit(argv[1]));
     auto* object=loader.instance();
     if(!object) { std::cerr<<loader.errorString().toStdString()<<'\n'; return 1; }
