@@ -25,6 +25,20 @@ Independent review also covered a signed HID-read error correction to avoid
 an endless packet-drain loop on disconnect. The final Windows build includes
 that correction; the physical trial preceded it. Linux/macOS were not tested.
 
+The installed package subsequently passed its 60-second handoff/wake check,
+with all saved profile hashes and persistent device configuration preserved.
+
+Pre-submission review found two additional cases: multiple Slipstream receivers
+must not share activity, and a failed lighting-initialization response must keep
+wake recovery pending. The source now correlates interfaces using bundled
+HIDAPI container IDs and retries until both existing initialization steps pass.
+Independent re-review, the Windows build, native listener/container checks and
+private initialization-failure/retry checks passed. These review revisions are
+not included in the installed 1.0.20261018.1 package and have not had another
+full-application physical sleep/wake test. The original hardware result above
+applies to the installed version. The upstream submission contains only the six
+controller files, without this personal packaging or the private tests.
+
 Inno Setup 6.7.3 EXE installer for valerian's tested Windows installation.
 Adds a Windows Installed Apps entry and uninstaller with a stable AppId.
 

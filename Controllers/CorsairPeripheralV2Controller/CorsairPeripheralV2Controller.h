@@ -18,6 +18,7 @@
 #include "RGBController.h"
 #include "CorsairPeripheralV2Devices.h"
 #ifdef _WIN32
+#include <guiddef.h>
 #include <memory>
 #include <mutex>
 #include "CorsairMouseIdlePolicy.h"
@@ -124,10 +125,12 @@ protected:
 
 private:
     bool                            SetRenderModeChecked(corsair_v2_device_mode mode);
+    bool                            LightingControlChecked(uint8_t opt1);
 #ifdef _WIN32
     bool                            MouseIsIdle();
     bool                            ChangeMouseOwnership(bool software);
     std::shared_ptr<CorsairMouseActivity> mouse_activity;
+    GUID                            mouse_container_id = {};
     std::mutex                      mouse_lighting_mutex;
     CorsairMouseIdlePolicy          mouse_idle_policy;
     unsigned long long              mouse_idle_timeout_ms = 900000;

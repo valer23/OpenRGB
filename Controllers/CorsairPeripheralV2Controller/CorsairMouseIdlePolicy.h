@@ -25,8 +25,10 @@ public:
         {
             if(!handed_back)
             {
-                // Attempt once per idle interval, even on failure. Repeated
-                // retries themselves could keep the wireless mouse awake.
+                /*---------------------------------------------------------*\
+                | Retry traffic could keep the idle mouse awake.           |
+                | Attempt handoff only once per idle interval.             |
+                \*---------------------------------------------------------*/
                 handed_back = true;
                 change_mode(false);
             }
