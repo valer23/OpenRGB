@@ -129,6 +129,14 @@ private:
     bool                            ReadMouseInactivity();
     bool                            MouseIsIdle();
     bool                            ChangeMouseOwnership(bool software);
+    void                            UpdateMouseBattery(unsigned long long now);
+    bool                            ReadMouseBattery(int& percentage);
+    bool                            mouse_battery_target = false;
+    bool                            mouse_battery_ready = false;
+    bool                            mouse_battery_attempted = false;
+    unsigned long long              mouse_battery_next_ms = 0;
+    unsigned long long              mouse_counter_read_ms = 0;
+    std::string                     mouse_battery_error;
     hid_device*                     mouse_events = nullptr;
     unsigned int                    mouse_receiver_pid = 0;
     bool                            mouse_idle_enabled = false;
