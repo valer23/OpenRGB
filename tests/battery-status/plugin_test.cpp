@@ -49,11 +49,14 @@ int main(int argc, char** argv)
     assert(menu && menu->actions()[0]->text().contains("Dark Core"));
     auto* monitor=menu->findChild<QAction*>("BatteryMonitoring");
     assert(monitor && monitor->isChecked());
+    host.cache.Publish(BatteryStatusManager::CorsairId,76,0,"active");
     monitor->setChecked(false); assert(!host.cache.Enabled());
+    assert(menu->actions()[0]->text().contains("last known"));
     monitor->setChecked(true); assert(host.cache.Enabled());
     auto* widget=plugin->GetWidget(); assert(widget);
     plugin->OnProfileAboutToLoad(); plugin->OnProfileLoad({}); plugin->OnProfileSave();
     assert(host.cache.Enabled());
+    assert(host.cache.Snapshots()[0]["percentage"]==76);
     delete widget; // The real host may destroy its page before unloading the plugin.
     plugin->Unload(); assert(!host.cache.Enabled());
     // PluginManager invokes Unload BEFORE the GUI removes this menu.

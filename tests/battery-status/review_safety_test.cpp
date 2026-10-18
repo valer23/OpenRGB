@@ -96,6 +96,7 @@ int main(int argc,char** argv)
     } else {
         delay_battery=true;mouse_test_now=38000;idle=0;d.Frame();writes.clear();
         mouse_test_now=39000;d.Frame();
+        CHECK(BatteryGets()==0);
         CHECK(Mode(1)==0); // No late battery reply may become inactivity and hand lighting back.
     }
     cache.Release(token);cache.SetCorsairValidated(false);

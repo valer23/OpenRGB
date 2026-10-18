@@ -9,7 +9,7 @@ foreach($file in @($coreExe,$pluginDll,(Join-Path $InstalledRoot 'Settings\OpenR
 }
 if(Test-Path -LiteralPath $trialRoot){throw 'Trial folder already exists; preserve it and select a fresh trial folder before preparing again'}
 New-Item -ItemType Directory -Path "$trialRoot\Settings\plugins","$trialRoot\Settings\profiles" -Force | Out-Null
-Get-ChildItem -LiteralPath $InstalledRoot -Filter '*.dll' -File | Copy-Item -Destination $trialRoot
+Get-ChildItem -LiteralPath $InstalledRoot -File | Where-Object { $_.Extension -in '.dll','.bin' } | Copy-Item -Destination $trialRoot
 foreach($directory in @('generic','iconengines','imageformats','networkinformation','platforms','styles','tls')){
     $source=Join-Path $InstalledRoot $directory
     if(Test-Path -LiteralPath $source){Copy-Item -LiteralPath $source -Destination $trialRoot -Recurse}
