@@ -19,6 +19,7 @@ Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Configure-Startup.ps1') -Destin
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Configure-Mouse-Idle.ps1') -Destination $payload -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Migrate-Device-Profiles.ps1') -Destination $payload -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'SLInfinity-Layout.json') -Destination $payload -Force
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'GalaxGPU-Layout.json') -Destination $payload -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Start-OpenRGB-Custom.ps1') -Destination $payload -Force
 Copy-Item -LiteralPath 'C:\Users\valerian\git-repos\OpenRGB-KFA2\LICENSE' -Destination (Join-Path $payload 'LICENSE-OpenRGB.txt') -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'INSTALL-NOTES.txt') -Destination $payload -Force

@@ -1,6 +1,7 @@
 param([string]$SettingsRoot = (Join-Path $PSScriptRoot 'Settings'))
 $ErrorActionPreference = 'Stop'
 $layout = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'SLInfinity-Layout.json') -Raw | ConvertFrom-Json
+$gpuLayout = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'GalaxGPU-Layout.json') -Raw | ConvertFrom-Json
 $oldGpu = 'KFA2 GeForce RTX 3080 Ti EX Gamer'
 $newGpu = 'KFA2 GeForce RTX 3080 Ti SG 1-Click OC'
 $oldFan = 'Lian Li SL Infinity (local static test)'
@@ -20,6 +21,29 @@ function Update-DeviceReferences($node) {
             if($node.PSObject.Properties['description']) {$node.description = 'KFA2 SG I2C lighting controller'}
             if($node.PSObject.Properties['modes'] -and $node.modes.Count -gt 0 -and $node.modes[0].name -eq 'Static') {
                 $node.modes[0].name = 'Direct'
+            }
+            $script:changed = $true
+        }
+        if($node.name -eq $newGpu -and $node.description -eq 'KFA2 SG I2C lighting controller') {
+            $node.description = $gpuLayout.description
+            if($node.PSObject.Properties['vendor']) {$node.vendor = $gpuLayout.vendor}
+            if($node.PSObject.Properties['modes']) {
+                $activeName = $node.modes[[int]$node.active_mode].name
+                $newModes = @($gpuLayout.modes | ForEach-Object {$_ | ConvertTo-Json -Depth 100 | ConvertFrom-Json})
+                $mapped = @($newModes | Where-Object {$_.name -eq $activeName})
+                if($mapped.Count -ne 1) {throw ('Cannot map GPU mode: ' + $activeName)}
+                foreach($oldMode in $node.modes) {
+                    $target = @($newModes | Where-Object {$_.name -eq $oldMode.name})
+                    if($target.Count -eq 1) {
+                        foreach($field in @('speed','direction','color_mode','colors','brightness')) {
+                            if($oldMode.PSObject.Properties[$field] -and $target[0].PSObject.Properties[$field]) {$target[0].$field = $oldMode.$field}
+                        }
+                    }
+                }
+                for($i=0; $i -lt $newModes.Count; $i++) {
+                    if($newModes[$i].name -eq $activeName) {$node.active_mode = $i; break}
+                }
+                $node.modes = $newModes
             }
             $script:changed = $true
         }

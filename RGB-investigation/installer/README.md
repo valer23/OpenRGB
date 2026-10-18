@@ -2,7 +2,7 @@
 
 ## Native mouse idle revision - 19 October 2026
 
-The pending source revision replaces Windows Raw Input tracking with the
+Version 1.0.20261019.1 replaces Windows Raw Input tracking with the
 Dark Core RGB Pro SE's firmware inactivity counter (GET 0x40) and Slipstream
 receiver connection notifications (0x36). It reuses the existing Corsair V2
 controller, render commands, update queue and keepalive workers. It adds no
@@ -36,7 +36,13 @@ standalone ten-second counter probe, not this one-second native app revision.
 A brief input immediately after handoff also restored effects in the owner's
 short check; this does not guarantee detection for every subsecond input.
 Linux/macOS builds and hardware and battery-life improvement remain unverified.
-The installed 1.0.20261018.1 package is unchanged.
+Version 1.0.20261019.1 was installed for longer personal validation. Installed
+application/plugin hashes, all profile colours/effects, OpenRGB settings and
+persistent device configuration passed post-install verification. The installer
+migrates the old SG GPU identity to the tested common Galax controller using
+the existing transactional profile migration. A full pre-upgrade application,
+profile/settings and startup-task backup is retained in the private upgrade
+folder; the previous 1.0.20261018.1 installer remains available for rollback.
 
 ## Mouse idle update - 18 October 2026
 
