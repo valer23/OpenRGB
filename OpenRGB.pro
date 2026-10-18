@@ -173,6 +173,8 @@ HEADERS +=                                                                      
     NetworkClient.h                                                                             \
     NetworkProtocol.h                                                                           \
     NetworkServer.h                                                                             \
+    OpenRGBBatteryStatusInterface.h \
+    BatteryStatus/BatteryStatusManager.h \
     OpenRGBPluginInterface.h                                                                    \
     PluginManager.h                                                                             \
     ProfileManager.h                                                                            \
@@ -247,6 +249,7 @@ SOURCES +=                                                                      
     NetworkClient.cpp                                                                           \
     NetworkProtocol.cpp                                                                         \
     NetworkServer.cpp                                                                           \
+    BatteryStatus/BatteryStatusManager.cpp \
     OpenRGBPluginAPI.cpp                                                                        \
     PluginManager.cpp                                                                           \
     ProfileManager.cpp                                                                          \

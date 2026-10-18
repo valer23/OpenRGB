@@ -13,15 +13,20 @@
 
 #include "LogManager.h"
 #include "OpenRGBPluginInterface.h"
+#include "OpenRGBBatteryStatusInterface.h"
 #include "PluginManagerInterface.h"
 #include "ProfileManager.h"
 #include "ResourceManager.h"
 #include "SettingsManager.h"
 
-class OpenRGBPluginAPI : public OpenRGBPluginAPIInterface
+class OpenRGBPluginAPI : public OpenRGBPluginAPIInterface, public OpenRGBBatteryStatusInterface
 {
 public:
     OpenRGBPluginAPI();
+    unsigned int GetBatteryStatusVersion() const override { return 1; }
+    uint64_t AcquireBatteryMonitoring() override;
+    void ReleaseBatteryMonitoring(uint64_t token) override;
+    nlohmann::json GetBatterySnapshots() override;
 
     /*-----------------------------------------------------*\
     | LogManager APIs                                       |

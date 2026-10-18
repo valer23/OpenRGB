@@ -10,6 +10,7 @@
 \*---------------------------------------------------------*/
 
 #include "OpenRGBPluginAPI.h"
+#include "BatteryStatus/BatteryStatusManager.h"
 #include "RGBController_Dummy.h"
 #include "RGBController_Virtual.h"
 
@@ -326,4 +327,23 @@ void OpenRGBPluginAPI::SaveSettings()
 void OpenRGBPluginAPI::SetSettings(std::string settings_key, nlohmann::json new_settings)
 {
     settings_manager->SetSettings(settings_key, new_settings);
+}
+
+uint64_t OpenRGBPluginAPI::AcquireBatteryMonitoring()
+{
+    auto& battery = BatteryStatusManager::Get();
+    const auto settings = settings_manager->GetSettings("BatteryStatusHardware");
+    battery.SetCorsairValidated(settings.is_object() && settings.contains("corsair_level_validated") &&
+        settings["corsair_level_validated"].is_boolean() && settings["corsair_level_validated"].get<bool>());
+    return battery.Acquire();
+}
+
+void OpenRGBPluginAPI::ReleaseBatteryMonitoring(uint64_t token)
+{
+    BatteryStatusManager::Get().Release(token);
+}
+
+nlohmann::json OpenRGBPluginAPI::GetBatterySnapshots()
+{
+    return BatteryStatusManager::Get().Snapshots();
 }

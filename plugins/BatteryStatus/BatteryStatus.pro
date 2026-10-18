@@ -1,0 +1,9 @@
+QT += core gui widgets
+CONFIG += c++17 plugin release rtti
+CONFIG -= debug_and_release
+TEMPLATE = lib
+TARGET = OpenRGBBatteryStatusPlugin
+INCLUDEPATH += ../.. ../../dependencies/json ../../RGBController
+HEADERS += BatteryStatusPlugin.h BatteryStatusPresentation.h ../../OpenRGBBatteryStatusInterface.h
+SOURCES += BatteryStatusPlugin.cpp
+DESTDIR = .
