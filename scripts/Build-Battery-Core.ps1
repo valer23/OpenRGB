@@ -22,6 +22,12 @@ Push-Location $buildRoot
 try {
     & "$qtBin\qmake.exe" "$repoRoot\OpenRGB.pro" 'CONFIG-=debug_and_release' 'CONFIG+=release' 'QMAKE_TARGET.arch=x86_64' -after 'CONFIG-=precompile_header' 'PRECOMPILED_HEADER=' 'QMAKE_CXXFLAGS -= /utf-8' 'LIBS -= -lmbedcrypto -lmbedtls -lmbedx509' "LIBS += $mbedLibrary -lole32 -loleaut32 -luuid -lwbemuuid -lsetupapi -lwinhttp -lws2_32 -liphlpapi" 'SOURCES -= dependencies/hueplusplus-1.2.0/src/TimePattern.cpp' "SOURCES += $buildQmake/compat-TimePattern.cpp" 'SOURCES -= wmi/wmi.cpp' "SOURCES += $buildQmake/compat-wmi.cpp" "INCLUDEPATH += $repoQmake/wmi"
     if($LASTEXITCODE -ne 0){throw 'Core configuration failed'}
+    # qmake changes version defines without making old object files stale.
+    # Recompile only the translation units that embed those defines.
+    foreach($name in @('cli','DetectionManager','LogManager','ResourceManager','OpenRGBSoftwareInfoPage','OpenRGBDialog','OpenRGBClientInfoPage')){
+        $object=Join-Path $buildRoot "_intermediate_release\.obj\$name.o"
+        if(Test-Path -LiteralPath $object){Remove-Item -LiteralPath $object}
+    }
     & "$compilerBin\mingw32-make.exe" "-j$Jobs"
     if($LASTEXITCODE -ne 0){throw 'Core build failed'}
 } finally {Pop-Location}
