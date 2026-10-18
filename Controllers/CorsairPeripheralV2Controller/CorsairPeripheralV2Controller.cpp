@@ -14,6 +14,11 @@
 
 #include "CorsairPeripheralV2Controller.h"
 #include "StringUtils.h"
+#ifdef _WIN32
+#include "CorsairMouseActivity_Windows.h"
+#include "ResourceManager.h"
+#include "SettingsManager.h"
+#endif
 
 using namespace std::chrono_literals;
 
@@ -135,6 +140,31 @@ CorsairPeripheralV2Controller::CorsairPeripheralV2Controller(hid_device* dev_han
                 break;
         }
     }
+#ifdef _WIN32
+    // Opt-in only for the identified Dark Core Pro SE through Slipstream.
+    if(pid == CORSAIR_DARK_CORE_RGB_PRO_PID && write_cmd == CORSAIR_V2_WRITE_WIRELESS_ID)
+    {
+        json settings = ResourceManager::get()->GetSettingsManager()->GetSettings("CorsairMouseIdle");
+        if(settings.is_object() && settings.contains("enabled") && settings["enabled"].is_boolean() && settings["enabled"].get<bool>())
+        {
+            if(settings.contains("timeout_seconds") && settings["timeout_seconds"].is_number_integer() &&
+               settings["timeout_seconds"] >= 5 && settings["timeout_seconds"] <= 3600)
+            {
+                mouse_idle_timeout_ms = settings["timeout_seconds"].get<unsigned int>() * 1000ULL;
+            }
+            mouse_activity = CorsairMouseActivity::Acquire();
+            if(!mouse_activity->Ready())
+            {
+                LOG_WARNING("[%s] Mouse activity listener unavailable; idle handoff disabled", device_name.c_str());
+                mouse_activity.reset();
+            }
+            else
+            {
+                LOG_INFO("[%s] Wireless mouse idle handoff enabled (%llu ms)", device_name.c_str(), mouse_idle_timeout_ms);
+            }
+        }
+    }
+#endif
 }
 
 CorsairPeripheralV2Controller::~CorsairPeripheralV2Controller()
@@ -212,6 +242,11 @@ std::string CorsairPeripheralV2Controller::GetSerialString()
 
 void CorsairPeripheralV2Controller::SetRenderMode(corsair_v2_device_mode mode)
 {
+    SetRenderModeChecked(mode);
+}
+
+bool CorsairPeripheralV2Controller::SetRenderModeChecked(corsair_v2_device_mode mode)
+{
     uint8_t buffer[CORSAIR_V2_WRITE_SIZE];
 
     memset(buffer, 0, CORSAIR_V2_WRITE_SIZE);
@@ -224,12 +259,16 @@ void CorsairPeripheralV2Controller::SetRenderMode(corsair_v2_device_mode mode)
     buffer[3]   = CORSAIR_V2_VALUE_MODE;
     buffer[5]   = mode;
 
-    hid_write(dev, buffer, CORSAIR_V2_WRITE_SIZE);
-
-    if(!skip_reads)
+    if(hid_write(dev, buffer, CORSAIR_V2_WRITE_SIZE) != CORSAIR_V2_WRITE_SIZE)
     {
-        hid_read_timeout(dev, buffer, CORSAIR_V2_WRITE_SIZE, CORSAIR_V2_TIMEOUT);
+        return false;
     }
+    if(skip_reads)
+    {
+        return true;
+    }
+    int count = hid_read_timeout(dev, buffer, CORSAIR_V2_WRITE_SIZE, CORSAIR_V2_TIMEOUT);
+    return count >= 3 && buffer[2] == 0;
 }
 
 void CorsairPeripheralV2Controller::LightingControl(uint8_t opt1)
@@ -365,7 +404,7 @@ void CorsairPeripheralV2Controller::ClearPacketBuffer()
         return;
     }
 
-    uint8_t result          = 0;
+    int result              = 0;
     uint8_t buffer[CORSAIR_V2_PACKET_SIZE];
 
     do
@@ -377,6 +416,19 @@ void CorsairPeripheralV2Controller::ClearPacketBuffer()
 
 void CorsairPeripheralV2Controller::SetLEDs(uint8_t *data, uint16_t data_size)
 {
+#ifdef _WIN32
+    std::unique_lock<std::mutex> mouse_guard(mouse_lighting_mutex, std::defer_lock);
+    if(mouse_activity)
+    {
+        mouse_guard.lock();
+        if(!mouse_idle_policy.AllowFrame(MouseIsIdle(), CorsairMouseActivity::Now(),
+            [this](bool software) { return ChangeMouseOwnership(software); }))
+        {
+            return;
+        }
+        mouse_last_frame_ms = CorsairMouseActivity::Now();
+    }
+#endif
     const uint8_t offset1   = 8;
     const uint8_t offset2   = 4;
     uint16_t remaining      = data_size;
@@ -506,3 +558,55 @@ void CorsairPeripheralV2Controller::UpdateHWMode(uint16_t mode, corsair_v2_color
     */
 
 }
+
+bool CorsairPeripheralV2Controller::HasMouseIdleControl()
+{
+#ifdef _WIN32
+    return mouse_activity != nullptr;
+#else
+    return false;
+#endif
+}
+
+bool CorsairPeripheralV2Controller::MouseIdleNeedsUpdate()
+{
+#ifdef _WIN32
+    if(mouse_activity)
+    {
+        std::lock_guard<std::mutex> guard(mouse_lighting_mutex);
+        bool idle = MouseIsIdle();
+        return mouse_idle_policy.NeedsUpdate(idle) ||
+            (!idle && CorsairMouseActivity::Now() - mouse_last_frame_ms >= CORSAIR_V2_UPDATE_PERIOD);
+    }
+#endif
+    return false;
+}
+
+#ifdef _WIN32
+bool CorsairPeripheralV2Controller::MouseIsIdle()
+{
+    unsigned long long age = 0;
+    return mouse_activity->IdleMilliseconds(age) && age >= mouse_idle_timeout_ms;
+}
+
+bool CorsairPeripheralV2Controller::ChangeMouseOwnership(bool software)
+{
+    ClearPacketBuffer();
+    if(!SetRenderModeChecked(software ? CORSAIR_V2_MODE_SW : CORSAIR_V2_MODE_HW))
+    {
+        if(!mouse_transition_failed)
+        {
+            LOG_WARNING("[%s] Mouse idle ownership change failed", device_name.c_str());
+        }
+        mouse_transition_failed = true;
+        return false;
+    }
+    if(software)
+    {
+        LightingControl(0x5F);
+    }
+    mouse_transition_failed = false;
+    LOG_INFO("[%s] Mouse lighting %s", device_name.c_str(), software ? "resumed on input" : "returned to firmware after inactivity");
+    return true;
+}
+#endif

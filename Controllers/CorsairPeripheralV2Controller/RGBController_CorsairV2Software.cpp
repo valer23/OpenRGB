@@ -226,7 +226,14 @@ void RGBController_CorsairV2SW::KeepaliveThread()
 {
     while(keepalive_thread_run.load())
     {
-        if(active_mode == 0)
+        if(controller->HasMouseIdleControl())
+        {
+            if(controller->MouseIdleNeedsUpdate())
+            {
+                UpdateLEDsInternal();
+            }
+        }
+        else if(active_mode == 0)
         {
             if((std::chrono::steady_clock::now() - last_update_time) >
                 std::chrono::milliseconds(CORSAIR_V2_UPDATE_PERIOD))
@@ -234,6 +241,6 @@ void RGBController_CorsairV2SW::KeepaliveThread()
                 DeviceUpdateLEDs();
             }
         }
-        std::this_thread::sleep_for(CORSAIR_V2_SLEEP_PERIOD);
+        std::this_thread::sleep_for(controller->HasMouseIdleControl() ? std::chrono::milliseconds(250) : CORSAIR_V2_SLEEP_PERIOD);
     }
 }

@@ -17,6 +17,12 @@
 #include "LogManager.h"
 #include "RGBController.h"
 #include "CorsairPeripheralV2Devices.h"
+#ifdef _WIN32
+#include <memory>
+#include <mutex>
+#include "CorsairMouseIdlePolicy.h"
+class CorsairMouseActivity;
+#endif
 
 #define NA                              0xFFFFFFFF
 #define HID_MAX_STR                     255
@@ -99,6 +105,8 @@ public:
     std::string                     GetSerialString();
     const corsair_v2_device*        GetDeviceData();
     bool                            IsDeviceSupported();
+    bool                            HasMouseIdleControl();
+    bool                            MouseIdleNeedsUpdate();
     unsigned int                    GetKeyboardLayout();
 
     void                            SetRenderMode(corsair_v2_device_mode mode);
@@ -115,6 +123,17 @@ protected:
     uint8_t                         light_ctrl          = CORSAIR_V2_LIGHT_CTRL2;
 
 private:
+    bool                            SetRenderModeChecked(corsair_v2_device_mode mode);
+#ifdef _WIN32
+    bool                            MouseIsIdle();
+    bool                            ChangeMouseOwnership(bool software);
+    std::shared_ptr<CorsairMouseActivity> mouse_activity;
+    std::mutex                      mouse_lighting_mutex;
+    CorsairMouseIdlePolicy          mouse_idle_policy;
+    unsigned long long              mouse_idle_timeout_ms = 900000;
+    unsigned long long              mouse_last_frame_ms = 0;
+    bool                            mouse_transition_failed = false;
+#endif
     void                            ClearPacketBuffer();
     unsigned int                    GetAddress(uint8_t address);
     unsigned int                    GetAddressRetry(uint8_t address);

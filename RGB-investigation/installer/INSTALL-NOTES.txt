@@ -2,7 +2,9 @@ OpenRGB Custom - personal build for valerian
 
 Includes the tested KFA2 GPU, Lian Li fan and ASUS logo support, the Effects Plugin and your saved lighting profiles.
 
-Version 1.0.20261016.1 corrects the GPU model to KFA2 RTX 3080 Ti SG 1-Click OC. Changed profiles are backed up before migrating GPU and fan identities. Colours and effects are retained. Persistent fan channel sizes are seeded from ValWhite if needed. Backup details are recorded under Settings\profile-backups\before-sg-upgrade.
+Version 1.0.20261018.1 enables wireless Dark Core RGB Pro SE idle handoff after one minute without mouse input. OpenRGB returns lighting to firmware and stops lighting updates until mouse input resumes. The firmware's own sleep timeout still applies. Existing mouse idle preferences are preserved. The settings backup is under Settings\profile-backups\before-mouse-idle-upgrade.
+
+The previous SG upgrade corrects the GPU model to KFA2 RTX 3080 Ti SG 1-Click OC. Changed profiles are backed up before migrating GPU and fan identities. Colours and effects are retained. Persistent fan channel sizes are seeded from ValWhite if needed. Backup details are recorded under Settings\profile-backups\before-sg-upgrade.
 
 Installs in the existing C:\Users\valerian\Apps\OpenRGB-Custom folder. Existing settings and profiles are retained. The current PawnIO installation is reused; this installer does not install or remove the shared PawnIO kernel driver.
 

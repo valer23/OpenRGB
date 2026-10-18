@@ -1,5 +1,30 @@
 # OpenRGB Custom personal installer
 
+## Mouse idle update - 18 October 2026
+
+Version 1.0.20261018.1 adds an opt-in Windows idle handoff for the Dark Core
+RGB Pro SE on Slipstream. This personal installer enables it with a 60-second
+mouse inactivity timeout. Firmware then owns lighting and OpenRGB suppresses
+lighting traffic until mouse movement, buttons or wheel input resumes effects.
+The firmware's own sleep timeout is unchanged. Keyboard input does not reset
+the mouse timer. Other supported devices and wired operation retain their
+existing lighting path.
+
+Configure-Mouse-Idle.ps1 backs up OpenRGB.json before adding CorsairMouseIdle.
+It preserves an existing block, including an explicit enabled=false opt-out or
+custom timeout. To change it, exit OpenRGB, edit timeout_seconds (5 to 3600),
+and restart. Missing settings in the driver preserve its former behaviour;
+installing this personal package supplies the opt-in. Profiles are unchanged.
+
+The owner tested the isolated 30-second diagnostic on 18 October: effects
+changed to onboard lighting after inactivity, resumed on movement, and after
+16-17 minutes the mouse lights turned off completely and movement restored
+Rainbow Wave. This confirms sleep/wake behaviour, not a measured battery-life
+improvement. Private policy, Raw Input and actual-driver/fake-HID checks passed.
+Independent review also covered a signed HID-read error correction to avoid
+an endless packet-drain loop on disconnect. The final Windows build includes
+that correction; the physical trial preceded it. Linux/macOS were not tested.
+
 Inno Setup 6.7.3 EXE installer for valerian's tested Windows installation.
 Adds a Windows Installed Apps entry and uninstaller with a stable AppId.
 

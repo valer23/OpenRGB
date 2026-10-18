@@ -16,6 +16,7 @@ Copy-Item -LiteralPath (Join-Path $AppRoot 'Settings\plugins\OpenRGBEffectsPlugi
 Copy-Item -LiteralPath (Join-Path $AppRoot 'Settings\OpenRGB.json') -Destination $settings -Force
 Get-ChildItem -LiteralPath (Join-Path $AppRoot 'Settings\profiles') -Filter '*.json' -File | Copy-Item -Destination (Join-Path $settings 'profiles') -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Configure-Startup.ps1') -Destination $payload -Force
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Configure-Mouse-Idle.ps1') -Destination $payload -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Migrate-Device-Profiles.ps1') -Destination $payload -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'SLInfinity-Layout.json') -Destination $payload -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Start-OpenRGB-Custom.ps1') -Destination $payload -Force
