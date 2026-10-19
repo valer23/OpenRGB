@@ -1,15 +1,15 @@
 /*---------------------------------------------------------*\
 | RGBController_LianLiUniHubSLInfinity.cpp                  |
 |                                                           |
-|   RGBController for Lian Li SL Infinity Uni Hub           |
+| RGBController for Lian Li SL Infinity Uni Hub             |
 |                                                           |
-|   Simon McKenna                               21 Oct 2023 |
-|   Will Kennedy                                17 Jan 2023 |
-|   Oliver P                                    26 Apr 2022 |
-|   Credit to Luca Lovisa for original work.                |
+| Simon McKenna                               21 Oct 2023   |
+| Will Kennedy                                17 Jan 2023   |
+| Oliver P                                    26 Apr 2022   |
+| Credit to Luca Lovisa for original work.                  |
 |                                                           |
-|   This file is part of the OpenRGB project                |
-|   SPDX-License-Identifier: GPL-2.0-or-later               |
+| This file is part of the OpenRGB project                  |
+| SPDX-License-Identifier: GPL-2.0-or-later                 |
 \*---------------------------------------------------------*/
 
 #include <string>
@@ -41,7 +41,7 @@ RGBController_LianLiUniHubSLInfinity::RGBController_LianLiUniHubSLInfinity(LianL
 
     mode Custom;
     Custom.name                 = "Custom";
-    Custom.value                = UNIHUB_SLINF_LED_MODE_STATIC_COLOR;
+    Custom.value                = UNIHUB_SLINF_LED_MODE_DIRECT;
     Custom.flags                = MODE_FLAG_HAS_BRIGHTNESS | MODE_FLAG_HAS_PER_LED_COLOR;
     Custom.brightness_min       = 0;
     Custom.brightness_max       = 50;
@@ -121,7 +121,10 @@ RGBController_LianLiUniHubSLInfinity::RGBController_LianLiUniHubSLInfinity(LianL
     Staggered.colors.resize(2);
     modes.push_back(Staggered);
 
-    mode Tide; // TODO: Has merge
+    /*---------------------------------------------------------*\
+    | TODO: Has merge                                           |
+    \*---------------------------------------------------------*/
+    mode Tide;
     Tide.name                   = "Tide";
     Tide.value                  = UNIHUB_SLINF_LED_MODE_TIDE;
     Tide.flags                  = MODE_FLAG_HAS_SPEED | MODE_FLAG_HAS_BRIGHTNESS | MODE_FLAG_HAS_MODE_SPECIFIC_COLOR;
@@ -137,7 +140,10 @@ RGBController_LianLiUniHubSLInfinity::RGBController_LianLiUniHubSLInfinity(LianL
     Tide.colors.resize(2);
     modes.push_back(Tide);
 
-    mode Runway; //TODO: Has merge
+    /*---------------------------------------------------------*\
+    | TODO: Has merge                                           |
+    \*---------------------------------------------------------*/
+    mode Runway;
     Runway.name                 = "Runway";
     Runway.value                = UNIHUB_SLINF_LED_MODE_RUNWAY;
     Runway.flags                = MODE_FLAG_HAS_SPEED | MODE_FLAG_HAS_BRIGHTNESS | MODE_FLAG_HAS_MODE_SPECIFIC_COLOR;
@@ -153,7 +159,10 @@ RGBController_LianLiUniHubSLInfinity::RGBController_LianLiUniHubSLInfinity(LianL
     Runway.colors.resize(2);
     modes.push_back(Runway);
 
-    mode Mixing; //TODO: Has merge
+    /*---------------------------------------------------------*\
+    | TODO: Has merge                                           |
+    \*---------------------------------------------------------*/
+    mode Mixing;
     Mixing.name                 = "Mixing";
     Mixing.value                = UNIHUB_SLINF_LED_MODE_MIXING;
     Mixing.flags                = MODE_FLAG_HAS_SPEED | MODE_FLAG_HAS_BRIGHTNESS | MODE_FLAG_HAS_MODE_SPECIFIC_COLOR;
@@ -186,7 +195,10 @@ RGBController_LianLiUniHubSLInfinity::RGBController_LianLiUniHubSLInfinity(LianL
     Stack.colors.resize(1);
     modes.push_back(Stack);
 
-    mode StackMultiColor; //TODO: Has merge
+    /*---------------------------------------------------------*\
+    | TODO: Has merge                                           |
+    \*---------------------------------------------------------*/
+    mode StackMultiColor;
     Stack.name                  = "Stack Multi Color";
     Stack.value                 = UNIHUB_SLINF_LED_MODE_STACK_MULTI_COLOR;
     Stack.flags                 = MODE_FLAG_HAS_SPEED | MODE_FLAG_HAS_BRIGHTNESS | MODE_FLAG_HAS_DIRECTION_LR;
@@ -230,7 +242,10 @@ RGBController_LianLiUniHubSLInfinity::RGBController_LianLiUniHubSLInfinity(LianL
     ColorCycle.colors.resize(3);
     modes.push_back(ColorCycle);
 
-    mode Meteor; //TODO: Has merge
+    /*---------------------------------------------------------*\
+    | TODO: Has merge                                           |
+    \*---------------------------------------------------------*/
+    mode Meteor;
     Meteor.name                 = "Meteor";
     Meteor.value                = UNIHUB_SLINF_LED_MODE_METEOR;
     Meteor.flags                = MODE_FLAG_HAS_SPEED | MODE_FLAG_HAS_BRIGHTNESS | MODE_FLAG_HAS_MODE_SPECIFIC_COLOR;
@@ -401,9 +416,12 @@ void RGBController_LianLiUniHubSLInfinity::DeviceConfigureZone(int zone_idx)
 
 void RGBController_LianLiUniHubSLInfinity::DeviceUpdateLEDs()
 {
-    if(active_mode != 0)
+    if(modes[active_mode].value != UNIHUB_SLINF_LED_MODE_DIRECT)
     {
-        // Preserve the selected hardware animation when colours are applied.
+        /*---------------------------------------------------------*\
+        | Preserve the selected hardware animation when colours     |
+        | are applied.                                              |
+        \*---------------------------------------------------------*/
         DeviceUpdateMode();
         return;
     }
@@ -413,7 +431,7 @@ void RGBController_LianLiUniHubSLInfinity::DeviceUpdateLEDs()
         DeviceUpdateMode();
     }
 
-    float brightness_scale = static_cast<float>(modes[active_mode].brightness)/modes[active_mode].brightness_max;
+    float brightness_scale = (float)modes[active_mode].brightness/modes[active_mode].brightness_max;
 
     for(std::size_t zone_idx = 0; zone_idx < zones.size(); zone_idx++)
     {
@@ -423,9 +441,12 @@ void RGBController_LianLiUniHubSLInfinity::DeviceUpdateLEDs()
 
 void RGBController_LianLiUniHubSLInfinity::DeviceUpdateZoneLEDs(int zone)
 {
-    if(active_mode != 0)
+    if(modes[active_mode].value != UNIHUB_SLINF_LED_MODE_DIRECT)
     {
-        // Preserve the selected hardware animation when colours are applied.
+        /*---------------------------------------------------------*\
+        | Preserve the selected hardware animation when colours     |
+        | are applied.                                              |
+        \*---------------------------------------------------------*/
         DeviceUpdateMode();
         return;
     }
@@ -434,14 +455,14 @@ void RGBController_LianLiUniHubSLInfinity::DeviceUpdateZoneLEDs(int zone)
         DeviceUpdateMode();
     }
 
-    float brightness_scale = static_cast<float>(modes[active_mode].brightness)/modes[active_mode].brightness_max;
+    float brightness_scale = (float)modes[active_mode].brightness/modes[active_mode].brightness_max;
 
     controller->SetChannelLEDs(zone, zones[zone].colors, zones[zone].leds_count, brightness_scale);
 }
 
-void RGBController_LianLiUniHubSLInfinity::DeviceUpdateSingleLED(int /* led */)
+void RGBController_LianLiUniHubSLInfinity::DeviceUpdateSingleLED(int)
 {
-    if(active_mode == 0)
+    if(modes[active_mode].value == UNIHUB_SLINF_LED_MODE_DIRECT)
     {
         DeviceUpdateLEDs();
     }
@@ -453,9 +474,13 @@ void RGBController_LianLiUniHubSLInfinity::DeviceUpdateSingleLED(int /* led */)
 
 void RGBController_LianLiUniHubSLInfinity::DeviceUpdateMode()
 {
-    if(!active_mode)
+    if(modes[active_mode].value == UNIHUB_SLINF_LED_MODE_DIRECT)
     {
-        return;                 // Do nothing, custom mode should go through DeviceUpdateLEDs() to avoid flooding controller
+        /*---------------------------------------------------------*\
+        | Do nothing, custom mode should go through                 |
+        | DeviceUpdateLEDs() to avoid flooding controller           |
+        \*---------------------------------------------------------*/
+        return;
     }
 
     initializedMode   = true;
@@ -466,12 +491,16 @@ void RGBController_LianLiUniHubSLInfinity::DeviceUpdateMode()
     {
         if(zones[zone_idx].leds_count == 0)
         {
-            continue;   // Skip unused channels; later channels may be populated
+            /*---------------------------------------------------------*\
+            | Skip unused channels; later channels may be populated     |
+            \*---------------------------------------------------------*/
+            continue;
         }
-        fan_idx = (((zones[zone_idx].leds_count + 15) / 16) - 1);        // Indexes start at 0
+        /*---------------------------------------------------------*\
+        | Indexes start at 0                                        |
+        \*---------------------------------------------------------*/
+        fan_idx = (((zones[zone_idx].leds_count + 15) / 16) - 1);
 
-        controller->SetChannelMode((unsigned char)zone_idx,
-                                   modes[active_mode],
-                                   fan_idx);
+        controller->SetChannelMode((unsigned char)zone_idx, modes[active_mode], fan_idx);
     }
 }
