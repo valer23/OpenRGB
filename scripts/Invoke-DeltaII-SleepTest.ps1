@@ -1,7 +1,7 @@
 # One explicit owner-observed sleep experiment. Never used by the plugin.
-param([switch]$ConfirmHeadsetAsleep,[switch]$AuthorizeOneBatteryQuery,[switch]$TemporarilyCloseAsusReaders)
+param([switch]$WaitForAutoPowerOff,[switch]$AuthorizeOneBatteryQuery,[switch]$TemporarilyCloseAsusReaders)
 $ErrorActionPreference='Stop'
-if(-not $ConfirmHeadsetAsleep -or -not $AuthorizeOneBatteryQuery -or -not $TemporarilyCloseAsusReaders){throw 'Requires explicit asleep confirmation, one-query authorization and temporary ASUS reader closure; nothing changed'}
+if(-not $WaitForAutoPowerOff -or -not $AuthorizeOneBatteryQuery -or -not $TemporarilyCloseAsusReaders){throw 'Requires -WaitForAutoPowerOff, one-query authorization and temporary ASUS reader closure; nothing changed'}
 $principal=[Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
 if(-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){throw 'Use administrator PowerShell; nothing changed'}
 $frameworkPath='C:\Program Files (x86)\ASUS\ArmouryDevice\asus_framework.exe'
@@ -36,9 +36,9 @@ try {
         if($LASTEXITCODE -ne 0){throw 'ASUS process closure failed; no probe issued'}
         $result.closedRootPids+=@($root.ProcessId)
     }
-    Write-Host 'ASUS readers released. Keep the headset untouched and observe whether this one query wakes it.'
+    Write-Host 'ASUS readers released. The inner trial will wait for an observed natural lights-off baseline before its one query.'
     $result.trialInvoked=$true
-    & (Join-Path $PSScriptRoot 'Invoke-DeltaII-LightingTrial.ps1') -TemporarilyStopLightingService -Mode SleepTest -ConfirmHeadsetAsleep -AuthorizeSleepTest
+    & (Join-Path $PSScriptRoot 'Invoke-DeltaII-LightingTrial.ps1') -TemporarilyStopLightingService -Mode SleepTest -WaitForAutoPowerOff -AuthorizeSleepTest
 } catch {$result.error=$_.Exception.Message}
 finally {
     if($result.serviceStopRequested){

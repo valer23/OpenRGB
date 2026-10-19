@@ -30,8 +30,8 @@ function Start-Process {
     $script:launches+=@($FilePath)
 }
 function Invoke-FakeSleepTrial {
-    param([switch]$TemporarilyStopLightingService,$Mode,[switch]$ConfirmHeadsetAsleep,[switch]$AuthorizeSleepTest)
-    if(-not $TemporarilyStopLightingService -or $Mode -ne 'SleepTest' -or -not $ConfirmHeadsetAsleep -or -not $AuthorizeSleepTest){throw 'Wrong sleep-trial arguments'}
+    param([switch]$TemporarilyStopLightingService,$Mode,[switch]$WaitForAutoPowerOff,[switch]$AuthorizeSleepTest)
+    if(-not $TemporarilyStopLightingService -or $Mode -ne 'SleepTest' -or -not $WaitForAutoPowerOff -or -not $AuthorizeSleepTest){throw 'Wrong sleep-trial arguments'}
     $script:trialCalls++
     if($script:failTrial){throw 'Injected trial failure'}
 }
@@ -46,7 +46,7 @@ foreach($initial in @('Running','Stopped')){
         $script:controller | Add-Member ScriptMethod WaitForStatus {param($expected,$timeout) if($this.Status -ne $expected){throw 'Unexpected service state'}}
         $script:processes=@([pscustomobject]@{Name='asus_framework.exe';ProcessId=123;ExecutablePath='C:\Program Files (x86)\ASUS\ArmouryDevice\asus_framework.exe';CommandLine='"C:\Program Files (x86)\ASUS\ArmouryDevice\asus_framework.exe"';CreationDate=[datetime]'2026-10-19T09:00:00'})
         $script:kills=@();$script:launches=@();$script:trialCalls=0;$script:failTrial=$failure
-        & $wrapper -ConfirmHeadsetAsleep -AuthorizeOneBatteryQuery -TemporarilyCloseAsusReaders 6>$null
+        & $wrapper -WaitForAutoPowerOff -AuthorizeOneBatteryQuery -TemporarilyCloseAsusReaders 6>$null
         if($script:controller.Status.ToString() -ne $initial){throw 'Original service state not restored'}
         $expectedChanges=if($initial -eq 'Running'){1}else{0}
         if($script:controller.Stops -ne $expectedChanges -or $script:controller.Starts -ne $expectedChanges){throw 'Unexpected service changes'}
