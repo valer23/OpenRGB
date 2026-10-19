@@ -1,70 +1,80 @@
 # Battery Status Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox syntax for tracking.
+> Execution skill: superpowers:executing-plans. This revision records the reviewed passive Corsair design and the owner's later finish-and-PR authorization; the ledger preserves the original GET proposal and its rejection.
 
-**Goal:** An optional battery tray plugin with safe core-owned telemetry for the two approved devices.
-**Architecture:** Keep the API-v5 ABI intact through a separate RTTI capability interface. Device owners publish copied snapshots to a bounded cache. Qt renders the cache and never queries hardware.
-**Tech Stack:** Existing C++17, Qt 6.8.3, MinGW 13.1, bundled HIDAPI, nlohmann JSON.
-**Spec:** ../specs/2026-10-19-battery-status-design.md (approved in chat).
+**Goal:** A working optional battery submenu in OpenRGB's existing tray for Corsair Dark Core RGB Pro SE and ASUS ROG Delta II, both through their USB wireless receivers, followed by a PR in the owner's public fork valer23/OpenRGB. No upstream publication.
+**Architecture:** Keep the API-v5 ABI intact through a separate RTTI capability interface. Core device owners publish copied snapshots to a bounded cache; Qt never queries hardware.
+**Tech Stack:** C++17, Qt6.8.3, MinGW13.1, the existing matched Corsair HIDAPI owner and exclusive Windows HID for Delta II, nlohmann JSON.
+**Spec:** ../specs/2026-10-19-battery-status-design.md. **Evidence/decisions:** battery-status-progress.md and ../../battery-status-validation.md.
 
 ## Global Constraints
 
-- Fan Control and installed OpenRGB remain running during development.
-- No competing reader; no query intended solely to wake a device.
-- Preserve native mouse idle and lighting behavior, API-v5 plugins, settings and profiles.
-- Acquire at most once per 60 seconds where safe; UI once per second; stale after 120 seconds.
-- Low-battery alerts default off, 20% trigger, 25% rearm; never alert from stale, unknown or charging data.
-- Device protocols and safe power behavior require owner-hardware validation before automatic acquisition is enabled.
-- No installation or active-app replacement without tray exit; no public posting or push.
+- Keep Fan Control running. Run only one hardware-detecting OpenRGB instance; the owner exited installed OpenRGB for the isolated trial.
+- No competing reader and no waking sleeping devices. The owner authorized exactly one separate asleep level-query experiment with observation; this does not authorize unvalidated background queries.
+- Preserve native mouse idle, sleep, lighting restoration, API-v5 plugins, settings and profiles.
+- Acquire at most once per60s where safe; UI reads copied cache once per1s; mark data stale after120s.
+- Alerts default off, threshold20% and rearm25%; suppress stale, disconnected, unknown charging and charging samples.
+- Never replace a running trial image or modify the installation. No runtime vendor-service/process termination; explicit one-shot diagnostic helpers preserve initial state and request launcher restoration.
+- Both devices must meet safety and battery-value requirements before completion. A software-only gate, a standalone awake reading or a mouse-only result is insufficient.
 
 ## Review Focus
 
-- Plugin unload and overlapping enable/disable must not leave a worker or subscription alive (Task 1/2 lifecycle tests).
-- A stale last-known value must never look current or generate an alert (Task 1/2 snapshot tests).
-- Event-reader recovery or failed software initialization must block all battery GETs (Task 3 transport tests).
-- Malformed/late/unrelated USB reports must never become battery values (Task 3/4 parser and transport tests).
-- Receiver presence must not enable headset polling or imply the child is awake (Task 4 gate tests).
+- Plugin unload and overlapping enable/disable must not leave a worker or subscription alive (Task1/2 lifecycle tests).
+- A stale last-known value must never look current or generate an alert (Task1/2 snapshot tests).
+- Event-reader recovery or failed software initialization must not introduce Corsair battery GETs or alter native idle and lighting (Task3 transport tests).
+- Malformed/late/unrelated USB reports must never become battery values (Task3/4 parser and transport tests).
+- Receiver presence must not enable headset polling or imply the child is awake (Task4 gate tests).
+- A cancelled Windows request must retain its buffer, OVERLAPPED and device until completion without an infinite unload wait, a second reader or repeated resource accumulation.
 
 ### Task 1: Capability and snapshot cache
 
-Files: create OpenRGBBatteryStatusInterface.h, BatteryStatus/BatteryStatusManager.{h,cpp}, tests/battery-status/cache_test.cpp and tests/battery-status/Run-Tests.ps1; modify OpenRGBPluginAPI.{h,cpp}, OpenRGB.pro.
-Interfaces: capability version 1; AcquireBatteryMonitoring() -> uint64_t token, ReleaseBatteryMonitoring(uint64_t), GetBatterySnapshots() -> nlohmann::json; manager Get(), Acquire(), Release(token), Enabled(), Publish(id,name,percent,charging,state,detail), SetState(id,name,state,detail), Snapshots(). Use -1 for optional percentage/charging at the internal boundary and JSON null in copied output.
-- [ ] Write and run failing cache tests for duplicate release, invalid values, retained sample age, state changes and token isolation.
-- [ ] Implement a mutex-protected, core-only singleton cache with two configured slots, monotonic ages, no external pointers/callbacks and no I/O.
-- [ ] Add the optional interface as a second API base without changing existing vtables; write real Qt plugin cross-DLL tests with new and old host shapes before hardware work.
-- [ ] Run tests and commit the self-contained deliverable.
+Files: OpenRGBBatteryStatusInterface.h, BatteryStatus/BatteryStatusManager.{h,cpp}, OpenRGBPluginAPI.{h,cpp}, OpenRGB.pro, cache and cross-DLL tests.
+Interface: version1; AcquireBatteryMonitoring() -> uint64_t token; ReleaseBatteryMonitoring(token); GetBatterySnapshots() -> copied JSON. Two fixed device IDs; internal optional percentage/charging use -1 and serialize as null.
+- [x] Test duplicate releases, independent tokens, invalid values, sample age and retained values.
+- [x] Implement monotonic, mutex-protected cache without hardware I/O, external pointers or plugin callbacks.
+- [x] Add an RTTI side interface without changing the existing API-v5 vtable; prove new-host cast and old-host fallback across the actual plugin DLL.
+- [x] Commit and pass the software suite.
 
 ### Task 2: Optional tray plugin
 
-Files: create plugins/BatteryStatus/BatteryStatusPlugin.{h,cpp}, BatteryStatusPresentation.h, BatteryStatusPlugin.json, BatteryStatus.pro, Build.ps1; tests/battery-status/plugin_test.cpp, abi_host.cpp.
-Consumes Task 1 interface. Produces GetTrayMenu() and GetWidget() through the existing plugin interface, with no profile effects or SDK commands.
-- [ ] Write and run failing presentation/notification and plugin lifecycle tests using a fake host (zero USB).
-- [ ] Implement two device rows with explicit last-known states, monitoring toggle, notification toggle and host-unsupported message. Use existing settings under BatteryStatus; timers refresh only copied values. Stop timer before releasing token on unload; no callback into unloaded code.
-- [ ] Implement optional notifications via the existing system tray object if safely discoverable; do not create another tray icon. Unknown charging suppresses alerts. Test discharge threshold/rearm and fresh sample handling.
-- [ ] Build DLL and execute offscreen Qt lifecycle/ABI tests, including the installed effects DLL metadata/loading compatibility; commit.
+Files: plugins/BatteryStatus/, presentation, notification, actual DLL lifecycle and installed Effects compatibility tests.
+- [x] Implement two named device menus, explicit last-known/unknown status, age, monitoring and notification toggles, and unsupported-host message.
+- [x] Use existing settings and tray object only; no hardware reader, hardware worker, profile telemetry persistence or extra tray icon.
+- [x] Stop the UI timer and release monitoring on unload; retain menu/widget lifetime until host loader destruction.
+- [x] Test alert thresholds, rearm and suppression; build DLL and prove real host discovery and API-v5 Effects compatibility.
 
-### Task 3: Corsair telemetry in existing owner
+### Task 3: Passive Corsair telemetry in the existing owner
 
-Files: modify Controllers/CorsairPeripheralV2Controller/CorsairPeripheralV2Controller.{h,cpp}; create BatteryStatus/BatteryProtocol.h and tests/battery-status/corsair_driver_test.cpp, reuse existing private driver harness/stubs.
-Consumes manager publication and subscriptions. Produces guarded GET0F battery values only for receiver 1BA6, mouse PID1B7E, route09, with hardware validation explicitly off by default.
-- [ ] Write actual-driver fake HID regressions showing no battery traffic with no subscription, validation disabled, idle handoff, offline, failed native activity, recovery, failed lighting initialization, or stale activity.
-- [ ] Add sample scheduling only after existing AllowFrame succeeds and recent valid activity exists. Check subscription/validation/eligibility immediately before the serialized GET. No retry burst or changes to inactivity/handoff scheduling.
-- [ ] Validate response route, command, status, minimum length, range and optional charging codes. Initially leave charging unknown until separately validated. Publish transport errors without changing lighting state. Limit attempts to one per 60000 ms.
-- [ ] Run existing mouse regressions and new tests; commit.
+Files: Controllers/CorsairPeripheralV2Controller/, BatteryStatus/BatteryProtocol.h, actual-controller fake-HID/native regression tests and captured passive fixture.
+Ruling: remove all active GET0F acquisition because a delayed reply is indistinguishable from GET40 inactivity and corrupts native sleep timing. Do not reintroduce a drain, active refresh, notification-enabling command or extra reader.
+- [x] Accept only the exact existing receiver1BA6, wireless mouse1B7E, route09 and notification01010F00 with valid tenths-of-percent range.
+- [x] Publish only while subscribed and connected through the synchronized matched event owner; preserve idle/onboard state. Charging remains unknown.
+- [x] Reproduce and fix late-reply and disconnect-state regressions; preserve native handoff, offline suppression, child isolation and checked lighting recovery.
+- [x] Validate real passive63%,62%,61% frames and owner-confirmed tray percentage; enable the narrowly matched passive path by default with explicit opt-out.
+- [ ] Finish current full-app short idle/movement/lighting confirmation. Native15-minute firmware sleep remains a separately recorded hardware check; do not repeat long waits merely to rerun software tests.
 
-### Task 4: Delta II guarded provider and bounded validation tools
+### Task 4: Delta II provider and bounded validation tools
 
-Files: create BatteryStatus/AsusDeltaIIBattery.{h,cpp}; extend manager ownership/lifecycle only as needed; tests/battery-status/protocol_test.cpp; scripts/documentation for awake validation.
-Consumes cache and core lifecycle. Produces a narrowly matched battery-only owner with automatic active queries disabled until no-wake behavior is proven. First inspect bundled HID capabilities and exclusive ownership options; never assume a shared handle prevents other readers.
-- [ ] Write failing parsers for CC1207 level at byte6 and CC1208 charging at byte5, short reports, error forms, out-of-range values and unknown charging.
-- [ ] Implement pure parsers and a default-closed safety gate. Any passive listening must refuse ambiguous identity or competing ownership; no interpretation of undocumented CC1209 as battery.
-- [ ] Implement a bounded, manually invoked awake validation path only after owner confirms the headset is on and only with a single exclusive owner. Do not use this path for background polling. Keep queries disabled if safety cannot be proven.
-- [ ] Record unresolved no-wake evidence honestly. Run software tests, commit.
+Files: BatteryStatus/AsusDeltaIIBattery, AsusBatteryMonitor, BatteryMonitoringService, WindowsHidTransfer, protocol/service/Win32 tests and explicit diagnostic scripts.
+- [x] Validate report identity/length/range and exact vendor collection:0B05:1AFA, MI03/COL04, usageFF00/1,64-byte input/output.
+- [x] Use one exclusive in-process owner; serialize requests, report busy access, reject ambiguous/wrong collections and never steal another reader.
+- [x] Implement bounded native I/O with retained storage if cancellation remains pending; no infinite wait or freed driver-owned buffer.
+- [x] Wire shared core subscriptions to one worker, interruptible60s backoff and final-release join. Keep compiled ReceiverLevelValidated=false until hardware evidence.
+- [x] Validate one owner-confirmed awake level/charging exchange:89%,charging=false. Do not inject it as current plugin telemetry or infer no-wake from it.
+- [x] Prepare exactly-one-level-query asleep experiment with explicit owner confirmation and observed-wake answer before vendor restoration; no charging/settings queries.
+- [ ] Obtain sleep-test evidence and owner wake observation. If inconclusive or it wakes the headset, find a safe acquisition source; do not weaken the no-wake constraint.
+- [ ] Enable only acquisition established safe by evidence, and verify real headset battery values through the core cache/tray, audio continuity, hotplug and charging semantics where supported.
 
-### Task 5: Windows build, review and trial preparation
+### Task 5: Build, independent review and isolated trial
 
-Files: build script under scripts/, progress/validation notes under docs/.
-- [ ] Build full core and plugin with the existing toolchain and compatibility libraries; logs remain in ignored build output. No hardware app launch during compilation.
-- [ ] Run software suite and independent whole-branch review. Fix important findings with reproducing tests.
-- [ ] Prepare isolated settings/plugin trial without modifying installed files. Ask owner for awake-state confirmation and any required tray exit only when the trial is concrete and ready.
-- [ ] Record outstanding owner hardware checks. Project remains incomplete until both devices satisfy the approved safety and battery-value requirements.
+- [x] Build full core and plugin with existing toolchain/compatibility shims, without vendored edits. Integrated core revision7db6db7c builds and passes version-only startup.
+- [x] Run the hardware-free suite, including actual driver, DLL, protocol, subscription, bounded I/O, simulated service restoration and packaging tests.
+- [x] Prepare isolated trial, preserve11 profiles and non-battery settings; owner confirms visible tray menu and usual lighting. Fix missing Effects migration source in future packaging.
+- [ ] Complete fresh whole-branch review of final software; fix important findings with a failing reproducer and passing suite.
+- [ ] Update the isolated app only after normal tray exit, complete both-device hardware checks and record evidence. Installed executable/profile state and Fan Control must remain intact.
+
+### Task 6: Completion and fork PR
+
+- [ ] Audit every requirement against current evidence; two-device working state and no-wake behavior remain required.
+- [ ] Commit final changes, push only to valer23/OpenRGB on codex/battery-status, and open the requested fork PR against the appropriate existing mouse-fix base. Do not post upstream.
+- [ ] Attach and verify the PR URL/state and report remaining material limitations honestly. Mark the goal complete only when the working plugin and PR are both proven.
