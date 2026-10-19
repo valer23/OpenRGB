@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #include "AsusDeltaIIBattery.h"
 #include "BatteryProtocol.h"
+#include "WindowsHidTransfer.h"
 #ifdef _WIN32
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -16,10 +17,19 @@ extern "C" {
 #include <vector>
 #include <array>
 #include <chrono>
+#include <mutex>
 
 namespace
 {
 using Clock = std::chrono::steady_clock;
+std::mutex delta_mutex;
+WindowsHidTransfer& DeltaTransfer()
+{
+    // Process lifetime: a defective driver may still own a cancelled operation
+    // during shutdown. There is no background thread or plugin-owned callback.
+    static auto* transfer = new WindowsHidTransfer(WindowsHidTransfer::Api{});
+    return *transfer;
+}
 struct Handle
 {
     HANDLE value = INVALID_HANDLE_VALUE;
@@ -32,6 +42,11 @@ struct Handle
 // Metadata enumeration has no command writes or feature-report requests.
 bool OpenExactDelta(Handle& handle, std::string& error)
 {
+    if(!DeltaTransfer().Ready())
+    {
+        error = "Previous Delta II I/O cancellation is pending; no new reader opened";
+        return false;
+    }
     GUID guid;
     HidD_GetHidGuid(&guid);
     auto devices = SetupDiGetClassDevsW(&guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
@@ -83,38 +98,19 @@ bool OpenExactDelta(Handle& handle, std::string& error)
     HIDP_CAPS caps = {};
     const auto result = HidP_GetCaps(preparsed, &caps);
     HidD_FreePreparsedData(preparsed);
-    if(result != HIDP_STATUS_SUCCESS || caps.UsagePage != 0xFF00 ||
-       caps.InputReportByteLength != 64 || caps.OutputReportByteLength != 64)
+    if(result != HIDP_STATUS_SUCCESS || !BatteryProtocol::AsusCollection(caps.UsagePage, caps.Usage,
+       caps.InputReportByteLength, caps.OutputReportByteLength))
     {
         error = "Unexpected Delta II vendor report descriptor; no commands sent"; return false;
     }
     return true;
 }
 
-int Transfer(HANDLE device, bool write, unsigned char* buffer, DWORD size, DWORD timeout)
+int Transfer(Handle& device, bool write, unsigned char* buffer, DWORD size, DWORD timeout)
 {
-    Handle event;
-    event.value = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-    if(!event.value) { return -1; }
-    OVERLAPPED operation = {};
-    operation.hEvent = event.value;
-    DWORD transferred = 0;
-    BOOL success = write ? WriteFile(device, buffer, size, &transferred, &operation) :
-        ReadFile(device, buffer, size, &transferred, &operation);
-    if(success) { return static_cast<int>(transferred); }
-    if(GetLastError() != ERROR_IO_PENDING) { return -1; }
-    if(WaitForSingleObject(event.value, timeout) != WAIT_OBJECT_0)
-    {
-        CancelIoEx(device, &operation);
-        // Settle the operation before its stack OVERLAPPED and buffer go away.
-        // The command-line supervisor also enforces a process-level deadline.
-        GetOverlappedResult(device, &operation, &transferred, TRUE);
-        return 0;
-    }
-    return GetOverlappedResult(device, &operation, &transferred, FALSE) ? static_cast<int>(transferred) : -1;
+    return DeltaTransfer().Transfer(device.value, write, buffer, size, timeout);
 }
-
-bool Query(HANDLE device, unsigned char key, std::array<unsigned char,64>& reply, std::string& error)
+bool Query(Handle& device, unsigned char key, std::array<unsigned char,64>& reply, std::string& error)
 {
     const auto deadline = Clock::now() + std::chrono::milliseconds(250);
     std::array<unsigned char,64> request = {};
@@ -157,16 +153,17 @@ nlohmann::json AsusDeltaIIBattery::ReadAwakeSnapshot(bool owner_confirmed_awake)
         return result;
     }
 #ifdef _WIN32
+    std::lock_guard<std::mutex> owner(delta_mutex);
     Handle handle;
     std::string error;
     if(!OpenExactDelta(handle, error)) { result["error"] = error; return result; }
     std::array<unsigned char,64> reply = {};
-    if(!Query(handle.value, 7, reply, error)) { result["error"] = error; return result; }
+    if(!Query(handle, 7, reply, error)) { result["error"] = error; return result; }
     const auto percentage = BatteryProtocol::AsusLevel(reply.data(), reply.size());
     if(!percentage) { result["error"] = "Invalid battery percentage reply"; return result; }
     result["percentage"] = *percentage;
     result["level_report_prefix"] = std::vector<unsigned char>(reply.begin(), reply.begin() + 12);
-    if(Query(handle.value, 8, reply, error))
+    if(Query(handle, 8, reply, error))
     {
         const auto charging = BatteryProtocol::AsusCharging(reply.data(), reply.size());
         if(charging) { result["charging"] = *charging == 1; }
@@ -191,13 +188,14 @@ nlohmann::json AsusDeltaIIBattery::ReadAuthorizedSleepTest(bool owner_authorized
         return result;
     }
 #ifdef _WIN32
+    std::lock_guard<std::mutex> owner(delta_mutex);
     Handle handle;
     std::string error;
     if(!OpenExactDelta(handle, error)) { result["error"] = error; return result; }
     std::array<unsigned char,64> reply = {};
     result["level_query_attempted"] = true;
     // Exactly one documented battery request. Do not query charging or retry.
-    if(!Query(handle.value, 7, reply, error)) { result["error"] = error; return result; }
+    if(!Query(handle, 7, reply, error)) { result["error"] = error; return result; }
     const auto percentage = BatteryProtocol::AsusLevel(reply.data(), reply.size());
     if(!percentage) { result["error"] = "Invalid battery percentage reply"; return result; }
     result["percentage"] = *percentage;
@@ -213,6 +211,7 @@ nlohmann::json AsusDeltaIIBattery::Observe()
     nlohmann::json result = {{"device", "ASUS ROG Delta II"}, {"reports", nlohmann::json::array()},
         {"commands_sent", 0}, {"automatic_polling_enabled", false}, {"no_wake_validated", false}};
 #ifdef _WIN32
+    std::lock_guard<std::mutex> owner(delta_mutex);
     Handle handle;
     std::string error;
     if(!OpenExactDelta(handle, error)) { result["error"] = error; return result; }
@@ -220,7 +219,7 @@ nlohmann::json AsusDeltaIIBattery::Observe()
     for(unsigned int i = 0; i < 16 && Clock::now() < deadline; ++i)
     {
         std::array<unsigned char,64> report = {};
-        const int count = Transfer(handle.value, false, report.data(), report.size(), 100);
+        const int count = Transfer(handle, false, report.data(), report.size(), 100);
         if(count < 0) { result["error"] = "Passive input unavailable"; break; }
         if(count > 0)
         {
@@ -238,12 +237,45 @@ nlohmann::json AsusDeltaIIBattery::InspectAvailability()
     nlohmann::json result = {{"device", "ASUS ROG Delta II"}, {"commands_sent", 0},
         {"automatic_polling_enabled", false}};
 #ifdef _WIN32
+    std::lock_guard<std::mutex> owner(delta_mutex);
     Handle handle;
     std::string error;
     result["exclusive_interface_available"] = OpenExactDelta(handle, error);
     if(!error.empty()) { result["error"] = error; }
 #else
     result["error"] = "Interface inspection is currently Windows-only";
+#endif
+    return result;
+}
+
+nlohmann::json AsusDeltaIIBattery::ReadValidatedReceiverSnapshot(bool sleep_safe_level_query_validated)
+{
+    nlohmann::json result = {{"device", "ASUS ROG Delta II"}, {"percentage", nullptr},
+        {"charging", nullptr}, {"availability", "unavailable"}};
+    if(!sleep_safe_level_query_validated)
+    {
+        result["error"] = "Automatic queries disabled: sleep-safe level acquisition not validated; no interface opened";
+        return result;
+    }
+#ifdef _WIN32
+    std::lock_guard<std::mutex> owner(delta_mutex);
+    Handle handle;
+    std::string error;
+    if(!OpenExactDelta(handle, error))
+    {
+        if(error == "Exact Delta II vendor collection not present") { result["availability"] = "disconnected"; }
+        result["error"] = error;
+        return result;
+    }
+    std::array<unsigned char,64> reply = {};
+    // Validation applies only to this level request, never to charging/settings.
+    if(!Query(handle, 7, reply, error)) { result["error"] = error; return result; }
+    const auto percentage = BatteryProtocol::AsusLevel(reply.data(), reply.size());
+    if(!percentage) { result["error"] = "Invalid battery percentage reply"; return result; }
+    result["percentage"] = *percentage;
+    result["availability"] = "receiver";
+#else
+    result["error"] = "Delta II acquisition is currently Windows-only";
 #endif
     return result;
 }

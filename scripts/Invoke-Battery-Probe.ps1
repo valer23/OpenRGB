@@ -11,7 +11,7 @@ $env:PATH="$compilerBin;$env:PATH"
 $buildRoot=Join-Path $repoRoot 'build-battery\probe'
 New-Item -ItemType Directory -Path $buildRoot -Force | Out-Null
 $probe=Join-Path $buildRoot 'BatteryStatusProbe.exe'
-& "$compilerBin\g++.exe" -std=c++17 -O2 "-I$repoRoot" "-I$repoRoot\dependencies\json" "$repoRoot\scripts\BatteryStatusProbe.cpp" "$repoRoot\BatteryStatus\AsusDeltaIIBattery.cpp" -lhid -lsetupapi -o $probe
+& "$compilerBin\g++.exe" -std=c++17 -O2 "-I$repoRoot" "-I$repoRoot\dependencies\json" "$repoRoot\scripts\BatteryStatusProbe.cpp" "$repoRoot\BatteryStatus\AsusDeltaIIBattery.cpp" "$repoRoot\BatteryStatus\WindowsHidTransfer.cpp" -lhid -lsetupapi -o $probe
 if($LASTEXITCODE -ne 0){throw 'Battery probe build failed'}
 $runId=Get-Date -Format 'yyyyMMdd-HHmmss-fff'
 $stdout=Join-Path $buildRoot "$runId.json"

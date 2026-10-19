@@ -11,6 +11,7 @@
 
 #include "OpenRGBPluginAPI.h"
 #include "BatteryStatus/BatteryStatusManager.h"
+#include "BatteryStatus/BatteryMonitoringService.h"
 #include "RGBController_Dummy.h"
 #include "RGBController_Virtual.h"
 
@@ -335,12 +336,12 @@ uint64_t OpenRGBPluginAPI::AcquireBatteryMonitoring()
     const auto settings = settings_manager->GetSettings("BatteryStatusHardware");
     battery.SetCorsairValidated(!settings.is_object() || !settings.contains("corsair_notifications_validated") ||
         !settings["corsair_notifications_validated"].is_boolean() || settings["corsair_notifications_validated"].get<bool>());
-    return battery.Acquire();
+    return BatteryMonitoringService::Get().Acquire();
 }
 
 void OpenRGBPluginAPI::ReleaseBatteryMonitoring(uint64_t token)
 {
-    BatteryStatusManager::Get().Release(token);
+    BatteryMonitoringService::Get().Release(token);
 }
 
 nlohmann::json OpenRGBPluginAPI::GetBatterySnapshots()

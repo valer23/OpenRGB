@@ -12,5 +12,9 @@ int main()
     assert(sleep_test["level_query_attempted"]==false);
     assert(sleep_test["automatic_polling_enabled"]==false && sleep_test["no_wake_validated"]==false);
     assert(sleep_test["error"].get<std::string>().find("no interface opened")!=std::string::npos);
+    const auto automatic=AsusDeltaIIBattery::ReadValidatedReceiverSnapshot(false);
+    assert(automatic["percentage"].is_null() && automatic["charging"].is_null());
+    assert(automatic["availability"]=="unavailable");
+    assert(automatic["error"].get<std::string>().find("no interface opened")!=std::string::npos);
     std::cout<<"Delta II validation gate refuses acquisition without awake confirmation\n";
 }

@@ -19,6 +19,10 @@ inline std::optional<int> CorsairNotification(const unsigned char* data, size_t 
     if(value > 1000) { return {}; }
     return value / 10;
 }
+inline bool AsusCollection(unsigned int usage_page, unsigned int usage, unsigned int input_bytes, unsigned int output_bytes)
+{
+    return usage_page == 0xFF00 && usage == 1 && input_bytes == 64 && output_bytes == 64;
+}
 inline bool AsusReply(const unsigned char* data, size_t size, unsigned char key)
 {
     return data && size >= 6 && data[0] == 0xCC && data[1] == 0x12 && data[2] == key &&

@@ -7,7 +7,7 @@ Status: two-device feature remains in progress. The Corsair passive battery path
 - Captured passive mouse reports decode to 63%, 62%, and then 61% in the current trial. They arrive through the existing matched receiver event reader; no battery GET or additional reader was added.
 - Delta II awake exchange returned 89%, charging=false. No naturally asleep query has been issued. Receiver presence and silence on the desk do not establish sleep or wake state.
 - Full software suite passes: cache and presentation, DLL lifecycle and cross-DLL RTTI, API-v5 Effects compatibility, actual Corsair driver with fake HID, native idle and delayed-response regressions, captured protocols, acquisition gates, simulated service restoration, and trial packaging.
-- The new ASUS scheduler passes injected-reader lifecycle tests but is not connected to a hardware reader yet. A receiver response is labelled receiver-reachable, with headset sleep state unknown.
+- The ASUS scheduler is now connected to host subscriptions and an exclusive in-process reader, behind the default-closed ReceiverLevelValidated hardware gate. Shared-token lifecycle and bounded Windows cancellation pass hardware-free tests. A receiver response is labelled receiver-reachable, with headset sleep state unknown.
 - Trial executable SHA256: 980BFC431BF3127DDDF900763E3401BEEEA6FD529D6DB445CC9F3713EAEA3F60.
 - Running trial battery DLL SHA256: 3A03C3A98A56AC5A64F85854099C118339C194578533467A461026E01A9597FC. Subsequent presentation changes are built separately and have not replaced the live DLL.
 - Installed executable SHA256 remains 1080F2E6CEEC2232C733786F458DD4C825248006ED5B9A49C60E13344BE41888. Installed profiles and files are unchanged. Fan Control remains running.

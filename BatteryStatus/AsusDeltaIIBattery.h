@@ -2,10 +2,13 @@
 #pragma once
 #include <nlohmann/json.hpp>
 
-// Bounded owner-hardware validation only. No automatic polling is enabled here.
+// Exclusive battery-only transport. Automatic level reads require a separate no-wake validation gate.
 class AsusDeltaIIBattery
 {
 public:
+    // Change only after owner-firmware evidence establishes no-wake level reads.
+    static constexpr bool ReceiverLevelValidated = false;
+    static nlohmann::json ReadValidatedReceiverSnapshot(bool sleep_safe_level_query_validated);
     static nlohmann::json InspectAvailability();
     static nlohmann::json Observe();
     static nlohmann::json ReadAwakeSnapshot(bool owner_confirmed_awake);

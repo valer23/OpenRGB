@@ -29,6 +29,11 @@ int main()
     assert(BatteryProtocol::CorsairNotification(capturedNotification.data(), capturedNotification.size()) == 63);
     const auto nextNotification = corsair_fixture.at("nextReportPrefix").get<std::vector<unsigned char>>();
     assert(BatteryProtocol::CorsairNotification(nextNotification.data(), nextNotification.size()) == 62);
+    assert(BatteryProtocol::AsusCollection(0xFF00,1,64,64));
+    assert(!BatteryProtocol::AsusCollection(0xFF00,2,64,64));
+    assert(!BatteryProtocol::AsusCollection(1,1,64,64));
+    assert(!BatteryProtocol::AsusCollection(0xFF00,1,63,64));
+    assert(!BatteryProtocol::AsusCollection(0xFF00,1,64,63));
     unsigned char corsair[]={1,2,0,0xF8,2}; // 760 tenths
     assert(BatteryProtocol::CorsairLevel(corsair,5)==76);
     assert(!BatteryProtocol::CorsairLevel(corsair,4));

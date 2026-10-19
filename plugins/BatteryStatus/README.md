@@ -7,7 +7,7 @@ The matching fork core is required for telemetry. On an older API-v5 core the pl
 ## Current acquisition status
 
 - Corsair Dark Core RGB Pro SE: passive battery notification parser in the existing, matched receiver reader. No additional USB request or reader is created. Automatic control GET0F was removed after reproducing a late-reply collision with native GET40 inactivity. The exact passive frame was observed on the owner receiver (63%, then 62%) and this matched path is enabled by default; an explicit hardware-setting opt-out remains available. Native idle support must already be available; this feature never enables it itself.
-- ASUS ROG Delta II: strict parsers and an exclusive Windows vendor-interface validation owner. Automatic polling is disabled until sleep-safe behavior is established. The manual probe refuses an absent, ambiguous, wrong-descriptor or busy interface. A valid awake battery reply does not establish safe background polling.
+- ASUS ROG Delta II: strict parsers and one exclusive Windows vendor-interface owner, scheduled by the core while monitoring is subscribed. Automatic level polling remains disabled by the compiled ReceiverLevelValidated gate until owner-firmware sleep-safe behavior is established. The automatic path queries only level; charging remains unknown until separately safe acquisition is validated. The manual probe refuses an absent, ambiguous, wrong-descriptor or busy interface. A valid awake battery reply does not establish safe background polling.
 
 One awake Delta II exchange through the owner's receiver succeeded (89%, not charging); sleep-safe operation, coexistence with ASUS readers, and charging transitions remain unvalidated. Corsair passive receiver notifications have now been observed and decoded on the owner hardware; charging remains unknown. This is not a completed two-device release. Do not enable validation flags merely to make the menu show a percentage.
 
@@ -22,7 +22,7 @@ From the repository root in PowerShell:
 ./scripts/Prepare-Battery-Trial.ps1
 ```
 
-Scripts default to the user's existing Qt 6.8.3 / MinGW 13.1 toolchain and library paths. Build output is isolated under ignored build-battery/. The core build generates the same MinGW portability shims used by the prior personal build rather than modifying vendored sources. The software suite never opens a device. It also checks the installed effects DLL's metadata/interface load and unload without giving it a hardware host; real effects behavior still needs a full-app trial.
+Scripts default to the user's existing Qt 6.8.3 / MinGW 13.1 toolchain and library paths. Build output is isolated under ignored build-battery/. The core build generates the same MinGW portability shims used by the prior personal build rather than modifying vendored sources. The software suite never opens a device. It covers shared monitoring subscriptions, an interruptible provider backoff, and Windows cancellation that retains a stalled operation rather than hanging unload or freeing driver-owned storage. It also checks the installed effects DLL's metadata/interface load and unload without giving it a hardware host; real effects behavior still needs a full-app trial.
 
 Preparation copies the installed settings, profiles, effects plugin and runtime libraries into an isolated trial folder. It does not install or launch anything, overwrite the installed app, change startup tasks or touch Fan Control. Keep the trial manifest and original installation as rollback materials.
 
