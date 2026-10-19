@@ -17,8 +17,6 @@
 #include "LogManager.h"
 #include "RGBController.h"
 #include "CorsairPeripheralV2Devices.h"
-#include <mutex>
-#include "CorsairMouseIdlePolicy.h"
 
 #define NA                              0xFFFFFFFF
 #define HID_MAX_STR                     255
@@ -92,6 +90,9 @@ enum corsair_v2_color
 class CorsairPeripheralV2Controller
 {
 public:
+    /*---------------------------------------------------------*\
+    | Runtime calls are serialized by RGBController::DeviceMutex.|
+    \*---------------------------------------------------------*/
     CorsairPeripheralV2Controller(hid_device* dev_handle, const char* path, std::string name);
     virtual ~CorsairPeripheralV2Controller();
 
@@ -108,8 +109,8 @@ public:
     bool                            MouseIdleNeedsUpdate();
     unsigned int                    GetKeyboardLayout();
 
-    void                            SetRenderMode(corsair_v2_device_mode mode);
-    void                            LightingControl(uint8_t opt1);
+    bool                            SetRenderMode(corsair_v2_device_mode mode);
+    bool                            LightingControl(uint8_t opt1);
     void                            SetLEDs(uint8_t *data, uint16_t data_size);
     void                            UpdateHWMode(uint16_t mode, corsair_v2_color color_mode, uint8_t speed,
                                                  uint8_t direction, uint8_t brightness, std::vector<RGBColor> colors);
@@ -122,10 +123,10 @@ protected:
     uint8_t                         light_ctrl          = CORSAIR_V2_LIGHT_CTRL2;
 
 private:
-    bool                            SetRenderModeChecked(corsair_v2_device_mode mode);
-    bool                            LightingControlChecked(uint8_t opt1);
     hid_device*                     OpenMouseEvents();
     void                            ReadMouseEvents(unsigned long long now);
+    bool                            UpdateMouseConnection(unsigned long long now);
+    bool                            AllowMouseFrame(unsigned long long now);
     void                            SetMouseConnected(bool connected);
     bool                            ReadMouseConnection();
     bool                            ReadMouseInactivity();
@@ -141,19 +142,16 @@ private:
     bool                            mouse_idle_handoff_enabled = false;
     bool                            mouse_connected = true;
     bool                            mouse_connection_sync = false;
-    bool                            mouse_event_failure_reported = false;
     bool                            mouse_inactivity_valid = false;
     unsigned long long              mouse_inactivity_ms = 0;
     unsigned long long              mouse_handoff_ms = 0;
-    unsigned long long              mouse_handoff_counter_ms = 0;
     bool                            mouse_activity_after_handoff = false;
     unsigned long long              mouse_next_query_ms = 0;
     unsigned long long              mouse_event_retry_ms = 0;
-    std::mutex                      mouse_lighting_mutex;
-    CorsairMouseIdlePolicy          mouse_idle_policy;
+    bool                            mouse_handed_back = false;
+    bool                            mouse_software_required = false;
+    unsigned long long              mouse_retry_after_ms = 0;
     unsigned long long              mouse_idle_timeout_ms = 900000;
-    unsigned long long              mouse_last_frame_ms = 0;
-    bool                            mouse_transition_failed = false;
     void                            ClearPacketBuffer();
     unsigned int                    GetAddress(uint8_t address);
     unsigned int                    GetAddressRetry(uint8_t address);
