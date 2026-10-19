@@ -46,6 +46,12 @@ RGBController_CorsairV2SW::RGBController_CorsairV2SW(CorsairPeripheralV2Controll
     Direct.color_mode               = MODE_COLORS_PER_LED;
     modes.push_back(Direct);
 
+    configuration = controller->GetMouseIdleConfiguration();
+    if(!configuration.empty())
+    {
+        flags |= CONTROLLER_FLAG_MANUALLY_CONFIGURABLE_DEVICE_SPECIFIC;
+    }
+
     SetupZones();
     /*-----------------------------------------------------*\
     | The Corsair K55 RGB PRO requires a packet within      |
@@ -243,4 +249,18 @@ void RGBController_CorsairV2SW::KeepaliveThread()
         }
         std::this_thread::sleep_for(controller->HasMouseIdleControl() ? std::chrono::milliseconds(250) : CORSAIR_V2_SLEEP_PERIOD);
     }
+}
+
+void RGBController_CorsairV2SW::DeviceConfigureDevice()
+{
+    if((flags & CONTROLLER_FLAG_MANUALLY_CONFIGURED_DEVICE_SPECIFIC) == 0)
+    {
+        configuration = controller->GetMouseIdleConfiguration();
+        controller->SetMouseIdleConfiguration(configuration);
+    }
+}
+
+void RGBController_CorsairV2SW::DeviceUpdateDeviceSpecificConfiguration()
+{
+    controller->SetMouseIdleConfiguration(configuration);
 }

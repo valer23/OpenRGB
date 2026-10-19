@@ -102,6 +102,8 @@ public:
     std::string                     GetSerialString();
     const corsair_v2_device*        GetDeviceData();
     bool                            IsDeviceSupported();
+    std::string                     GetMouseIdleConfiguration();
+    void                            SetMouseIdleConfiguration(const std::string& configuration);
     bool                            HasMouseIdleControl();
     bool                            MouseIdleNeedsUpdate();
     unsigned int                    GetKeyboardLayout();
@@ -131,7 +133,12 @@ private:
     bool                            ChangeMouseOwnership(bool software);
     hid_device*                     mouse_events = nullptr;
     unsigned int                    mouse_receiver_pid = 0;
+    /*---------------------------------------------------------*\
+    | Activity monitoring remains active after disabling the   |
+    | handoff policy so software ownership can resume safely.  |
+    \*---------------------------------------------------------*/
     bool                            mouse_idle_enabled = false;
+    bool                            mouse_idle_handoff_enabled = false;
     bool                            mouse_connected = true;
     bool                            mouse_connection_sync = false;
     bool                            mouse_event_failure_reported = false;
