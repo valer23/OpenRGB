@@ -9,7 +9,7 @@ The matching fork core is required for telemetry. On an older API-v5 core the pl
 - Corsair Dark Core RGB Pro SE: passive battery notification parser in the existing, matched receiver reader. No additional USB request or reader is created. Automatic control GET0F was removed after reproducing a late-reply collision with native GET40 inactivity. Notifications require owner-hardware validation and are disabled by default. Native idle support must already be available; this feature never enables it itself.
 - ASUS ROG Delta II: strict parsers and an exclusive Windows vendor-interface validation owner. Automatic polling is disabled until sleep-safe behavior is established. The manual probe refuses an absent, ambiguous, wrong-descriptor or busy interface. A valid awake battery reply does not establish safe background polling.
 
-Neither device has yet been validated on the owner's receiver. This is not a completed two-device release. Do not enable validation flags merely to make the menu show a percentage.
+One awake Delta II exchange through the owner's receiver succeeded (89%, not charging); sleep-safe operation, coexistence with ASUS readers, and charging transitions remain unvalidated. Corsair receiver notifications are still unvalidated. This is not a completed two-device release. Do not enable validation flags merely to make the menu show a percentage.
 
 ## Development and trial
 

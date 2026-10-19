@@ -1,8 +1,26 @@
 #include "BatteryStatus/BatteryProtocol.h"
 #include <cassert>
 #include <iostream>
+#include <fstream>
+#include <vector>
+#include <nlohmann/json.hpp>
 int main()
 {
+    // Real owner-confirmed awake capture. Prefixes are sufficient for decoding;
+    // this fixture does not claim a sleeping-device or independent-gauge check.
+    std::ifstream capture("tests/battery-status/fixtures/delta-ii-awake-20261019.json");
+    assert(capture.good());
+    nlohmann::json fixture;
+    capture >> fixture;
+    const auto& snapshot = fixture.at("snapshot");
+    const auto capturedLevel = snapshot.at("level_report_prefix").get<std::vector<unsigned char>>();
+    const auto capturedCharging = snapshot.at("charging_report_prefix").get<std::vector<unsigned char>>();
+    assert(BatteryProtocol::AsusLevel(capturedLevel.data(), capturedLevel.size()) == 89);
+    assert(BatteryProtocol::AsusCharging(capturedCharging.data(), capturedCharging.size()) == 0);
+    assert(!BatteryProtocol::AsusLevel(capturedCharging.data(), capturedCharging.size()));
+    assert(!BatteryProtocol::AsusCharging(capturedLevel.data(), capturedLevel.size()));
+    assert(!snapshot.at("automatic_polling_enabled").get<bool>());
+    assert(!snapshot.at("no_wake_validated").get<bool>());
     unsigned char corsair[]={1,2,0,0xF8,2}; // 760 tenths
     assert(BatteryProtocol::CorsairLevel(corsair,5)==76);
     assert(!BatteryProtocol::CorsairLevel(corsair,4));

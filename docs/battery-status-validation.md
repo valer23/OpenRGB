@@ -1,6 +1,6 @@
 # Battery Status software validation - 19 October 2026
 
-Status: software built and reviewed; owner-hardware validation pending. Neither device has a validated live battery reading yet.
+Status: software built and reviewed. One owner-confirmed awake Delta II read succeeded on 19 October at 09:26 local: receiver reports 89% and not charging. Sleep-safe acquisition and Corsair notification delivery remain unvalidated; automatic ASUS polling stays disabled.
 
 - Feature branch: codex/battery-status, isolated managed worktree, base cb1385fa.
 - Built core product-source revision: 5bbeecd23f6bd5cc58029697f8a4d35ce524bcab (subsequent tests/documentation changes do not alter the product code).
@@ -14,13 +14,13 @@ Status: software built and reviewed; owner-hardware validation pending. Neither 
 - Installed executable remains SHA256 1080F2E6CEEC2232C733786F458DD4C825248006ED5B9A49C60E13344BE41888.
 - Trial executable SHA256 2DBAFE79496CE53E1D60A60695257CD917947EF5489950A636BC4EC46F222464.
 - Battery plugin SHA256 8A648D52B90DC0779285816FEB427DA0287B3D22C412EA25E7A9D8DDDC4BE18F.
-- Installed OpenRGB and Fan Control remained running. No installation, service stop, startup change, public post, PR/MR or push occurred.
+- Installed OpenRGB and Fan Control remained running. No installation, startup change, public post, PR/MR or push occurred. Later hardware checks used explicitly authorized vendor service stops and owner-initiated ASUS process closures; see the dated evidence below.
 
 ## Important limit
 
 A successful awake Delta II read would validate framing and the reported value only. It would not establish no-wake background polling. A Corsair notification parser passing fake-HID tests does not establish the owner's receiver emits that frame. The UI will correctly show unknown/unavailable until evidence is collected.
 
-The next step is the pending owner-confirmed awake headset read. A later isolated full-app mouse trial requires the owner to exit normal OpenRGB through its tray so there is one receiver owner; Fan Control stays running. Never start a second hardware-detecting OpenRGB instance. The trial launcher enforces this guard. Native 15-minute firmware sleep remains pending; no repeated long wait is required for this software stage.
+The awake headset framing check has succeeded; no-wake behavior and acquisition coexistence remain open. A later isolated full-app mouse trial requires the owner to exit normal OpenRGB through its tray so there is one receiver owner; Fan Control stays running. Never start a second hardware-detecting OpenRGB instance. The trial launcher enforces this guard. Native 15-minute firmware sleep remains pending; no repeated long wait is required for this software stage.
 
 See plugins/BatteryStatus/README.md and the trial/probe scripts for the concrete commands and safety guards.
 
@@ -49,3 +49,18 @@ Cached Windows metadata confirms the exact collection is the expected vendor int
 Prepared scripts/Find-DeltaII-Owner.ps1 for a read-only exact-object handle lookup in the owner's existing administrator terminal. It dynamically resolves the PDO, validates the downloaded Microsoft Handle executable's Authenticode signature, and passes only listing/search options; it does not stop services/processes, close external handles or issue USB commands. Handle was downloaded from Microsoft's official Sysinternals site; signer Microsoft Corporation, signature Valid, SHA256 24BAFCC570CC9BBB6B6E6652A57A519E0464E3996891AABA6F55299CCE20B04F. Its first-run license dialog is left for the owner to review. No further service closures are proposed until the lookup identifies the actual remaining owner.
 
 Sources: https://learn.microsoft.com/en-us/sysinternals/downloads/handle and https://learn.microsoft.com/en-us/windows-hardware/drivers/hid/opening-hid-collections.
+
+## Successful awake Delta II read - 19 October 2026, 09:26 local
+
+After owner-initiated ASUS framework closures, both exact-PDO owner scans reported no matching handles. LightingService was already Stopped, and the transaction preserved that state. The bounded exclusive probe exited 0 and decoded receiver reports as percentage=89, charging=false. It sent the two authorized battery/charging requests only; firmware was not queried. No independent display/gauge comparison was supplied, and charging=true remains untested.
+
+Captured prefixes (12 bytes each; full reports were not retained):
+
+- Level: CC 12 07 00 00 05 59 14 01 00 00 00; byte6 is 0x59 (89).
+- Charging: CC 12 08 00 00 00 00 00 00 00 00 00; byte5 is 0 (not charging).
+
+Evidence: build-battery/probe/lighting-trial-20261019-092603-471.json and a sanitized, committed copy in tests/battery-status/fixtures/delta-ii-awake-20261019.json. The protocol test replays the real prefixes and rejects interpreting the charging report as level or vice versa. Diagnostic regression tests cover Handle's successful no-match exit1, failed scans, and Running/Stopped service state preservation on both successful and failed probe launches.
+
+This validates one awake exchange through the owner's receiver. It does not validate queries against a sleeping headset, passive notification delivery, audio continuity, hotplug, charging transitions, battery accuracy, or automatic polling. No background acquisition was enabled and no standalone sample was inserted into the core as current telemetry. Normal ASUS components must still be able to retain their existing ownership; runtime service/process termination is not a plugin strategy.
+
+At the end of the owner trial, both LightingService and ArmouryCrateService were manually stopped. The owner should restore these originally Running services and reopen Armoury after testing. Fan Control and installed OpenRGB remain running.

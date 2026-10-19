@@ -40,7 +40,7 @@ if($LASTEXITCODE -ne 0){throw 'Actual Corsair driver test compilation failed'}
 & "$buildRoot\corsair_driver_test.exe"
 if($LASTEXITCODE -ne 0){throw 'Actual Corsair driver tests failed'}
 
-& "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' tests/battery-status/protocol_test.cpp -o "$buildRoot\protocol_test.exe"
+& "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' '-Idependencies/json' tests/battery-status/protocol_test.cpp -o "$buildRoot\protocol_test.exe"
 if($LASTEXITCODE -ne 0){throw 'Protocol test compilation failed'}
 & "$buildRoot\protocol_test.exe"
 if($LASTEXITCODE -ne 0){throw 'Protocol tests failed'}

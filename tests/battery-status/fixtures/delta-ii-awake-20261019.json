@@ -1,0 +1,48 @@
+{
+  "capture": {
+    "localTime": "2026-10-19T09:26:03+02:00",
+    "vendorId": "0B05",
+    "productId": "1AFA",
+    "collection": "MI03/COL04",
+    "ownerConfirmedAwake": true,
+    "exclusiveAccess": true,
+    "reports": "First 12 bytes only, not complete 64-byte reports",
+    "independentGaugeComparison": false
+  },
+  "snapshot": {
+    "automatic_polling_enabled": false,
+    "charging": false,
+    "charging_report_prefix": [
+      204,
+      18,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "device": "ASUS ROG Delta II",
+    "firmware_usb_version": "Not queried: no unrelated commands",
+    "level_report_prefix": [
+      204,
+      18,
+      7,
+      0,
+      0,
+      5,
+      89,
+      20,
+      1,
+      0,
+      0,
+      0
+    ],
+    "no_wake_validated": false,
+    "percentage": 89
+  }
+}
