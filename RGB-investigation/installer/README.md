@@ -1,5 +1,26 @@
 # OpenRGB Custom personal installer
 
+## Device-specific mouse idle settings - 19 October 2026
+
+Version 1.0.20261019.2 moves the idle handoff toggle and timeout to the mouse's
+Edit Device page. OpenRGB saves them through its existing Configuration.json
+mechanism. The driver no longer reads CorsairMouseIdle from OpenRGB.json.
+Upstream defaults to disabled/900 seconds; this personal package migrates the
+existing opt-in and timeout (normally enabled/60 seconds).
+
+Configure-Mouse-Idle.ps1 backs up both settings files, writes the per-device
+entry first, then removes the old application property. Existing valid device
+preferences win. Malformed new settings stop migration without deleting the
+legacy fallback. Existing fan configuration and all profile colours/effects
+are preserved; a saved ValWhite mouse description supplies the matching device
+identity if Configuration.json has no mouse entry yet. Repeated runs are safe.
+
+The Windows build, independent standards and behaviour reviews, driver
+failure/recovery checks and migration fixtures passed. The isolated GUI
+confirmed the controls, a 30-second handoff and movement resume. Full firmware
+sleep and battery-life measurement remain separate, pending checks. Linux and
+macOS are unverified. Older sections below describe historical packages.
+
 ## Native mouse idle revision - 19 October 2026
 
 Version 1.0.20261019.1 replaces Windows Raw Input tracking with the
@@ -54,7 +75,7 @@ The firmware's own sleep timeout is unchanged. Keyboard input does not reset
 the mouse timer. Other supported devices and wired operation retain their
 existing lighting path.
 
-Configure-Mouse-Idle.ps1 backs up OpenRGB.json before adding CorsairMouseIdle.
+In the historical 18 October package, Configure-Mouse-Idle.ps1 backed up OpenRGB.json before adding CorsairMouseIdle.
 It preserves an existing block, including an explicit enabled=false opt-out or
 custom timeout. To change it, exit OpenRGB, edit timeout_seconds (5 to 3600),
 and restart. Missing settings in the driver preserve its former behaviour;
