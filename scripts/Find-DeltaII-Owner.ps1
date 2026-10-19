@@ -30,9 +30,10 @@ $handleExitCode=$LASTEXITCODE
 $output=@($output | ForEach-Object {([string]$_).Replace([string][char]0,'')})
 $output | Out-String | Set-Content -LiteralPath $log -Encoding utf8
 $output | ForEach-Object {Write-Host $_}
-$licenseRequired=($output -join "`n") -match 'must accept EULA|Use -accepteula'
-if($licenseRequired -or $handleExitCode -ne 0){
-    $status=if($licenseRequired){'license-required'}else{'utility-failed'}
+. (Join-Path $PSScriptRoot 'BatteryHandleResult.ps1')
+$status=Get-BatteryHandleScanStatus -ExitCode $handleExitCode -Output $output
+$licenseRequired=$status -eq 'license-required'
+if($status -ne 'completed'){
     @{status=$status;exitCode=$handleExitCode;owners=$null;commandsSent=0;servicesChanged=@();handlesClosed=@();log=$log} |
         ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $probeRoot 'headset-handle-owner.json') -Encoding utf8
     if($licenseRequired){throw 'Owner scan did not run. Review the displayed Microsoft license; if you accept it, rerun with -AcceptHandleLicense.'}

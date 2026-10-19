@@ -1,5 +1,6 @@
 param([string]$ToolchainRoot='C:\Users\valerian\git-repos\OpenRGB-KFA2\RGB-investigation\toolchain')
 $ErrorActionPreference='Stop'
+& (Join-Path $PSScriptRoot 'handle_result_test.ps1')
 $repoRoot=(Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $compilerBin=Join-Path $ToolchainRoot 'Tools\mingw1310_64\bin'
 $qtBin=Join-Path $ToolchainRoot '6.8.3\mingw_64\bin'
