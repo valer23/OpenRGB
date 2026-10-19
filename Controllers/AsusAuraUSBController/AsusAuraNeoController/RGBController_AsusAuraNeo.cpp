@@ -1,5 +1,5 @@
 /*---------------------------------------------------------*\
-| RGBController_AsusAuraNeo_Windows.cpp                     |
+| RGBController_AsusAuraNeo.cpp                             |
 |                                                           |
 | ASUS Aura NEO onboard logo controller                     |
 |                                                           |
@@ -8,10 +8,13 @@
 | This file is part of the OpenRGB project                  |
 | SPDX-License-Identifier: GPL-2.0-or-later                 |
 \*---------------------------------------------------------*/
-#include "RGBController_AsusAuraNeo_Windows.h"
+
+#include "RGBController_AsusAuraNeo.h"
 #include "LogManager.h"
 #include <chrono>
 #include <thread>
+
+#if defined(HID_API_VERSION) && HID_API_VERSION >= 0x00000F00
 
 /**------------------------------------------------------------------*\
     @name ASUS ROG STRIX B850-F GAMING WIFI7 NEO (logo)
@@ -21,14 +24,15 @@
     @direct :white_check_mark:
     @effects :o:
     @detectors DetectAsusAuraNeo
-    @comment Windows only. Static onboard-logo colour streaming is supported.
+    @comment Requires HIDAPI 0.15 or newer. Verified on Windows hardware.
+             Static onboard-logo colour streaming is supported.
              ARGB headers and hardware effects are unsupported.
              Avoid simultaneous ASUS LightingService lighting control.
 \*-------------------------------------------------------------------*/
 
 RGBController_AsusAuraNeo::RGBController_AsusAuraNeo(hid_device* handle, const std::string& path)
-    : device(handle)
 {
+    device      = handle;
     name        = "ASUS ROG STRIX B850-F GAMING WIFI7 NEO (logo)";
     vendor      = "ASUS";
     type        = DEVICE_TYPE_MOTHERBOARD;
@@ -36,7 +40,7 @@ RGBController_AsusAuraNeo::RGBController_AsusAuraNeo(hid_device* handle, const s
     location    = "HID: " + path;
     mode static_mode;
     static_mode.name       = "Static";
-    static_mode.value      = 0;
+    static_mode.value      = ASUS_AURA_NEO_MODE_STATIC;
     static_mode.flags      = MODE_FLAG_HAS_PER_LED_COLOR;
     static_mode.color_mode = MODE_COLORS_PER_LED;
     modes.push_back(static_mode);
@@ -59,10 +63,9 @@ RGBController_AsusAuraNeo::~RGBController_AsusAuraNeo()
     hid_close(device);
 }
 
-RGBController_AsusAuraNeo::Report RGBController_AsusAuraNeo::OnboardReport(
-    unsigned char output, bool initialize, RGBColor color)
+bool RGBController_AsusAuraNeo::SendOnboardReport(unsigned char output, bool initialize, RGBColor color)
 {
-    Report report = {};
+    unsigned char report[ASUS_AURA_NEO_REPORT_SIZE] = {};
     report[0] = 0x41;
     report[1] = 0x05;
     report[2] = 0x01;
@@ -78,13 +81,15 @@ RGBController_AsusAuraNeo::Report RGBController_AsusAuraNeo::OnboardReport(
         report[19] = RGBGetRValue(color);
         report[20] = RGBGetBValue(color);
     }
-    return report;
+    return Send(report);
 }
 
-bool RGBController_AsusAuraNeo::Send(const Report& report)
+bool RGBController_AsusAuraNeo::Send(const unsigned char* report)
 {
-    // The capture uses control SET_REPORT. hid_write uses a different endpoint.
-    if(hid_send_output_report(device, report.data(), report.size()) != static_cast<int>(report.size()))
+    /*---------------------------------------------------------*\
+    | The capture uses control SET_REPORT, not interrupt output.|
+    \*---------------------------------------------------------*/
+    if(hid_send_output_report(device, report, ASUS_AURA_NEO_REPORT_SIZE) != ASUS_AURA_NEO_REPORT_SIZE)
     {
         if(!write_failed)
         {
@@ -100,17 +105,21 @@ bool RGBController_AsusAuraNeo::Send(const Report& report)
 
 bool RGBController_AsusAuraNeo::Initialize()
 {
-    // Exact captured onboard setup packets, frames 369 and 371. Header setup
-    // packets are deliberately excluded; only the onboard logo is supported.
-    if(!Send(OnboardReport(0, true, 0)) || !Send(OnboardReport(1, true, 0)))
+    /*---------------------------------------------------------*\
+    | Captured onboard setup only. Header setup is excluded.   |
+    \*---------------------------------------------------------*/
+    if(!SendOnboardReport(0, true, 0) || !SendOnboardReport(1, true, 0))
     {
         return false;
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(2200));
-    Report activate = {};
+    unsigned char activate[ASUS_AURA_NEO_REPORT_SIZE] = {};
     activate[0] = 0x41;
     activate[1] = 0x21;
-    activate[3] = 0x01; // Exact captured frame 407; activation semantics inferred.
+    /*---------------------------------------------------------*\
+    | Captured activation packet; its wider meaning is unknown.|
+    \*---------------------------------------------------------*/
+    activate[3] = 0x01;
     if(!Send(activate))
     {
         return false;
@@ -122,17 +131,19 @@ bool RGBController_AsusAuraNeo::Initialize()
 
 void RGBController_AsusAuraNeo::DeviceUpdateLEDs()
 {
-    if(colors.empty() || active_mode != 0 || (!initialized && !Initialize()))
+    if(colors.empty() || (size_t)active_mode >= modes.size() || modes[active_mode].value != ASUS_AURA_NEO_MODE_STATIC || (!initialized && !Initialize()))
     {
         return;
     }
-    // Both captured onboard outputs share the chosen logo colour. Their separate
-    // physical mapping is unknown, so do not expose unverified independent zones.
-    if(!Send(OnboardReport(0, false, colors[0])))
+    /*---------------------------------------------------------*\
+    | Both captured outputs share the logo colour. Their       |
+    | separate physical mapping has not been established.      |
+    \*---------------------------------------------------------*/
+    if(!SendOnboardReport(0, false, colors[0]))
     {
         return;
     }
-    if(Send(OnboardReport(1, false, colors[0])))
+    if(SendOnboardReport(1, false, colors[0]))
     {
         write_failed = false;
     }
@@ -158,3 +169,5 @@ void RGBController_AsusAuraNeo::DeviceUpdateMode()
 {
     DeviceUpdateLEDs();
 }
+
+#endif
