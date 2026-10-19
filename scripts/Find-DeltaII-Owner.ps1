@@ -1,5 +1,7 @@
 # Read-only diagnostic. Does not stop a service/process, close another handle,
 # or open a HID data reader. Requires Microsoft's signed portable Handle utility.
+# Specify this switch only after reviewing and accepting Microsoft's Handle license.
+param([switch]$AcceptHandleLicense)
 $ErrorActionPreference='Stop'
 $principal=[Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
 if(-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){
@@ -20,10 +22,22 @@ $pdo=[string](Get-PnpDeviceProperty -InstanceId $devices[0].InstanceId -KeyName 
 if([string]::IsNullOrWhiteSpace($pdo) -or -not $pdo.StartsWith('\Device\')){throw 'Cached device-object name is invalid; no scan performed'}
 $log=Join-Path $probeRoot 'headset-handle-owner.log'
 Write-Host "Looking up handles for $pdo only. No handles will be closed."
-Write-Host 'Microsoft Handle may show its license dialog on first use; review it to continue.'
-$output=@(& $utility -a -g $pdo 2>&1)
+$handleArguments=@('-a','-g',$pdo)
+if($AcceptHandleLicense){$handleArguments=@('-accepteula')+$handleArguments}
+$output=@(& $utility @handleArguments 2>&1)
+$handleExitCode=$LASTEXITCODE
+# Handle's redirected first-run output can contain embedded UTF-16 NULs.
+$output=@($output | ForEach-Object {([string]$_).Replace([string][char]0,'')})
 $output | Out-String | Set-Content -LiteralPath $log -Encoding utf8
 $output | ForEach-Object {Write-Host $_}
+$licenseRequired=($output -join "`n") -match 'must accept EULA|Use -accepteula'
+if($licenseRequired -or $handleExitCode -ne 0){
+    $status=if($licenseRequired){'license-required'}else{'utility-failed'}
+    @{status=$status;exitCode=$handleExitCode;owners=$null;commandsSent=0;servicesChanged=@();handlesClosed=@();log=$log} |
+        ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $probeRoot 'headset-handle-owner.json') -Encoding utf8
+    if($licenseRequired){throw 'Owner scan did not run. Review the displayed Microsoft license; if you accept it, rerun with -AcceptHandleLicense.'}
+    throw "Owner scan failed (exit $handleExitCode); see $log"
+}
 $owners=@()
 foreach($line in $output){
     if([string]$line -match '\bpid:\s*(\d+)'){
@@ -33,6 +47,6 @@ foreach($line in $output){
         $owners+=@{pid=$ownerPid;process=$process.ProcessName;services=$services}
     }
 }
-@{deviceInstance=$devices[0].InstanceId;deviceObject=$pdo;owners=$owners;commandsSent=0;servicesChanged=@();handlesClosed=@();log=$log} |
+@{status='completed';deviceInstance=$devices[0].InstanceId;deviceObject=$pdo;owners=$owners;commandsSent=0;servicesChanged=@();handlesClosed=@();log=$log} |
     ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $probeRoot 'headset-handle-owner.json') -Encoding utf8
 Write-Host "Saved lookup: $log"
