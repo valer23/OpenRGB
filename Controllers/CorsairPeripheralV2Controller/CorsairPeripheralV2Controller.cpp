@@ -783,7 +783,7 @@ std::string CorsairPeripheralV2Controller::GetMouseIdleConfiguration()
 
     nlohmann::json config;
     config["schema"]["idle_handoff_enabled"]["title"]       = "Return mouse lighting to firmware when idle";
-    config["schema"]["idle_handoff_enabled"]["type"]        = "boolean";
+    config["schema"]["idle_handoff_enabled"]["type"]        = "bool";
     config["schema"]["idle_timeout_seconds"]["title"]       = "Lighting idle timeout (seconds)";
     config["schema"]["idle_timeout_seconds"]["type"]        = "integer";
     config["schema"]["idle_timeout_seconds"]["minimum"]     = 5;
