@@ -39,3 +39,13 @@ The owner explicitly authorized stopping and restoring ArmouryCrateService. The 
 After the owner closed the headset's Armoury component manually, a metadata-only check still returned Windows error 32. ArmouryAudioAgent (PID 14340) and ArmouryCrateService remained running; this does not identify which process holds the interface. A direct authorized service-control attempt was denied by Windows before Stop succeeded (stopRequested=false, probeAttempted=false, service still Running). No headset battery or charging commands were sent. FanControl, installed OpenRGB and LightingService remained running.
 
 Further exclusive acquisition requires the owner to release the remaining ASUS reader using their Windows session, or provide a visible administrator terminal for the already-authorized transactional stop/read/restore. Do not open shared access as a workaround.
+
+## Administrator service test and precise owner lookup
+
+The owner's administrator-terminal transaction stopped ArmouryCrateService, attempted exclusive access once, and restored the service successfully (restoreError=null, after=Running). The interface still returned Windows error 32 while that service was stopped. This does not identify the remaining owner and does not prove that ArmouryCrateService had no handle; multiple owners may exist. No battery/charging command was sent.
+
+Cached Windows metadata confirms the exact collection is the expected vendor interface: MI03/COL04, usage page FF00, usage 1, 64-byte input and output reports, no feature reports. A diagnostic helper obtained this using zero-data-access metadata handles only (no input/output/feature report operations). The Windows instance is HID/VID_0B05&PID_1AFA&MI_03&COL04/8&2CBE7DFC&0&0003; cached PDO name at inspection was \Device\0000008b. Evidence: build-battery/probe/headset-metadata.json.
+
+Prepared scripts/Find-DeltaII-Owner.ps1 for a read-only exact-object handle lookup in the owner's existing administrator terminal. It dynamically resolves the PDO, validates the downloaded Microsoft Handle executable's Authenticode signature, and passes only listing/search options; it does not stop services/processes, close external handles or issue USB commands. Handle was downloaded from Microsoft's official Sysinternals site; signer Microsoft Corporation, signature Valid, SHA256 24BAFCC570CC9BBB6B6E6652A57A519E0464E3996891AABA6F55299CCE20B04F. Its first-run license dialog is left for the owner to review. No further service closures are proposed until the lookup identifies the actual remaining owner.
+
+Sources: https://learn.microsoft.com/en-us/sysinternals/downloads/handle and https://learn.microsoft.com/en-us/windows-hardware/drivers/hid/opening-hid-collections.
