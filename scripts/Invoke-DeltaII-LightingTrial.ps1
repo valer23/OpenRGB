@@ -16,19 +16,22 @@ $controller=Get-Service -Name LightingService
 $serviceInfo=Get-CimInstance Win32_Service -Filter "Name='LightingService'"
 $otherOwners=@($ownership.owners | Where-Object { $_.pid -ne $serviceInfo.ProcessId -or $_.process -ne 'LightingService' })
 if($otherOwners.Count -and -not $DiagnoseOnly){throw 'Another reader still holds the headset. Close the Armoury device page/app normally, then retry this script. No service or device changes made.'}
-if($controller.Status -ne [System.ServiceProcess.ServiceControllerStatus]::Running){throw 'LightingService must initially be Running; no changes made'}
+$initialServiceState=$controller.Status.ToString()
+if($initialServiceState -notin @('Running','Stopped')){throw 'LightingService is transitioning; no changes made'}
 if(@($controller.DependentServices).Count){throw 'Unexpected dependent services; no changes made'}
 $runId='lighting-trial-'+(Get-Date -Format 'yyyyMMdd-HHmmss-fff')
 $stdout=Join-Path $probeRoot ($runId+'.json')
 $stderr=Join-Path $probeRoot ($runId+'.stderr.log')
 $resultPath=Join-Path $probeRoot 'lighting-trial-result.json'
-$result=[ordered]@{service='LightingService';before='Running';diagnoseOnly=[bool]$DiagnoseOnly;ownersWhileStopped=$null;stopRequested=$false;probeAttempted=$false;probeExitCode=$null;probeResult=$null;error=$null;restoreError=$null;after=$null;stdout=$stdout;stderr=$stderr}
+$result=[ordered]@{service='LightingService';before=$initialServiceState;diagnoseOnly=[bool]$DiagnoseOnly;ownersWhileStopped=$null;stopRequested=$false;probeAttempted=$false;probeExitCode=$null;probeResult=$null;error=$null;restoreError=$null;after=$null;stdout=$stdout;stderr=$stderr}
 $previousPath=$env:PATH
 try {
     $env:PATH='C:\Users\valerian\git-repos\OpenRGB-KFA2\RGB-investigation\toolchain\Tools\mingw1310_64\bin;'+$env:PATH
-    Write-Host 'Temporarily stopping LightingService. Leave this window open until restoration finishes.'
-    $controller.Stop();$result.stopRequested=$true
-    $controller.WaitForStatus([System.ServiceProcess.ServiceControllerStatus]::Stopped,[TimeSpan]::FromSeconds(10))
+    if($initialServiceState -eq 'Running'){
+        Write-Host 'Temporarily stopping LightingService. Leave this window open until restoration finishes.'
+        $controller.Stop();$result.stopRequested=$true
+        $controller.WaitForStatus([System.ServiceProcess.ServiceControllerStatus]::Stopped,[TimeSpan]::FromSeconds(10))
+    } else {Write-Host 'LightingService is already stopped; its initial state will be preserved.'}
     & (Join-Path $PSScriptRoot 'Find-DeltaII-Owner.ps1')
     $during=Get-Content -LiteralPath (Join-Path $probeRoot 'headset-handle-owner.json') -Raw | ConvertFrom-Json
     if($during.status -ne 'completed'){throw 'During-stop ownership scan failed; no battery query issued'}
@@ -58,5 +61,5 @@ finally {
     $result | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $resultPath -Encoding utf8
 }
 $result | ConvertTo-Json -Depth 20 | Write-Host
-if($result.restoreError -or $result.after -ne 'Running'){throw 'RESTORATION FAILED: start LightingService in Windows Services before closing this window'}
-Write-Host "LightingService restored. Result saved to $resultPath"
+if($result.restoreError -or $result.after -ne $result.before){throw 'SERVICE STATE MISMATCH: inspect LightingService and the saved result before closing this window'}
+Write-Host "LightingService state: $($result.after) (initially $($result.before)). Result saved to $resultPath"
