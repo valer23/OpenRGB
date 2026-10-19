@@ -1,15 +1,15 @@
 /*---------------------------------------------------------*\
 | RGBController_LianLiUniHubSLInfinity.cpp                  |
 |                                                           |
-| RGBController for Lian Li SL Infinity Uni Hub             |
+|   RGBController for Lian Li SL Infinity Uni Hub           |
 |                                                           |
-| Simon McKenna                               21 Oct 2023   |
-| Will Kennedy                                17 Jan 2023   |
-| Oliver P                                    26 Apr 2022   |
-| Credit to Luca Lovisa for original work.                  |
+|   Simon McKenna                               21 Oct 2023 |
+|   Will Kennedy                                17 Jan 2023 |
+|   Oliver P                                    26 Apr 2022 |
+|   Credit to Luca Lovisa for original work.                |
 |                                                           |
-| This file is part of the OpenRGB project                  |
-| SPDX-License-Identifier: GPL-2.0-or-later                 |
+|   This file is part of the OpenRGB project                |
+|   SPDX-License-Identifier: GPL-2.0-or-later               |
 \*---------------------------------------------------------*/
 
 #include <string>
@@ -496,9 +496,7 @@ void RGBController_LianLiUniHubSLInfinity::DeviceUpdateMode()
             \*---------------------------------------------------------*/
             continue;
         }
-        /*---------------------------------------------------------*\
-        | Indexes start at 0                                        |
-        \*---------------------------------------------------------*/
+
         fan_idx = (((zones[zone_idx].leds_count + 15) / 16) - 1);
 
         controller->SetChannelMode((unsigned char)zone_idx, modes[active_mode], fan_idx);

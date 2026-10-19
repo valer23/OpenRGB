@@ -1,15 +1,15 @@
 /*---------------------------------------------------------*\
 | LianLiUniHubSLInfinityController.cpp                      |
 |                                                           |
-| Driver for Lian Li SL Infinity Uni Hub                    |
+|   Driver for Lian Li SL Infinity Uni Hub                  |
 |                                                           |
-| Simon McKenna                               21 Oct 2023   |
-| Will Kennedy                                17 Jan 2023   |
-| Oliver P                                    26 Apr 2022   |
-| Credit to Luca Lovisa for original work.                  |
+|   Simon McKenna                               21 Oct 2023 |
+|   Will Kennedy                                17 Jan 2023 |
+|   Oliver P                                    26 Apr 2022 |
+|   Credit to Luca Lovisa for original work.                |
 |                                                           |
-| This file is part of the OpenRGB project                  |
-| SPDX-License-Identifier: GPL-2.0-or-later                 |
+|   This file is part of the OpenRGB project                |
+|   SPDX-License-Identifier: GPL-2.0-or-later               |
 \*---------------------------------------------------------*/
 
 #include <string.h>
@@ -18,7 +18,6 @@
 #include "LogManager.h"
 
 using namespace std::chrono_literals;
-
 
 LianLiUniHubSLInfinityController::LianLiUniHubSLInfinityController(hid_device* dev_handle, const char* path, std::string dev_name)
 {
@@ -42,9 +41,9 @@ std::string LianLiUniHubSLInfinityController::GetFirmwareVersionString()
     wchar_t product_string[40];
     int ret = hid_get_product_string(dev, product_string, 40);
 
-    if(ret != 0)
+    if (ret != 0)
     {
-        return("");
+        return ("");
     }
 
     std::string return_string = StringUtils::wstring_to_string(product_string);
@@ -91,9 +90,7 @@ void LianLiUniHubSLInfinityController::SetChannelLEDs(unsigned char channel, RGB
 
     if(num_colors == 0)
     {
-        /*---------------------------------------------------------*\
-        | Do nothing, channel isn't in use                          |
-        \*---------------------------------------------------------*/
+
         return;
     }
 
@@ -108,10 +105,6 @@ void LianLiUniHubSLInfinityController::SetChannelLEDs(unsigned char channel, RGB
 
         float brightness_scale = brightness * infinityBrightnessLimit(colors[led_idx]);
 
-        /*---------------------------------------------------------*\
-        | Determine current position of led_data array from         |
-        | colors array                                              |
-        \*---------------------------------------------------------*/
         cur_led_idx = ((mod_led_idx + (fan_idx * 16)) * 3);
 
         led_data[cur_led_idx + 0] = (unsigned char)(RGBGetRValue(colors[led_idx]) * brightness_scale);
@@ -169,9 +162,6 @@ void LianLiUniHubSLInfinityController::SetChannelMode(unsigned char channel, con
     std::vector<RGBColor> colors = active_mode.colors;
     unsigned int num_colors = (unsigned int)colors.size();
 
-    /*---------------------------------------------------------*\
-    | Update led_data if there's colors                         |
-    \*---------------------------------------------------------*/
     if(!colors.empty())
     {
         brightness = (float)active_mode.brightness/4;
@@ -290,7 +280,7 @@ bool LianLiUniHubSLInfinityController::SendStartAction(unsigned char channel, un
 bool LianLiUniHubSLInfinityController::SendColorData(unsigned char   channel, unsigned int    num_leds, unsigned char*  led_data)
 {
     /*---------------------------------------------------------*\
-    | Send LED data                                             |
+    | Send LED data                                        |
     \*---------------------------------------------------------*/
 
     unsigned char usb_buf[353];
@@ -352,21 +342,13 @@ void LianLiUniHubSLInfinityController::SendCommitAction(unsigned char channel, u
     | Channel+device (10 = channel 1, 11 = channel 2, etc.)     |
     \*---------------------------------------------------------*/
     usb_buf[0x01]   = 0x10 + channel;
-    /*---------------------------------------------------------*\
-    | Effect                                                    |
-    \*---------------------------------------------------------*/
+
     usb_buf[0x02]   = effect;
-    /*---------------------------------------------------------*\
-    | Speed, 02=0%, 01=25%, 00=50%, ff=75%, fe=100%             |
-    \*---------------------------------------------------------*/
+
     usb_buf[0x03]   = speed;
-    /*---------------------------------------------------------*\
-    | Direction, right=00, left=01                              |
-    \*---------------------------------------------------------*/
+
     usb_buf[0x04]   = direction;
-    /*---------------------------------------------------------*\
-    | Brightness, 0=100%, 1= 75%, 2 = 50%, 3 = 25%, 8 = 0%      |
-    \*---------------------------------------------------------*/
+
     usb_buf[0x05]   = brightness;
 
     /*-----------------------------------------------------*\
