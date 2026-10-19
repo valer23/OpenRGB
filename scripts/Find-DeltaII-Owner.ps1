@@ -44,7 +44,19 @@ foreach($line in $output){
         $ownerPid=[int]$Matches[1]
         $process=Get-Process -Id $ownerPid -ErrorAction SilentlyContinue
         $services=@(Get-CimInstance Win32_Service -Filter "ProcessId=$ownerPid" | Select-Object -ExpandProperty Name)
-        $owners+=@{pid=$ownerPid;process=$process.ProcessName;services=$services}
+        $launch=Get-CimInstance Win32_Process -Filter "ProcessId=$ownerPid"
+        $ancestry=@()
+        $parentPid=[int]$launch.ParentProcessId
+        $seen=@($ownerPid)
+        for($depth=0;$depth -lt 5 -and $parentPid -gt 0 -and $parentPid -notin $seen;$depth++){
+            $parent=Get-CimInstance Win32_Process -Filter "ProcessId=$parentPid"
+            if(-not $parent){break}
+            $parentServices=@(Get-CimInstance Win32_Service -Filter "ProcessId=$parentPid" | Select-Object -ExpandProperty Name)
+            $ancestry+=@{pid=$parentPid;process=$parent.Name;executable=$parent.ExecutablePath;commandLine=$parent.CommandLine;services=$parentServices}
+            $seen+=@($parentPid)
+            $parentPid=[int]$parent.ParentProcessId
+        }
+        $owners+=@{pid=$ownerPid;process=$process.ProcessName;services=$services;executable=$launch.ExecutablePath;commandLine=$launch.CommandLine;ancestors=$ancestry}
     }
 }
 @{status='completed';deviceInstance=$devices[0].InstanceId;deviceObject=$pdo;owners=$owners;commandsSent=0;servicesChanged=@();handlesClosed=@();log=$log} |
