@@ -33,6 +33,11 @@ int main(int argc, char** argv)
         std::cout<<"Installed effects DLL: API-v5 metadata, load, interface cast and unload passed (no hardware host supplied)\n";
     }
     QPluginLoader loader(QString::fromLocal8Bit(argv[1]));
+    // PluginManager rejects a DLL without these discovery fields before Load().
+    const auto battery_metadata = loader.metaData()["MetaData"].toObject();
+    assert(battery_metadata["OpenRGBPluginAPIVersion"].toInt() == 5);
+    assert(battery_metadata["Id"].toString() == "org.openrgb.battery-status");
+    assert(!battery_metadata["VersionStr"].toString().isEmpty());
     auto* object=loader.instance();
     if(!object) { std::cerr<<loader.errorString().toStdString()<<'\n'; return 1; }
     auto* plugin=qobject_cast<OpenRGBPluginInterface*>(object);

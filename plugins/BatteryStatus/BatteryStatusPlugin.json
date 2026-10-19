@@ -1,5 +1,7 @@
 {
   "OpenRGBPluginAPIVersion": 5,
+  "Id": "org.openrgb.battery-status",
   "Name": "Battery Status",
-  "Version": "0.1.0"
+  "VersionStr": "0.1.0",
+  "Url": "https://github.com/valer23/OpenRGB"
 }
