@@ -46,6 +46,17 @@ if($LASTEXITCODE -ne 0){throw 'Actual Corsair driver tests failed'}
 if($LASTEXITCODE -ne 0){throw 'ASUS monitor test compilation failed'}
 & "$buildRoot\asus_monitor_test.exe"
 if($LASTEXITCODE -ne 0){throw 'ASUS monitor tests failed'}
+# Pause the actual monitor between predicate evaluation and wait to force the
+# shutdown interleaving that ordinary lifecycle tests cannot guarantee.
+$monitorSource=Get-Content "$repoRoot\BatteryStatus\AsusBatteryMonitor.cpp" -Raw
+$waitPredicate='[this] { return stop.load(); }'
+if(([regex]::Matches($monitorSource,[regex]::Escape($waitPredicate))).Count -ne 1){throw 'ASUS wait test seam changed'}
+$monitorSource='#include "AsusWaitHooks.h"'+"`n"+$monitorSource.Replace($waitPredicate,'[this] { const bool stopping = stop.load(); AsusPredicateTestHook(stopping); return stopping; }').Replace('changed.notify_all();','changed.notify_all(); AsusNotifyTestHook();')
+[System.IO.File]::WriteAllText("$buildRoot\AsusMonitorUnderTest.cpp",$monitorSource)
+& "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' '-Idependencies/json' '-IBatteryStatus' '-Itests/battery-status' tests/battery-status/asus_stop_race_test.cpp "$buildRoot\AsusMonitorUnderTest.cpp" BatteryStatus/BatteryStatusManager.cpp -o "$buildRoot\asus_stop_race_test.exe"
+if($LASTEXITCODE -ne 0){throw 'ASUS stop interleaving test compilation failed'}
+& "$buildRoot\asus_stop_race_test.exe"
+if($LASTEXITCODE -ne 0){throw 'ASUS stop interleaving regression failed'}
 & "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' '-Idependencies/json' tests/battery-status/protocol_test.cpp -o "$buildRoot\protocol_test.exe"
 if($LASTEXITCODE -ne 0){throw 'Protocol test compilation failed'}
 & "$buildRoot\protocol_test.exe"

@@ -16,7 +16,10 @@ AsusBatteryMonitor::~AsusBatteryMonitor()
 
 void AsusBatteryMonitor::StopLocked()
 {
-    stop.store(true);
+    {
+        std::lock_guard<std::mutex> wait_guard(wait_mutex);
+        stop.store(true);
+    }
     changed.notify_all();
     if(worker.joinable())
     {
