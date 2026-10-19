@@ -180,6 +180,34 @@ nlohmann::json AsusDeltaIIBattery::ReadAwakeSnapshot(bool owner_confirmed_awake)
     return result;
 }
 
+nlohmann::json AsusDeltaIIBattery::ReadAuthorizedSleepTest(bool owner_authorized_one_query)
+{
+    nlohmann::json result = {{"device", "ASUS ROG Delta II"}, {"percentage", nullptr}, {"charging", nullptr},
+        {"sleep_safety_experiment", true}, {"level_query_attempted", false},
+        {"automatic_polling_enabled", false}, {"no_wake_validated", false}};
+    if(!owner_authorized_one_query)
+    {
+        result["error"] = "Explicit authorization for one asleep battery query is required; no interface opened";
+        return result;
+    }
+#ifdef _WIN32
+    Handle handle;
+    std::string error;
+    if(!OpenExactDelta(handle, error)) { result["error"] = error; return result; }
+    std::array<unsigned char,64> reply = {};
+    result["level_query_attempted"] = true;
+    // Exactly one documented battery request. Do not query charging or retry.
+    if(!Query(handle.value, 7, reply, error)) { result["error"] = error; return result; }
+    const auto percentage = BatteryProtocol::AsusLevel(reply.data(), reply.size());
+    if(!percentage) { result["error"] = "Invalid battery percentage reply"; return result; }
+    result["percentage"] = *percentage;
+    result["level_report_prefix"] = std::vector<unsigned char>(reply.begin(), reply.begin() + 12);
+    result["observation_required"] = "Owner must report whether the naturally asleep headset woke; a reply does not prove no-wake";
+#else
+    result["error"] = "Owner-hardware validation is currently Windows-only";
+#endif
+    return result;
+}
 nlohmann::json AsusDeltaIIBattery::Observe()
 {
     nlohmann::json result = {{"device", "ASUS ROG Delta II"}, {"reports", nlohmann::json::array()},

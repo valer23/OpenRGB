@@ -11,6 +11,11 @@ int main(int argc,char** argv)
     {
         auto result=AsusDeltaIIBattery::Observe();std::cout<<result.dump(2)<<'\n';return result.contains("error")?1:0;
     }
+    if(argc==4 && std::string(argv[1])=="--sleep-test" &&
+       std::string(argv[2])=="--authorize-one-battery-query" && std::string(argv[3])=="--confirm-headset-asleep")
+    {
+        auto result=AsusDeltaIIBattery::ReadAuthorizedSleepTest(true);std::cout<<result.dump(2)<<'\n';return result.contains("error")?1:0;
+    }
     if(argc==3 && std::string(argv[1])=="--awake-read" && std::string(argv[2])=="--confirm-headset-on")
     {
         auto result=AsusDeltaIIBattery::ReadAwakeSnapshot(true);std::cout<<result.dump(2)<<'\n';return result.contains("error")?1:0;

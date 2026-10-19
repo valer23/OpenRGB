@@ -1,7 +1,12 @@
 # Explicit, one-shot diagnostic; never changes ASUS framework or OpenRGB processes.
-param([switch]$ConfirmHeadsetOn,[switch]$TemporarilyStopLightingService,[switch]$DiagnoseOnly)
+param([switch]$ConfirmHeadsetOn,[switch]$TemporarilyStopLightingService,[switch]$DiagnoseOnly,[ValidateSet('Awake','SleepTest')][string]$Mode='Awake',[switch]$ConfirmHeadsetAsleep,[switch]$AuthorizeSleepTest)
 $ErrorActionPreference='Stop'
-if((-not $ConfirmHeadsetOn -and -not $DiagnoseOnly) -or -not $TemporarilyStopLightingService){throw 'Requires -TemporarilyStopLightingService plus either -ConfirmHeadsetOn or -DiagnoseOnly. No changes made.'}
+if(-not $TemporarilyStopLightingService){throw 'Requires explicit -TemporarilyStopLightingService; no changes made'}
+if(-not $DiagnoseOnly){
+    if($Mode -eq 'SleepTest'){
+        if(-not $ConfirmHeadsetAsleep -or -not $AuthorizeSleepTest){throw 'SleepTest requires -ConfirmHeadsetAsleep and -AuthorizeSleepTest; no changes made'}
+    } elseif(-not $ConfirmHeadsetOn){throw 'Awake trial requires -ConfirmHeadsetOn; no changes made'}
+}
 $principal=[Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
 if(-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){throw 'Use administrator PowerShell. No changes made.'}
 $repoRoot=(Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -23,7 +28,7 @@ $runId='lighting-trial-'+(Get-Date -Format 'yyyyMMdd-HHmmss-fff')
 $stdout=Join-Path $probeRoot ($runId+'.json')
 $stderr=Join-Path $probeRoot ($runId+'.stderr.log')
 $resultPath=Join-Path $probeRoot 'lighting-trial-result.json'
-$result=[ordered]@{service='LightingService';before=$initialServiceState;diagnoseOnly=[bool]$DiagnoseOnly;ownersWhileStopped=$null;stopRequested=$false;probeAttempted=$false;probeExitCode=$null;probeResult=$null;error=$null;restoreError=$null;after=$null;stdout=$stdout;stderr=$stderr}
+$result=[ordered]@{service='LightingService';before=$initialServiceState;diagnoseOnly=[bool]$DiagnoseOnly;mode=$Mode;ownersWhileStopped=$null;stopRequested=$false;probeAttempted=$false;probeExitCode=$null;probeResult=$null;error=$null;restoreError=$null;after=$null;stdout=$stdout;stderr=$stderr}
 $previousPath=$env:PATH
 try {
     $env:PATH='C:\Users\valerian\git-repos\OpenRGB-KFA2\RGB-investigation\toolchain\Tools\mingw1310_64\bin;'+$env:PATH
@@ -39,11 +44,18 @@ try {
     $during | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath (Join-Path $probeRoot ($runId+'-owners.json')) -Encoding utf8
     if(-not $DiagnoseOnly){
         if(@($during.owners).Count){throw 'A reader holds the headset while LightingService is stopped; no battery query issued'}
-    $child=Start-Process -FilePath $probe -ArgumentList @('--awake-read','--confirm-headset-on') -WindowStyle Hidden -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+    $probeArguments=if($Mode -eq 'SleepTest'){@('--sleep-test','--authorize-one-battery-query','--confirm-headset-asleep')}else{@('--awake-read','--confirm-headset-on')}
+    $child=Start-Process -FilePath $probe -ArgumentList $probeArguments -WindowStyle Hidden -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
     $result.probeAttempted=$true
     if(-not $child.WaitForExit(6000)){$child.Kill();$child.WaitForExit();throw 'Six-second deadline exceeded; no retry'}
     $result.probeExitCode=$child.ExitCode
     $result.probeResult=Get-Content -LiteralPath $stdout -Raw | ConvertFrom-Json
+    if($Mode -eq 'SleepTest' -and $result.probeResult.level_query_attempted){
+        $result.probeResult | ConvertTo-Json -Depth 10 | Write-Host
+        Write-Host 'Observe the headset now without touching it. ASUS service restoration waits for your answer to avoid confusing vendor activity with this query.'
+        $observedWake=Read-Host 'Did the naturally asleep headset wake? Enter yes, no, or uncertain'
+        $result['ownerObservedWake']=switch($observedWake.Trim().ToLowerInvariant()){'yes'{$true};'no'{$false};default{$null}}
+    }
     }
 } catch {$result.error=$_.Exception.Message}
 finally {

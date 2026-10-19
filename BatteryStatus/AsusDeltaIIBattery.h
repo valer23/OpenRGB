@@ -9,4 +9,5 @@ public:
     static nlohmann::json InspectAvailability();
     static nlohmann::json Observe();
     static nlohmann::json ReadAwakeSnapshot(bool owner_confirmed_awake);
+    static nlohmann::json ReadAuthorizedSleepTest(bool owner_authorized_one_query);
 };
