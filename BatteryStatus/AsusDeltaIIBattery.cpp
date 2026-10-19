@@ -67,7 +67,9 @@ bool OpenExactDelta(Handle& handle, std::string& error)
         OPEN_EXISTING, FILE_FLAG_OVERLAPPED, nullptr);
     if(handle.value == INVALID_HANDLE_VALUE)
     {
-        error = "Delta II vendor collection busy or unavailable; no competing reader opened";
+        const auto windows_error = GetLastError();
+        error = "Delta II vendor collection busy or unavailable (Windows error " + std::to_string(windows_error) +
+            "); no competing reader opened";
         return false;
     }
     HIDD_ATTRIBUTES attributes = {};
@@ -199,6 +201,21 @@ nlohmann::json AsusDeltaIIBattery::Observe()
     }
 #else
     result["error"] = "Owner-hardware validation is currently Windows-only";
+#endif
+    return result;
+}
+
+nlohmann::json AsusDeltaIIBattery::InspectAvailability()
+{
+    nlohmann::json result = {{"device", "ASUS ROG Delta II"}, {"commands_sent", 0},
+        {"automatic_polling_enabled", false}};
+#ifdef _WIN32
+    Handle handle;
+    std::string error;
+    result["exclusive_interface_available"] = OpenExactDelta(handle, error);
+    if(!error.empty()) { result["error"] = error; }
+#else
+    result["error"] = "Interface inspection is currently Windows-only";
 #endif
     return result;
 }

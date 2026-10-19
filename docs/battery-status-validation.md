@@ -23,3 +23,11 @@ A successful awake Delta II read would validate framing and the reported value o
 The next step is the pending owner-confirmed awake headset read. A later isolated full-app mouse trial requires the owner to exit normal OpenRGB through its tray so there is one receiver owner; Fan Control stays running. Never start a second hardware-detecting OpenRGB instance. The trial launcher enforces this guard. Native 15-minute firmware sleep remains pending; no repeated long wait is required for this software stage.
 
 See plugins/BatteryStatus/README.md and the trial/probe scripts for the concrete commands and safety guards.
+
+## Awake headset attempt - 19 October 2026, 08:05 local
+
+The owner confirmed the Delta II was awake and authorized one battery/charging read. The exact vendor collection was found, but Windows refused exclusive access. No battery or charging command was sent, and no value was obtained. A subsequent metadata-only check confirmed Windows error 32 (sharing violation), with commands_sent=0. No shared reader was opened and no automatic retry or polling was enabled.
+
+Armoury Crate, ArmouryAudioAgent, ArmouryCrateService and LightingService were running. This is consistent with an ASUS reader owning the collection, but the owning process has not been identified. FanControl and installed OpenRGB remained running. No vendor component was stopped. The approved design requires reporting busy access rather than stopping a vendor service, so any temporary service stop needs an explicit exception from the owner.
+
+Evidence is retained under build-battery/probe/20261019-080512-589.json and 20261019-080610-785.json. An Inspect probe mode now reports exclusive-interface availability and the Windows error without sending device commands.

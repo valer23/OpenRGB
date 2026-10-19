@@ -34,7 +34,7 @@ For Delta II validation only after owner confirmation that it is on and awake:
 ./scripts/Invoke-Battery-Probe.ps1 -Mode Awake -ConfirmHeadsetOn
 ```
 
-`-Mode Observe` sends no commands and records at most sixteen vendor input reports over about two seconds. Both modes require exclusive ownership of the exact collection, have a six-second process deadline, and never retry automatically. Logs stay under build-battery/probe/. Do not run active checks against a sleeping headset without explicit approval for that bounded experiment.
+`-Mode Inspect` checks the exact interface and descriptor without sending device commands, and includes the Windows error on refusal. `-Mode Observe` sends no commands and records at most sixteen vendor input reports over about two seconds. Both modes require exclusive ownership of the exact collection, have a six-second process deadline, and never retry automatically. Logs stay under build-battery/probe/. Do not run active checks against a sleeping headset without explicit approval for that bounded experiment.
 
 The unverified Corsair notification diagnostic is emitted at debug level at most once per minute when monitoring is subscribed. A full-app trial can collect this through the existing receiver owner without another reader or battery GET. The setting BatteryStatusHardware.corsair_notifications_validated is false in prepared trials. Charging remains unknown until independently validated.
 

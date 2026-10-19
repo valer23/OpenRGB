@@ -6,6 +6,7 @@
 class AsusDeltaIIBattery
 {
 public:
+    static nlohmann::json InspectAvailability();
     static nlohmann::json Observe();
     static nlohmann::json ReadAwakeSnapshot(bool owner_confirmed_awake);
 };

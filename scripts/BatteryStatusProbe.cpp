@@ -3,6 +3,10 @@
 #include <string>
 int main(int argc,char** argv)
 {
+    if(argc==2 && std::string(argv[1])=="--check-interface")
+    {
+        auto result=AsusDeltaIIBattery::InspectAvailability();std::cout<<result.dump(2)<<'\n';return result.contains("error")?1:0;
+    }
     if(argc==2 && std::string(argv[1])=="--observe")
     {
         auto result=AsusDeltaIIBattery::Observe();std::cout<<result.dump(2)<<'\n';return result.contains("error")?1:0;
