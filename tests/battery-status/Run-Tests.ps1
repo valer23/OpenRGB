@@ -2,6 +2,8 @@ param([string]$ToolchainRoot='C:\Users\valerian\git-repos\OpenRGB-KFA2\RGB-inves
 $ErrorActionPreference='Stop'
 & (Join-Path $PSScriptRoot 'handle_result_test.ps1')
 & (Join-Path $PSScriptRoot 'service_trial_test.ps1')
+& (Join-Path $PSScriptRoot 'sleep_wrapper_test.ps1')
+& (Join-Path $PSScriptRoot 'trial_packaging_test.ps1')
 $repoRoot=(Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $compilerBin=Join-Path $ToolchainRoot 'Tools\mingw1310_64\bin'
 $qtBin=Join-Path $ToolchainRoot '6.8.3\mingw_64\bin'
@@ -40,6 +42,10 @@ if($LASTEXITCODE -ne 0){throw 'Actual Corsair driver test compilation failed'}
 & "$buildRoot\corsair_driver_test.exe"
 if($LASTEXITCODE -ne 0){throw 'Actual Corsair driver tests failed'}
 
+& "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' '-Idependencies/json' tests/battery-status/asus_monitor_test.cpp BatteryStatus/BatteryStatusManager.cpp BatteryStatus/AsusBatteryMonitor.cpp -o "$buildRoot\asus_monitor_test.exe"
+if($LASTEXITCODE -ne 0){throw 'ASUS monitor test compilation failed'}
+& "$buildRoot\asus_monitor_test.exe"
+if($LASTEXITCODE -ne 0){throw 'ASUS monitor tests failed'}
 & "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' '-Idependencies/json' tests/battery-status/protocol_test.cpp -o "$buildRoot\protocol_test.exe"
 if($LASTEXITCODE -ne 0){throw 'Protocol test compilation failed'}
 & "$buildRoot\protocol_test.exe"

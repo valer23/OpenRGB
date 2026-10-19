@@ -81,7 +81,7 @@ nlohmann::json BatteryStatusManager::Snapshots()
         std::string quality = "unknown";
         if(sample.percentage >= 0)
         {
-            quality = sample.availability != "active" ? "last_known" :
+            quality = sample.availability != "active" && sample.availability != "receiver" ? "last_known" :
                 !sample.detail.empty() ? "error" : age > 120000 ? "stale" : "current";
         }
         result.push_back({{"id", sample.id}, {"name", sample.name},

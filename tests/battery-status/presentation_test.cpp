@@ -18,6 +18,8 @@ int main()
     row["quality"]="current"; row["charging"]=nullptr; assert(!alerts.ShouldNotify(row,true));
     row["charging"]=true; assert(!alerts.ShouldNotify(row,true));
     row["charging"]=false; row["availability"]="disconnected"; assert(!alerts.ShouldNotify(row,true));
+    row["availability"]="receiver"; assert(!alerts.ShouldNotify(row,true));
+    assert(BatteryAvailabilityText(row).contains("sleep state unknown"));
     row["percentage"]=nullptr; assert(BatteryTitle(row).contains("unknown"));
     std::cout<<"Presentation and discharge-alert tests passed\n";
 }

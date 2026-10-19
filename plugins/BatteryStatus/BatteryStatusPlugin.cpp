@@ -114,7 +114,7 @@ void BatteryStatusPlugin::Refresh()
         if(!token && row["percentage"].is_number_integer()) { row["quality"] = "last_known"; }
         const QString title = BatteryTitle(row);
         device_menus[i]->setTitle(title);
-        QString detail = token ? QString::fromStdString(row["availability"].get<std::string>()) : "Monitoring disabled";
+        QString detail = token ? BatteryAvailabilityText(row) : "Monitoring disabled";
         if(row["age_ms"].is_number_unsigned() || row["age_ms"].is_number_integer())
         {
             detail += QString("; last updated %1 s ago").arg(row["age_ms"].get<uint64_t>() / 1000);

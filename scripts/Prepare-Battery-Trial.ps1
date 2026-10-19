@@ -17,6 +17,11 @@ foreach($directory in @('generic','iconengines','imageformats','networkinformati
 Copy-Item -LiteralPath $coreExe -Destination "$trialRoot\OpenRGB-Battery-Trial.exe"
 Copy-Item -LiteralPath $pluginDll -Destination "$trialRoot\Settings\plugins"
 Copy-Item -LiteralPath (Join-Path $InstalledRoot 'Settings\plugins\OpenRGBEffectsPlugin.dll') -Destination "$trialRoot\Settings\plugins"
+# The Effects Plugin migrates its legacy settings on startup. Preserve that
+# source tree, including empty directories, rather than copying only its DLL.
+$effectSettings=Join-Path $InstalledRoot 'Settings\plugins\settings'
+if(Test-Path -LiteralPath $effectSettings){Copy-Item -LiteralPath $effectSettings -Destination "$trialRoot\Settings\plugins" -Recurse}
+New-Item -ItemType Directory -Path "$trialRoot\Settings\plugins\settings\effect-profiles" -Force | Out-Null
 foreach($name in @('OpenRGB.json','Configuration.json')){
     $source=Join-Path $InstalledRoot "Settings\$name"
     if(Test-Path -LiteralPath $source){Copy-Item -LiteralPath $source -Destination "$trialRoot\Settings"}

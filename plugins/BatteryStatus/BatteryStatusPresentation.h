@@ -16,6 +16,11 @@ inline QString BatteryTitle(const nlohmann::json& row)
     return QString::fromStdString(row["name"].get<std::string>()) + ": " + value;
 }
 
+inline QString BatteryAvailabilityText(const nlohmann::json& row)
+{
+    if(row["availability"] == "receiver") { return "Receiver reachable; headset sleep state unknown"; }
+    return QString::fromStdString(row["availability"].get<std::string>());
+}
 class BatteryAlertPolicy
 {
 public:
