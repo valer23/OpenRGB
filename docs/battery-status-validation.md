@@ -31,3 +31,11 @@ The owner confirmed the Delta II was awake and authorized one battery/charging r
 Armoury Crate, ArmouryAudioAgent, ArmouryCrateService and LightingService were running. This is consistent with an ASUS reader owning the collection, but the owning process has not been identified. FanControl and installed OpenRGB remained running. No vendor component was stopped. The approved design requires reporting busy access rather than stopping a vendor service, so any temporary service stop needs an explicit exception from the owner.
 
 Evidence is retained under build-battery/probe/20261019-080512-589.json and 20261019-080610-785.json. An Inspect probe mode now reports exclusive-interface availability and the Windows error without sending device commands.
+
+## Authorized service-release attempt - 19 October 2026
+
+The owner explicitly authorized stopping and restoring ArmouryCrateService. The execution token is not an administrator token. The RunAs launcher did not produce a visible approval prompt, and the service remained Running. The pending elevated helper was replaced with an unconditional cancellation script before any service change, so a late launch cannot stop the service or query the headset.
+
+After the owner closed the headset's Armoury component manually, a metadata-only check still returned Windows error 32. ArmouryAudioAgent (PID 14340) and ArmouryCrateService remained running; this does not identify which process holds the interface. A direct authorized service-control attempt was denied by Windows before Stop succeeded (stopRequested=false, probeAttempted=false, service still Running). No headset battery or charging commands were sent. FanControl, installed OpenRGB and LightingService remained running.
+
+Further exclusive acquisition requires the owner to release the remaining ASUS reader using their Windows session, or provide a visible administrator terminal for the already-authorized transactional stop/read/restore. Do not open shared access as a workaround.
