@@ -17,7 +17,12 @@ identity if Configuration.json has no mouse entry yet. Repeated runs are safe.
 
 The Windows build, independent standards and behaviour reviews, driver
 failure/recovery checks and migration fixtures passed. The isolated GUI
-confirmed the controls, a 30-second handoff and movement resume. Full firmware
+confirmed the controls, disabled handoff staying animated, and enabled/60-second
+handoff plus movement resume after correcting the checkbox schema to OpenRGB's
+"bool" type. An actual-widget check covers checkbox callbacks and timeout limits.
+Version 1.0.20261019.2 is installed. Its hashes, enabled/60-second migration,
+unchanged fan configuration and all profile colours/effects passed verification.
+Full firmware
 sleep and battery-life measurement remain separate, pending checks. Linux and
 macOS are unverified. Older sections below describe historical packages.
 
