@@ -1,0 +1,29 @@
+{
+  "reportPrefix": [
+    1,
+    1,
+    15,
+    0,
+    118,
+    2
+  ],
+  "expectedPercentage": 63,
+  "charging": null,
+  "capture": {
+    "commandsSentForBattery": 0,
+    "source": "Existing matched receiver event reader in isolated full-app trial",
+    "route": "09",
+    "date": "2026-10-19",
+    "wirelessChild": "1B7E",
+    "receiver": "1B1C:1BA6"
+  },
+  "nextReportPrefix": [
+    1,
+    1,
+    15,
+    0,
+    108,
+    2
+  ],
+  "expectedNextPercentage": 62
+}

@@ -21,6 +21,14 @@ int main()
     assert(!BatteryProtocol::AsusCharging(capturedLevel.data(), capturedLevel.size()));
     assert(!snapshot.at("automatic_polling_enabled").get<bool>());
     assert(!snapshot.at("no_wake_validated").get<bool>());
+    std::ifstream corsair_capture("tests/battery-status/fixtures/corsair-passive-20261019.json");
+    assert(corsair_capture.good());
+    nlohmann::json corsair_fixture;
+    corsair_capture >> corsair_fixture;
+    const auto capturedNotification = corsair_fixture.at("reportPrefix").get<std::vector<unsigned char>>();
+    assert(BatteryProtocol::CorsairNotification(capturedNotification.data(), capturedNotification.size()) == 63);
+    const auto nextNotification = corsair_fixture.at("nextReportPrefix").get<std::vector<unsigned char>>();
+    assert(BatteryProtocol::CorsairNotification(nextNotification.data(), nextNotification.size()) == 62);
     unsigned char corsair[]={1,2,0,0xF8,2}; // 760 tenths
     assert(BatteryProtocol::CorsairLevel(corsair,5)==76);
     assert(!BatteryProtocol::CorsairLevel(corsair,4));

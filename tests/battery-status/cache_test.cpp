@@ -5,6 +5,7 @@ int main()
 {
     uint64_t now = 1000;
     BatteryStatusManager cache([&] { return now; });
+    assert(cache.CorsairValidated()); // Exact passive frame validated on owner receiver.
     assert(!cache.Enabled());
     auto a = cache.Acquire(), b = cache.Acquire();
     assert(a != b && cache.Enabled());

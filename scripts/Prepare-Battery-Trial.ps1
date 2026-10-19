@@ -26,7 +26,7 @@ $profiles | Copy-Item -Destination "$trialRoot\Settings\profiles"
 $settingsPath=Join-Path $trialRoot 'Settings\OpenRGB.json'
 $settings=Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json -AsHashtable
 $settings['BatteryStatus']=@{enabled=$true;notifications=$false}
-$settings['BatteryStatusHardware']=@{corsair_notifications_validated=$false}
+$settings['BatteryStatusHardware']=@{corsair_notifications_validated=$true}
 $settings | ConvertTo-Json -Depth 100 | Set-Content -LiteralPath $settingsPath -Encoding utf8
 $manifest=@{
     base='cb1385facc3337b0db7f9956624dbc111a80be38'
@@ -35,7 +35,7 @@ $manifest=@{
     trialExeSHA256=(Get-FileHash -LiteralPath "$trialRoot\OpenRGB-Battery-Trial.exe").Hash
     pluginSHA256=(Get-FileHash -LiteralPath "$trialRoot\Settings\plugins\OpenRGBBatteryStatusPlugin.dll").Hash
     profileCount=$profiles.Count
-    hardwareValidationEnabled=$false
+    corsairPassiveValidated=$true;asusAutomaticPollingEnabled=$false
     copiedProfiles=@($profiles | ForEach-Object {@{name=$_.Name;sha256=(Get-FileHash -LiteralPath $_.FullName).Hash}})
 }
 $manifest | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath "$trialRoot\trial-manifest.json" -Encoding utf8

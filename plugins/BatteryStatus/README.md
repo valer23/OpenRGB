@@ -6,10 +6,10 @@ The matching fork core is required for telemetry. On an older API-v5 core the pl
 
 ## Current acquisition status
 
-- Corsair Dark Core RGB Pro SE: passive battery notification parser in the existing, matched receiver reader. No additional USB request or reader is created. Automatic control GET0F was removed after reproducing a late-reply collision with native GET40 inactivity. Notifications require owner-hardware validation and are disabled by default. Native idle support must already be available; this feature never enables it itself.
+- Corsair Dark Core RGB Pro SE: passive battery notification parser in the existing, matched receiver reader. No additional USB request or reader is created. Automatic control GET0F was removed after reproducing a late-reply collision with native GET40 inactivity. The exact passive frame was observed on the owner receiver (63%, then 62%) and this matched path is enabled by default; an explicit hardware-setting opt-out remains available. Native idle support must already be available; this feature never enables it itself.
 - ASUS ROG Delta II: strict parsers and an exclusive Windows vendor-interface validation owner. Automatic polling is disabled until sleep-safe behavior is established. The manual probe refuses an absent, ambiguous, wrong-descriptor or busy interface. A valid awake battery reply does not establish safe background polling.
 
-One awake Delta II exchange through the owner's receiver succeeded (89%, not charging); sleep-safe operation, coexistence with ASUS readers, and charging transitions remain unvalidated. Corsair receiver notifications are still unvalidated. This is not a completed two-device release. Do not enable validation flags merely to make the menu show a percentage.
+One awake Delta II exchange through the owner's receiver succeeded (89%, not charging); sleep-safe operation, coexistence with ASUS readers, and charging transitions remain unvalidated. Corsair passive receiver notifications have now been observed and decoded on the owner hardware; charging remains unknown. This is not a completed two-device release. Do not enable validation flags merely to make the menu show a percentage.
 
 ## Development and trial
 
@@ -36,7 +36,7 @@ For Delta II validation only after owner confirmation that it is on and awake:
 
 `-Mode Inspect` checks the exact interface and descriptor without sending device commands, and includes the Windows error on refusal. `-Mode Observe` sends no commands and records at most sixteen vendor input reports over about two seconds. Both modes require exclusive ownership of the exact collection, have a six-second process deadline, and never retry automatically. Logs stay under build-battery/probe/. Do not run active checks against a sleeping headset without explicit approval for that bounded experiment.
 
-The unverified Corsair notification diagnostic is emitted at debug level at most once per minute when monitoring is subscribed. A full-app trial can collect this through the existing receiver owner without another reader or battery GET. The setting BatteryStatusHardware.corsair_notifications_validated is false in prepared trials. Charging remains unknown until independently validated.
+The unverified Corsair notification diagnostic is emitted at debug level at most once per minute when monitoring is subscribed. A full-app trial can collect this through the existing receiver owner without another reader or battery GET. The setting BatteryStatusHardware.corsair_notifications_validated defaults true for the validated, narrowly matched passive path; setting it false disables publication. Charging remains unknown until independently validated.
 
 ## Validation still required
 

@@ -146,6 +146,7 @@ int main()
  fail_counter=true;{Device d;CHECK(!d.HasMouseIdleControl());}fail_counter=false;
  { // Only keyed passive notifications may publish battery values.
   auto& cache=BatteryStatusManager::Get();
+  cache.SetCorsairValidated(false); // Explicit opt-out must still suppress publication.
   mouse_test_now=1000;idle=0;mask=2;writes.clear();Device d;writes.clear();
   d.Frame();CHECK(BatteryGets()==0);
   auto token=cache.Acquire();d.Frame();CHECK(BatteryGets()==0);

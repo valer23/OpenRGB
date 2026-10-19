@@ -37,6 +37,6 @@ private:
     std::mutex mutex;
     std::set<uint64_t> subscriptions;
     uint64_t next_token = 0;
-    std::atomic<bool> enabled {false}, corsair_validated {false};
+    std::atomic<bool> enabled {false}, corsair_validated {true};
     std::array<Sample, 2> samples;
 };
