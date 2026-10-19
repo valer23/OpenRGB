@@ -12,7 +12,10 @@ public:
         bool asus_level_validated, std::chrono::milliseconds interval = std::chrono::seconds(60));
     uint64_t Acquire();
     void Release(uint64_t token);
+    void SetSuspended(bool value);
 private:
+    void UpdateLocked();
+    bool suspended = false;
     BatteryStatusManager& cache;
     AsusBatteryMonitor asus;
     const bool asus_level_validated;

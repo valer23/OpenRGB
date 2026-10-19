@@ -25,5 +25,73 @@
     108,
     2
   ],
-  "expectedNextPercentage": 62
+  "expectedNextPercentage": 62,
+  "laterReports": [
+    {
+      "percentage": 61,
+      "prefix": [
+        1,
+        1,
+        15,
+        0,
+        98,
+        2
+      ],
+      "trial_ms": 20039
+    },
+    {
+      "percentage": 62,
+      "prefix": [
+        1,
+        1,
+        15,
+        0,
+        108,
+        2
+      ],
+      "trial_ms": 2506853
+    },
+    {
+      "percentage": 59,
+      "prefix": [
+        1,
+        1,
+        15,
+        0,
+        78,
+        2
+      ],
+      "trial_ms": 2813936
+    },
+    {
+      "percentage": 100,
+      "prefix": [
+        1,
+        1,
+        15,
+        0,
+        232,
+        3
+      ],
+      "trial_ms": 15886693
+    }
+  ],
+  "nativeLightingEvents": [
+    {
+      "trial_ms": 239536,
+      "state": "returned to firmware after inactivity"
+    },
+    {
+      "trial_ms": 261325,
+      "state": "resumed on input"
+    },
+    {
+      "trial_ms": 391707,
+      "state": "returned to firmware after inactivity"
+    },
+    {
+      "trial_ms": 2506705,
+      "state": "resumed on input"
+    }
+  ]
 }

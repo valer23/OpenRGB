@@ -7,6 +7,7 @@
 |   SPDX-License-Identifier: GPL-2.0-or-later               |
 \*---------------------------------------------------------*/
 
+#include "BatteryStatus/BatteryMonitoringService.h"
 #include <thread>
 #include "AutoStart.h"
 #include "OpenRGBDialog.h"
@@ -1503,6 +1504,7 @@ void OpenRGBDialog::UpdateProfileList()
 
 void OpenRGBDialog::OnSuspend()
 {
+    BatteryMonitoringService::Get().SetSuspended(true);
     if(ResourceManager::get()->GetProfileManager()->LoadAutoProfileSuspend())
     {
         plugin_manager->UnloadPlugins();
@@ -1513,6 +1515,7 @@ void OpenRGBDialog::OnResume()
 {
     plugin_manager->LoadPlugins();
     ResourceManager::get()->GetProfileManager()->LoadAutoProfileResume();
+    BatteryMonitoringService::Get().SetSuspended(false);
 }
 
 void OpenRGBDialog::on_Exit()

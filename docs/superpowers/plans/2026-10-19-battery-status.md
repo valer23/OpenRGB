@@ -70,7 +70,7 @@ Files: BatteryStatus/AsusDeltaIIBattery, AsusBatteryMonitor, BatteryMonitoringSe
 - [x] Build full core and plugin with existing toolchain/compatibility shims, without vendored edits. Integrated core revision7db6db7c builds and passes version-only startup.
 - [x] Run the hardware-free suite, including actual driver, DLL, protocol, subscription, bounded I/O, simulated service restoration and packaging tests.
 - [x] Prepare isolated trial, preserve11 profiles and non-battery settings; owner confirms visible tray menu and usual lighting. Fix missing Effects migration source in future packaging.
-- [ ] Complete fresh whole-branch review of final software; fix important findings with a failing reproducer and passing suite.
+- [x] Complete fresh whole-branch review (e1662f81); reproduce/fix the one Important shutdown race and pass the full suite. Later explicit suspend/resume requirement coverage is separately recorded and tested.
 - [ ] Update the isolated app only after normal tray exit, complete both-device hardware checks and record evidence. Installed executable/profile state and Fan Control must remain intact.
 
 ### Task 6: Completion and fork PR

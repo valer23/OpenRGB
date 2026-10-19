@@ -34,6 +34,19 @@ int main()
     assert(!BatteryProtocol::AsusCollection(1,1,64,64));
     assert(!BatteryProtocol::AsusCollection(0xFF00,1,63,64));
     assert(!BatteryProtocol::AsusCollection(0xFF00,1,64,63));
+    for(const auto& later : corsair_fixture.at("laterReports"))
+    {
+        const auto bytes=later.at("prefix").get<std::vector<unsigned char>>();
+        assert(BatteryProtocol::CorsairNotification(bytes.data(),bytes.size())==later.at("percentage").get<int>());
+    }
+    std::ifstream sleep_capture("tests/battery-status/fixtures/delta-ii-sleep-attempt-20261019.json");
+    assert(sleep_capture.good());
+    nlohmann::json sleep_fixture; sleep_capture >> sleep_fixture;
+    const auto sleep_prefix=sleep_fixture.at("snapshot").at("level_report_prefix").get<std::vector<unsigned char>>();
+    assert(BatteryProtocol::AsusLevel(sleep_prefix.data(),sleep_prefix.size())==100);
+    assert(!sleep_fixture.at("capture").at("sleepStateEstablished").get<bool>());
+    assert(sleep_fixture.at("capture").at("ownerObservedWake").is_null());
+    assert(!sleep_fixture.at("snapshot").at("no_wake_validated").get<bool>());
     unsigned char corsair[]={1,2,0,0xF8,2}; // 760 tenths
     assert(BatteryProtocol::CorsairLevel(corsair,5)==76);
     assert(!BatteryProtocol::CorsairLevel(corsair,4));
