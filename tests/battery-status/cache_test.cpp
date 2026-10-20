@@ -32,5 +32,9 @@ int main()
     assert(cache.Snapshots()[0]["charging"].is_null());
     cache.Publish("unknown-device", 10, 0, "active");
     assert(cache.Snapshots().size() == 2);
+    cache.Publish(BatteryStatusManager::AsusId,83,0,"asus_cache","Cached ASUS report",3600000);
+    now+=1000;
+    assert(cache.Snapshots()[1]["age_ms"]==3601000);
+    assert(cache.Snapshots()[1]["quality"]=="last_known");
     std::cout << "Cache lifecycle, freshness and invalid-value tests passed\n";
 }

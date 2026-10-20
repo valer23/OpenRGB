@@ -6,6 +6,7 @@
 #endif
 #include <windows.h>
 #include <array>
+#include <cstdint>
 #include <memory>
 
 // A timed-out HID operation must keep its OVERLAPPED, buffer and device alive
@@ -30,7 +31,9 @@ public:
     WindowsHidTransfer& operator=(const WindowsHidTransfer&) = delete;
     bool Ready();
     int Transfer(HANDLE& device, bool write, unsigned char* buffer, DWORD size, DWORD timeout);
+    int ReadAt(HANDLE& file, unsigned char* buffer, DWORD size, DWORD timeout, uint64_t offset);
 private:
+    int TransferAt(HANDLE& device, bool writing, unsigned char* buffer, DWORD size, DWORD timeout, uint64_t offset);
     struct Operation;
     Api api;
     std::unique_ptr<Operation> pending;

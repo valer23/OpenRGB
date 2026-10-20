@@ -176,6 +176,7 @@ HEADERS +=                                                                      
     OpenRGBBatteryStatusInterface.h \
     BatteryStatus/BatteryStatusManager.h \
     BatteryStatus/BatteryMonitoringService.h \
+    BatteryStatus/AsusBatteryLog.h \
     BatteryStatus/AsusBatteryMonitor.h \
     BatteryStatus/AsusDeltaIIBattery.h \
     BatteryStatus/BatteryProtocol.h \
@@ -256,6 +257,7 @@ SOURCES +=                                                                      
     NetworkServer.cpp                                                                           \
     BatteryStatus/BatteryStatusManager.cpp \
     BatteryStatus/BatteryMonitoringService.cpp \
+    BatteryStatus/AsusBatteryLog.cpp \
     BatteryStatus/AsusBatteryMonitor.cpp \
     BatteryStatus/AsusDeltaIIBattery.cpp \
     BatteryStatus/WindowsHidTransfer.cpp \

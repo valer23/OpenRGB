@@ -66,12 +66,17 @@ if($LASTEXITCODE -ne 0){throw 'ASUS stop interleaving regression failed'}
 if($LASTEXITCODE -ne 0){throw 'Protocol test compilation failed'}
 & "$buildRoot\protocol_test.exe"
 if($LASTEXITCODE -ne 0){throw 'Protocol tests failed'}
+& "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' '-Idependencies/json' tests/battery-status/asus_log_test.cpp BatteryStatus/AsusBatteryLog.cpp BatteryStatus/WindowsHidTransfer.cpp -ladvapi32 -o "$buildRoot\asus_log_test.exe"
+if($LASTEXITCODE -ne 0){throw 'ASUS log reader compilation failed'}
+& "$buildRoot\asus_log_test.exe"
+if($LASTEXITCODE -ne 0){throw 'ASUS log reader tests failed'}
+
 
 & "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' tests/battery-status/windows_hid_transfer_test.cpp BatteryStatus/WindowsHidTransfer.cpp -o "$buildRoot\windows_hid_transfer_test.exe"
 if($LASTEXITCODE -ne 0){throw 'Windows HID transport test compilation failed'}
 & "$buildRoot\windows_hid_transfer_test.exe"
 if($LASTEXITCODE -ne 0){throw 'Windows HID transport tests failed'}
-& "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' '-Idependencies/json' tests/battery-status/monitoring_service_test.cpp BatteryStatus/BatteryStatusManager.cpp BatteryStatus/AsusBatteryMonitor.cpp BatteryStatus/BatteryMonitoringService.cpp BatteryStatus/AsusDeltaIIBattery.cpp BatteryStatus/WindowsHidTransfer.cpp -lhid -lsetupapi -o "$buildRoot\monitoring_service_test.exe"
+& "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' '-Idependencies/json' tests/battery-status/monitoring_service_test.cpp BatteryStatus/BatteryStatusManager.cpp BatteryStatus/AsusBatteryMonitor.cpp BatteryStatus/BatteryMonitoringService.cpp BatteryStatus/AsusBatteryLog.cpp BatteryStatus/AsusDeltaIIBattery.cpp BatteryStatus/WindowsHidTransfer.cpp -lhid -lsetupapi -ladvapi32 -o "$buildRoot\monitoring_service_test.exe"
 if($LASTEXITCODE -ne 0){throw 'Core monitoring service test compilation failed'}
 & "$buildRoot\monitoring_service_test.exe"
 if($LASTEXITCODE -ne 0){throw 'Core monitoring service tests failed'}

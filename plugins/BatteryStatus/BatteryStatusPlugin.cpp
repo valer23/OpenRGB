@@ -117,7 +117,9 @@ void BatteryStatusPlugin::Refresh()
     const auto rows = battery->GetBatterySnapshots();
     if(refresh_action)
     {
-        refresh_action->setEnabled(token && !awake_confirmation && rows.size() > 1 && rows[1]["availability"] != "refreshing");
+        const bool cached = rows.size() > 1 && rows[1].value("acquisition", nlohmann::json()) == "asus_log";
+        refresh_action->setVisible(!cached);
+        refresh_action->setEnabled(!cached && token && !awake_confirmation && rows.size() > 1 && rows[1]["availability"] != "refreshing");
     }
     QStringList lines;
     for(size_t i = 0; i < device_menus.size() && i < rows.size(); ++i)

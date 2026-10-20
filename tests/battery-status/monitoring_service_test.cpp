@@ -41,6 +41,28 @@ int main()
         assert(!cache.Enabled() && cache.Snapshots()[1]["quality"]=="last_known");
         assert(reads==2);
     }
+    {
+        BatteryStatusManager cached;
+        std::atomic<int> files{0},usb{0};
+        BatteryMonitoringService passive(cached,[&] { ++files; return nlohmann::json{
+            {"source","asus_log"},{"source_age_ms",8000},{"availability","asus_cache_offline"},
+            {"percentage",83},{"charging",false},{"detail","Existing ASUS report"}}; },false,1h,[&] {
+                ++usb; return nlohmann::json();
+            },true);
+        const auto token=passive.Acquire();
+        auto deadline=std::chrono::steady_clock::now()+2s;
+        while(cached.Snapshots()[1]["percentage"].is_null() && std::chrono::steady_clock::now()<deadline) { std::this_thread::sleep_for(1ms); }
+        auto row=cached.Snapshots()[1];
+        assert(files==1 && usb==0 && row["percentage"]==83);
+        assert(row["acquisition"]=="asus_log" && row["quality"]=="last_known" && row["age_ms"]>=8000);
+        assert(row["availability"]=="asus_cache_offline");
+        assert(!passive.RequestAsusRefresh(token,true) && !passive.RequestAsusRefresh(token,false));
+        passive.SetSuspended(true);passive.SetSuspended(false);
+        deadline=std::chrono::steady_clock::now()+2s;
+        while(files<2 && std::chrono::steady_clock::now()<deadline) { std::this_thread::sleep_for(1ms); }
+        passive.Release(token);
+        assert(files==2 && usb==0);
+    }
     // One awake-confirmed request runs off the caller thread, without polling.
     {
         BatteryStatusManager manual_cache;

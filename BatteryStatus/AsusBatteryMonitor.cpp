@@ -82,9 +82,22 @@ void AsusBatteryMonitor::ApplyReply(const nlohmann::json& reply, bool manual)
         const auto charging_error = reply.find("charging_error");
         const std::string detail = charging_error != reply.end() && charging_error->is_string() ?
             charging_error->get<std::string>() : "";
+        const bool cached = reply.value("source", nlohmann::json()) == "asus_log";
+        const auto age = reply.find("source_age_ms");
+        if(cached && (age == reply.end() || !age->is_number_integer() || *age < 0))
+        {
+            cache.SetState(BatteryStatusManager::AsusId, "unavailable", "Invalid ASUS cache timestamp");
+            return;
+        }
+        const auto state = reply.value("availability", nlohmann::json());
+        const std::string availability = cached ? (state == "asus_cache_offline" ? "asus_cache_offline" : "asus_cache") :
+            (manual ? "manual" : "receiver");
+        const auto cached_detail = reply.find("detail");
+        const std::string description = cached && cached_detail != reply.end() && cached_detail->is_string() ?
+            cached_detail->get<std::string>() : detail;
         cache.Publish(BatteryStatusManager::AsusId, level->get<int>(),
             charging != reply.end() && charging->is_boolean() ? (charging->get<bool>() ? 1 : 0) : -1,
-            manual ? "manual" : "receiver", detail); // A receiver response does not establish the wireless child's awake state.
+            availability, description, cached ? age->get<uint64_t>() : 0); // A receiver response does not establish the wireless child's awake state.
     }
     else
     {

@@ -7,9 +7,11 @@ The matching fork core is required for telemetry. On an older API-v5 core the pl
 ## Current acquisition status
 
 - Corsair Dark Core RGB Pro SE: passive battery notification parser in the existing, matched receiver reader. No additional USB request or reader is created. Automatic control GET0F was removed after reproducing a late-reply collision with native GET40 inactivity. The exact passive frame was observed on the owner receiver (63%, then 62%) and this matched path is enabled by default; an explicit hardware-setting opt-out remains available. Native idle support must already be available; this feature never enables it itself.
-- ASUS ROG Delta II: manual awake-confirmed refresh through one core-owned exclusive Windows vendor-interface owner. Automatic level polling remains disabled by the compiled ReceiverLevelValidated gate until owner-firmware sleep-safe behavior is established. The automatic path queries only level; charging remains unknown until separately safe acquisition is validated. Manual acquisition refuses an absent, ambiguous, wrong-descriptor or busy interface. A valid awake battery reply does not establish safe background polling.
+- ASUS ROG Delta II: reads existing ASUS Framework diagnostic log reports every five seconds. This file-only path works alongside ASUS and never opens the receiver, sends USB commands, stops services or enables ASUS logging. Reports remain **last known** with their original ASUS event age; an event timestamp is not proof of physical measurement time or sleep state. Charging reflects that cached report. If ASUS logging is disabled, unavailable or rotated away, the last known value is retained or unavailable is shown.
 
-One awake Delta II exchange through the owner's receiver succeeded (89%, not charging); sleep-safe operation, coexistence with ASUS readers, and charging transitions remain unvalidated. Corsair passive receiver notifications have now been observed and decoded on the owner hardware; charging remains unknown. The live tray trial now also shows the mouse at77% and the headset at84%, not charging at last refresh. Do not enable validation flags merely to make the menu show a percentage.
+The provider discovers the existing diagnosis LogPath registry setting and the current user's MD5-named Framework directory. It reads bounded tails of known Service.04 date/rotation files, matches tray battery event10200/model6906, and ignores incomplete, invalid and future reports. No headset alerts use this cached data. Automatic hardware queries remain disabled by ReceiverLevelValidated. The manual USB refresh action is hidden in this cache-provider mode, with no hardware fallback.
+
+A standalone file-only read returned83%, not charging, while ASUS, Fan Control and the old trial remained running. The updated full-app cache display still needs owner validation. Earlier manual trials showed77% mouse and84% headset with audio and lighting continuing normally.
 
 ## Development and trial
 
@@ -42,9 +44,9 @@ The unverified Corsair notification diagnostic is emitted at debug level at most
 
 The owner confirmed the live mouse77% reading, manual awake headset84% reading with not-charging status, and uninterrupted headset audio/usual lighting. The existing mouse idle handoff and movement recovery also appear in the trial log. Independent gauge accuracy, charging transitions, physical receiver hotplug and system sleep/resume qualification remain unverified. Native15-minute firmware sleep remains pending; no battery-life improvement or other-platform hardware claim is made. Publication is limited to the requested PR in the owner fork; no upstream issue or MR is included.
 
-## Manual Delta II refresh
+## Earlier manual Delta II refresh trial (historical)
 
-Matching fork builds now expose a separate optional refresh capability without changing the battery-v1 or OpenRGB API-v5 vtables. Under the Delta II tray submenu, choose **Refresh headset battery while awake...**, then confirm that it is powered on and awake. Cancel sends no request. The core performs one bounded exclusive battery/charging exchange on its own thread; repeated clicks cannot queue extra reads.
+The earlier trial exposed a separate optional refresh capability without changing the battery-v1 or OpenRGB API-v5 vtables. Under the Delta II tray submenu, choose **Refresh headset battery while awake...**, then confirm that it is powered on and awake. Cancel sends no request. The core performs one bounded exclusive battery/charging exchange on its own thread; repeated clicks cannot queue extra reads.
 
 This is manual-only: the last reading remains labeled **last known**, with its age. No timer, resume event, profile load, plugin reload or subscriber change authorizes another manual read. Disable monitoring or unload the final subscriber to join in-flight core work and discard a late result. System suspension also stops manual work; resuming does not repeat it.
 

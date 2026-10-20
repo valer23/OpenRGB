@@ -2,6 +2,7 @@
 #include "WindowsHidTransfer.h"
 #ifdef _WIN32
 #include <cstring>
+#include <vector>
 
 struct WindowsHidTransfer::Operation
 {
@@ -9,7 +10,7 @@ struct WindowsHidTransfer::Operation
     HANDLE event = nullptr;
     HANDLE device = INVALID_HANDLE_VALUE;
     OVERLAPPED overlapped = {};
-    std::array<unsigned char,64> buffer = {};
+    std::vector<unsigned char> buffer;
     explicit Operation(Api calls) : api(calls) {}
     ~Operation()
     {
@@ -40,11 +41,26 @@ bool WindowsHidTransfer::Ready()
 
 int WindowsHidTransfer::Transfer(HANDLE& device, bool writing, unsigned char* buffer, DWORD size, DWORD timeout)
 {
-    if(!Ready() || device == INVALID_HANDLE_VALUE || !buffer || size > 64) { return -1; }
+    if(size > 64) { return -1; }
+    return TransferAt(device, writing, buffer, size, timeout, 0);
+}
+
+int WindowsHidTransfer::ReadAt(HANDLE& file, unsigned char* buffer, DWORD size, DWORD timeout, uint64_t offset)
+{
+    if(size > 65536) { return -1; }
+    return TransferAt(file, false, buffer, size, timeout, offset);
+}
+
+int WindowsHidTransfer::TransferAt(HANDLE& device, bool writing, unsigned char* buffer, DWORD size, DWORD timeout, uint64_t offset)
+{
+    if(!Ready() || device == INVALID_HANDLE_VALUE || !buffer) { return -1; }
     auto operation = std::make_unique<Operation>(api);
     operation->event = api.create_event(nullptr, TRUE, FALSE, nullptr);
     if(!operation->event) { return -1; }
     operation->overlapped.hEvent = operation->event;
+    operation->overlapped.Offset = static_cast<DWORD>(offset);
+    operation->overlapped.OffsetHigh = static_cast<DWORD>(offset >> 32);
+    operation->buffer.resize(size);
     if(writing) { std::memcpy(operation->buffer.data(), buffer, size); }
     DWORD transferred = 0;
     const BOOL immediate = writing ?

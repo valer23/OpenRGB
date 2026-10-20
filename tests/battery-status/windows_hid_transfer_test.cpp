@@ -9,15 +9,17 @@ HANDLE device_handle=reinterpret_cast<HANDLE>(1), event_handle=reinterpret_cast<
 std::vector<DWORD> waits;
 std::vector<HANDLE> closed;
 unsigned int wait_index=0, cancels=0;
+DWORD last_count=64;
 bool immediate=false, writing=false;
 unsigned char* held_buffer=nullptr;
 OVERLAPPED* held_operation=nullptr;
 HANDLE WINAPI CreateEventFake(LPSECURITY_ATTRIBUTES,BOOL,BOOL,LPCWSTR) { return event_handle; }
 BOOL WINAPI IoFake(HANDLE device,LPVOID buffer,DWORD count,LPDWORD transferred,LPOVERLAPPED operation) {
-    assert(device==device_handle && count==64);
+    assert(device==device_handle && (count==64 || count==128));last_count=count;
+    if(count==128) { assert(operation->Offset==64 && operation->OffsetHigh==1); }
     held_buffer=static_cast<unsigned char*>(buffer); held_operation=operation;
     if(!writing) { std::memset(buffer,0x59,count); }
-    *transferred=64;
+    *transferred=last_count;
     return immediate;
 }
 BOOL WINAPI WriteFake(HANDLE d,LPCVOID b,DWORD n,LPDWORD t,LPOVERLAPPED o) { return IoFake(d,const_cast<LPVOID>(b),n,t,o); }
@@ -30,7 +32,7 @@ BOOL WINAPI CancelFake(HANDLE device,LPOVERLAPPED operation) {
     assert(device==device_handle && operation==held_operation); ++cancels; return TRUE;
 }
 BOOL WINAPI ResultFake(HANDLE device,LPOVERLAPPED operation,LPDWORD transferred,BOOL wait) {
-    assert(device==device_handle && operation==held_operation && wait==FALSE); *transferred=64; return TRUE;
+    assert(device==device_handle && operation==held_operation && wait==FALSE); *transferred=last_count; return TRUE;
 }
 BOOL WINAPI CloseFake(HANDLE value) { closed.push_back(value); return TRUE; }
 WindowsHidTransfer::Api FakeApi() {
@@ -71,6 +73,13 @@ int main() {
     }
     assert(device==INVALID_HANDLE_VALUE && closed.empty());
     assert(held_buffer[0]==0xCC && held_operation->hEvent==event_handle);
+    device=device_handle;Reset({},true);
+    {
+        WindowsHidTransfer io(FakeApi());unsigned char tail[128]={};
+        assert(io.Transfer(device,false,tail,65,50)==-1);
+        assert(io.ReadAt(device,tail,128,50,0x100000040ULL)==128);
+        assert(tail[127]==0x59);
+    }
     std::cout<<"Windows HID: immediate/pending completion, bounded cancellation and retained pending I/O ownership passed\n";
 }
 #else

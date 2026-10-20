@@ -18,6 +18,14 @@ inline QString BatteryTitle(const nlohmann::json& row)
 
 inline QString BatteryAvailabilityText(const nlohmann::json& row)
 {
+    if(row["availability"] == "asus_cache" || row["availability"] == "asus_cache_offline")
+    {
+        const QString charging = row["charging"].is_boolean() ?
+            (row["charging"].get<bool>() ? "charging in that report" : "not charging in that report") :
+            "charging status unknown";
+        return "ASUS cached report; " + charging +
+            (row["availability"] == "asus_cache_offline" ? "; ASUS reports device unavailable" : "; headset sleep state unknown");
+    }
     if(row["availability"] == "manual")
     {
         const QString charging = row["charging"].is_boolean() ?

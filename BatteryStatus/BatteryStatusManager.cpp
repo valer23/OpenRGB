@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #include "BatteryStatusManager.h"
 #include <chrono>
+#include <limits>
 
 BatteryStatusManager& BatteryStatusManager::Get()
 {
@@ -50,7 +51,7 @@ BatteryStatusManager::Sample* BatteryStatusManager::Find(const std::string& id)
     return nullptr;
 }
 
-void BatteryStatusManager::Publish(const std::string& id, int percentage, int charging, const std::string& availability, const std::string& detail)
+void BatteryStatusManager::Publish(const std::string& id, int percentage, int charging, const std::string& availability, const std::string& detail, uint64_t source_age_ms)
 {
     if(percentage < 0 || percentage > 100) { return; }
     std::lock_guard<std::mutex> guard(mutex);
@@ -61,6 +62,7 @@ void BatteryStatusManager::Publish(const std::string& id, int percentage, int ch
     sample->availability = availability;
     sample->detail = detail;
     sample->updated = clock();
+    sample->age_at_publish = source_age_ms;
 }
 
 void BatteryStatusManager::SetState(const std::string& id, const std::string& availability, const std::string& detail)
@@ -77,7 +79,9 @@ nlohmann::json BatteryStatusManager::Snapshots()
     const auto now = clock();
     for(const auto& sample : samples)
     {
-        auto age = now >= sample.updated ? now - sample.updated : 0;
+        const auto elapsed = now >= sample.updated ? now - sample.updated : 0;
+        const auto maximum = std::numeric_limits<uint64_t>::max();
+        const auto age = elapsed > maximum - sample.age_at_publish ? maximum : sample.age_at_publish + elapsed;
         std::string quality = "unknown";
         if(sample.percentage >= 0)
         {
@@ -88,6 +92,7 @@ nlohmann::json BatteryStatusManager::Snapshots()
             {"percentage", sample.percentage < 0 ? nlohmann::json(nullptr) : nlohmann::json(sample.percentage)},
             {"charging", sample.charging < 0 ? nlohmann::json(nullptr) : nlohmann::json(sample.charging == 1)},
             {"age_ms", sample.percentage < 0 ? nlohmann::json(nullptr) : nlohmann::json(age)},
+            {"acquisition", sample.id == AsusId ? (asus_cache_mode.load() ? "asus_log" : "manual") : "passive_receiver"},
             {"availability", sample.availability}, {"quality", quality}, {"detail", sample.detail}});
     }
     return result;

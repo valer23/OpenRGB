@@ -103,6 +103,12 @@ int main(int argc, char** argv)
     plugin->Unload(); // idempotent
     for(int i=0;i<3;++i) { plugin->Load(&host); assert(host.cache.Enabled()); plugin->Unload(); }
     assert(!host.cache.Enabled());
+    Host cached_host;cached_host.cache.SetAsusCacheMode(true);
+    plugin->Load(&cached_host);
+    auto* cached_refresh=plugin->GetTrayMenu()->findChild<QAction*>("BatteryAsusRefresh");
+    assert(cached_refresh && !cached_refresh->isVisible() && !cached_refresh->isEnabled());
+    cached_refresh->trigger();assert(cached_host.requests==0);
+    plugin->Unload();
     QPointer<QMenu> final_menu = plugin->GetTrayMenu();
     assert(loader.unload());
     assert(final_menu.isNull());

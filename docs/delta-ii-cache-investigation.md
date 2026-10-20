@@ -1,6 +1,6 @@
 # Delta II battery cache investigation — 19 October 2026
 
-## Result
+## Initial result (19 October; superseded by the disk-cache discovery below)
 
 Static inspection establishes a battery cache inside the installed ASUS device service, but does not establish a supported external reader for OpenRGB. Do not enable automatic headset queries on this evidence. No device command, IPC connection, service stop, process termination, or target-code execution was performed during this pass.
 
@@ -34,3 +34,15 @@ FanControl PID7284 and installed OpenRGB-Custom PID50048 were observed running a
 ## 20 October continuation
 
 Following the proposed manual alternative and the owner's resume, a manual awake-confirmed tray path is now implemented in the working tree. The negative passive-source findings and closed automatic gate above remain applicable. A live full-app trial has not yet validated this new UI/core path.
+
+## 21 October: confirmed passive disk cache
+
+The earlier search covered profiles and private IPC, but missed the diagnostic logs. REA inspection of the shipped tray consumer and static inspection of the shipped service/logger established a readable disk source. No USB commands, IPC connection, vendor code execution, service stop, process restart or logging-setting change was needed.
+
+The existing HKLM\SOFTWARE\ASUS\ARMOURY CRATE Diagnosis LogPath points to C:\ProgramData\ASUS\Armoury Crate Diagnosis. Framework subdirectories use MD5 of the UTF-8 Windows username; the owner's is a8955173b5f291ae0b74d3c259fc965a. Service.04.2026-10-21.log contains complete Device Service Broadcast JSON with command broadcastEvent, target.role trayIcon, msg.cmd10200 and modelNumber6906. At00:34:22.258 it reports83%, isCharging false, isDeviceAlive true; at00:45:35.096 it reports83%, false, false. A regular-user standalone reader returned83%, not charging while ASUS, Fan Control and the trial remained running.
+
+Service.js broadcastEvent logs the JSON before nodeServer.send. The shipped ASAR main logger uses yyyy-MM-dd dates,10MiB rotations, six backups and deletion of files older than six days. The new provider probes exact names for the current and previous six local dates, at most49 candidates, reads at most16 tails of64KiB, and shares read/write/delete with the existing writer. It does not scan arbitrary directories or use file modification time as sample freshness. Source timestamps age from the original event; negative status codes retain the preceding valid value and its age. An unavailable-device flag is ASUS's cached observation, not a sleep-state determination.
+
+The tray consumer AcPowerNotification.exe (assembly1.0.12.34, SHA25662595e066408ff5623b6b672bf9b79a8891f64b9de9e6681d5632dfec32e09c2) receives event10200 and caches DeviceCard.powerStatus. Its managed trace corroborates the event shape; its own output log was not found. The confirmed provider uses Service.04 logs, not a hypothetical tray log or unsupported IPC endpoint. REA member evidence: ev_f9d6af72031ee71728901a9e6f4ade3c47f528c413693a8fdeff6153a24c4cb5; identity: ev_b3c9035f1bac327e90b26b6e039ba2d58b388bdc7ec63ff0dd7c957feadfaf6f. Supporting artifacts remain under ignored build-battery/research/cached-source; vendor source is not committed.
+
+This is an implementation-specific ASUS log format, not a supported vendor API. Existing logging must remain available; the plugin never enables it. Cached report age does not establish measurement age, gauge accuracy or headset sleep. Automatic receiver-query validation stays false, while the file-only provider can run automatically without introducing receiver traffic. Full-app cache trial validation remains pending.

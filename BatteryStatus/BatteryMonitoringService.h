@@ -10,7 +10,7 @@ public:
     static BatteryMonitoringService& Get();
     BatteryMonitoringService(BatteryStatusManager& cache, AsusBatteryMonitor::Reader reader,
         bool asus_level_validated, std::chrono::milliseconds interval = std::chrono::seconds(60),
-        AsusBatteryMonitor::Reader awake_reader = {});
+        AsusBatteryMonitor::Reader awake_reader = {}, bool passive_cache = false);
     uint64_t Acquire();
     void Release(uint64_t token);
     void SetSuspended(bool value);
@@ -21,6 +21,7 @@ private:
     BatteryStatusManager& cache;
     AsusBatteryMonitor asus;
     const bool asus_level_validated;
+    const bool passive_cache;
     AsusBatteryMonitor::Reader awake_reader;
     std::set<uint64_t> subscriptions;
     std::mutex mutex;
