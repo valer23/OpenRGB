@@ -72,3 +72,17 @@ Evidence: build-battery/probe/lighting-trial-20261019-092603-471.json and a sani
 This validates one awake exchange through the owner's receiver. It does not validate queries against a sleeping headset, passive notification delivery, audio continuity, hotplug, charging transitions, battery accuracy, or automatic polling. No background acquisition was enabled and no standalone sample was inserted into the core as current telemetry. Normal ASUS components must still be able to retain their existing ownership; runtime service/process termination is not a plugin strategy.
 
 At the end of the owner trial, both LightingService and ArmouryCrateService were manually stopped. The owner should restore these originally Running services and reopen Armoury after testing. Fan Control and installed OpenRGB remain running.
+
+## Integrated manual tray trial — 21 October 2026
+
+Core source f51d2475 with plugin SHA2566939E8CB27419EAD65AAAF269D6ECE4D37BAA26987E5F478276AB5DB27CE0B91 ran as isolated OpenRGB-Battery-Trial11756. Installed1.0.20261020.1 files and11profiles were preserved; FanControl28840 stayed running.
+
+The owner saw Corsair77%. The trial log records passive frame01010F000203 at1664171ms, decoding LE16(0x0302)/10 to77, with no added battery GET. Native firmware handoff/software restoration were also logged.
+
+Headset refresh initially returned Windows error32 and opened no competing reader. Even after framework root32136 and LightingService were stopped for the approved diagnostic window, the ASUS launcher restarted a new framework reader10208 under root41352 and reclaimed the exact PDO. This was confirmed by an elevated read-only handle scan, not inferred from process presence. The initial helper was restored without errors.
+
+The corrected diagnostic included the verified ArmourySocketServer launcher15964. LightingService was temporarily stopped fromRunning; ArmouryCrateService was alreadyStopped and stayedStopped. Two owner scans separated by5s were clear before the owner used the actual tray confirmation while the headset was awake during gameplay. The owner reported84% last known, then explicitly confirmed “manual reading, not charging at last refresh.” They also confirmed audio and usual lighting continued normally. This is owner-observed UI evidence, not a retained84% USB packet capture.
+
+The release signal restored LightingService toRunning and requested the ASUS launcher relaunch, with no restoration errors. The diagnostic helper sent0USB commands; the core-owned tray action performed the authorized awake acquisition. Automatic ASUS polling remains disabled. Keeping ASUS readers running can still prevent future manual refreshes; retained data remains last-known, with age. No automatic vendor stop or sleep-safety claim is made.
+
+Remaining qualifications: charging transitions, independent battery accuracy, physical hotplug/system suspend tests and other platforms. These limits are stated in the fork PR; the strict automatic headset acquisition design is not claimed completed.

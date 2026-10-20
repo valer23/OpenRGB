@@ -7,9 +7,9 @@ The matching fork core is required for telemetry. On an older API-v5 core the pl
 ## Current acquisition status
 
 - Corsair Dark Core RGB Pro SE: passive battery notification parser in the existing, matched receiver reader. No additional USB request or reader is created. Automatic control GET0F was removed after reproducing a late-reply collision with native GET40 inactivity. The exact passive frame was observed on the owner receiver (63%, then 62%) and this matched path is enabled by default; an explicit hardware-setting opt-out remains available. Native idle support must already be available; this feature never enables it itself.
-- ASUS ROG Delta II: strict parsers and one exclusive Windows vendor-interface owner, scheduled by the core while monitoring is subscribed. Automatic level polling remains disabled by the compiled ReceiverLevelValidated gate until owner-firmware sleep-safe behavior is established. The automatic path queries only level; charging remains unknown until separately safe acquisition is validated. The manual probe refuses an absent, ambiguous, wrong-descriptor or busy interface. A valid awake battery reply does not establish safe background polling.
+- ASUS ROG Delta II: manual awake-confirmed refresh through one core-owned exclusive Windows vendor-interface owner. Automatic level polling remains disabled by the compiled ReceiverLevelValidated gate until owner-firmware sleep-safe behavior is established. The automatic path queries only level; charging remains unknown until separately safe acquisition is validated. Manual acquisition refuses an absent, ambiguous, wrong-descriptor or busy interface. A valid awake battery reply does not establish safe background polling.
 
-One awake Delta II exchange through the owner's receiver succeeded (89%, not charging); sleep-safe operation, coexistence with ASUS readers, and charging transitions remain unvalidated. Corsair passive receiver notifications have now been observed and decoded on the owner hardware; charging remains unknown. This is not a completed two-device release. Do not enable validation flags merely to make the menu show a percentage.
+One awake Delta II exchange through the owner's receiver succeeded (89%, not charging); sleep-safe operation, coexistence with ASUS readers, and charging transitions remain unvalidated. Corsair passive receiver notifications have now been observed and decoded on the owner hardware; charging remains unknown. The live tray trial now also shows the mouse at77% and the headset at84%, not charging at last refresh. Do not enable validation flags merely to make the menu show a percentage.
 
 ## Development and trial
 
@@ -40,7 +40,7 @@ The unverified Corsair notification diagnostic is emitted at debug level at most
 
 ## Validation still required
 
-Owner-device framing, notification delivery, battery values, charging, sleep/disconnect behavior, headset audio continuity, full-app effects behavior and short mouse idle/wake regressions. Native 15-minute firmware sleep remains pending; no battery-life improvement or other-platform hardware claim is made. No upstream issue, PR or MR is part of this local work.
+The owner confirmed the live mouse77% reading, manual awake headset84% reading with not-charging status, and uninterrupted headset audio/usual lighting. The existing mouse idle handoff and movement recovery also appear in the trial log. Independent gauge accuracy, charging transitions, physical receiver hotplug and system sleep/resume qualification remain unverified. Native15-minute firmware sleep remains pending; no battery-life improvement or other-platform hardware claim is made. Publication is limited to the requested PR in the owner fork; no upstream issue or MR is included.
 
 ## Manual Delta II refresh
 
@@ -50,4 +50,4 @@ This is manual-only: the last reading remains labeled **last known**, with its a
 
 If ASUS owns the receiver, the refresh reports unavailable and retains the previous reading. Closing the visible widget may not release background ASUS ownership. The plugin does not stop vendor services, close foreign handles or compete with another reader. There are no headset low-battery alerts based on retained manual readings. Old fork hosts retain cached display but do not show the refresh action.
 
-The new manual path requires a live full-app trial before it can be declared owner-hardware validated. Automatic headset polling remains disabled; no no-wake claim follows from manual refresh support.
+The owner exercised the actual tray action while gaming and reported84%, not charging at last refresh, with audio and usual lighting continuing normally. The first attempts correctly refused Windows error32 while ASUS owned the receiver; one framework closure was insufficient because ArmourySocketServer restarted it. The diagnostic test released that launcher and LightingService temporarily, verified two clear owner scans, and restored original service states afterward. This is an explicit diagnostic exception, not runtime plugin behavior or a coexistence claim. Automatic headset polling remains disabled; no no-wake claim follows from manual refresh support.
