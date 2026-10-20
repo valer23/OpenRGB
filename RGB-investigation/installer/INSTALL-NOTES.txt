@@ -2,7 +2,15 @@ OpenRGB Custom - personal build for valerian
 
 Includes the tested KFA2 GPU, Lian Li fan and ASUS logo support, the Effects Plugin and your saved lighting profiles.
 
-Version 1.0.20261016.1 corrects the GPU model to KFA2 RTX 3080 Ti SG 1-Click OC. Changed profiles are backed up before migrating GPU and fan identities. Colours and effects are retained. Persistent fan channel sizes are seeded from ValWhite if needed. Backup details are recorded under Settings\profile-backups\before-sg-upgrade.
+Version 1.0.20261020.1 packages the reviewed mouse idle simplification. Existing device settings and profiles are preserved. Software regressions and packet comparison passed; the refactor still requires physical verification.
+
+Version 1.0.20261019.2 moves mouse idle preferences to Edit Device / Configuration.json, preserving the old toggle and timeout with backups. Existing device preferences take precedence; invalid saved values stop migration. Profiles and fan configuration are preserved.
+
+Version 1.0.20261019.1 replaces Windows mouse input tracking with the tested native inactivity counter and Slipstream notifications. The short idle/wake checks passed; the full firmware sleep check remains pending during longer personal use. The existing 60-second preference is retained. GPU profile identities are migrated to the tested common Galax controller, with backups and existing colours/effects preserved.
+
+Version 1.0.20261018.1 enables wireless Dark Core RGB Pro SE idle handoff after one minute without mouse input. OpenRGB returns lighting to firmware and stops lighting updates until mouse input resumes. The firmware's own sleep timeout still applies. Existing mouse idle preferences are preserved. The settings backup is under Settings\profile-backups\before-mouse-idle-upgrade.
+
+The previous SG upgrade corrects the GPU model to KFA2 RTX 3080 Ti SG 1-Click OC. Changed profiles are backed up before migrating GPU and fan identities. Colours and effects are retained. Persistent fan channel sizes are seeded from ValWhite if needed. Backup details are recorded under Settings\profile-backups\before-sg-upgrade.
 
 Installs in the existing C:\Users\valerian\Apps\OpenRGB-Custom folder. Existing settings and profiles are retained. The current PawnIO installation is reused; this installer does not install or remove the shared PawnIO kernel driver.
 

@@ -29,6 +29,8 @@ public:
     void DeviceUpdateSingleLED(int led);
 
     void DeviceUpdateMode();
+    void DeviceConfigureDevice() override;
+    void DeviceUpdateDeviceSpecificConfiguration() override;
     void KeepaliveThread();
 
 private:

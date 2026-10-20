@@ -35,6 +35,7 @@ foreach($profileFile in @(Get-ChildItem -LiteralPath $profileRoot -Filter '*.jso
 }
 
 & (Join-Path $appRoot 'Migrate-Device-Profiles.ps1') -SettingsRoot (Join-Path $appRoot 'Settings')
+& (Join-Path $appRoot 'Configure-Mouse-Idle.ps1') -SettingsRoot (Join-Path $appRoot 'Settings')
 
 # The application's own Startup shortcut runs without elevation and can beat
 # this task to logon. Keep the task as this installation's startup entry.

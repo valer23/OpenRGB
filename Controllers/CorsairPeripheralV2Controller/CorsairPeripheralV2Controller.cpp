@@ -10,12 +10,23 @@
 \*---------------------------------------------------------*/
 
 #include <chrono>
+#include <cwchar>
 #include <thread>
 
 #include "CorsairPeripheralV2Controller.h"
 #include "StringUtils.h"
+#ifdef _WIN32
+#include <hidapi_winapi.h>
+#endif
+#include <nlohmann/json.hpp>
 
 using namespace std::chrono_literals;
+
+static unsigned long long CorsairMouseTime()
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+}
 
 CorsairPeripheralV2Controller::CorsairPeripheralV2Controller(hid_device* dev_handle, const char* path, std::string name)
 {
@@ -30,6 +41,7 @@ CorsairPeripheralV2Controller::CorsairPeripheralV2Controller(hid_device* dev_han
     |   switch the write_cmd to talk to the device and retry    |
     \*---------------------------------------------------------*/
     unsigned int pid    = GetAddressRetry(0x12);
+    mouse_receiver_pid  = pid;
 
     switch(pid)
     {
@@ -135,6 +147,7 @@ CorsairPeripheralV2Controller::CorsairPeripheralV2Controller(hid_device* dev_han
                 break;
         }
     }
+
 }
 
 CorsairPeripheralV2Controller::~CorsairPeripheralV2Controller()
@@ -147,7 +160,14 @@ CorsairPeripheralV2Controller::~CorsairPeripheralV2Controller()
     |   persists until the next USB enumeration if it is never  |
     |   reverted.                                               |
     \*---------------------------------------------------------*/
-    SetRenderMode(CORSAIR_V2_MODE_HW);
+    if(!mouse_idle_enabled || mouse_connected)
+    {
+        SetRenderMode(CORSAIR_V2_MODE_HW);
+    }
+    if(mouse_events)
+    {
+        hid_close(mouse_events);
+    }
 
     hid_close(dev);
 }
@@ -210,7 +230,7 @@ std::string CorsairPeripheralV2Controller::GetSerialString()
     return(StringUtils::wstring_to_string(serial_string));
 }
 
-void CorsairPeripheralV2Controller::SetRenderMode(corsair_v2_device_mode mode)
+bool CorsairPeripheralV2Controller::SetRenderMode(corsair_v2_device_mode mode)
 {
     uint8_t buffer[CORSAIR_V2_WRITE_SIZE];
 
@@ -224,15 +244,19 @@ void CorsairPeripheralV2Controller::SetRenderMode(corsair_v2_device_mode mode)
     buffer[3]   = CORSAIR_V2_VALUE_MODE;
     buffer[5]   = mode;
 
-    hid_write(dev, buffer, CORSAIR_V2_WRITE_SIZE);
-
-    if(!skip_reads)
+    if(hid_write(dev, buffer, CORSAIR_V2_WRITE_SIZE) != CORSAIR_V2_WRITE_SIZE)
     {
-        hid_read_timeout(dev, buffer, CORSAIR_V2_WRITE_SIZE, CORSAIR_V2_TIMEOUT);
+        return false;
     }
+    if(skip_reads)
+    {
+        return true;
+    }
+    int count = hid_read_timeout(dev, buffer, CORSAIR_V2_WRITE_SIZE, CORSAIR_V2_TIMEOUT);
+    return count >= 3 && buffer[2] == 0;
 }
 
-void CorsairPeripheralV2Controller::LightingControl(uint8_t opt1)
+bool CorsairPeripheralV2Controller::LightingControl(uint8_t opt1)
 {
     uint8_t buffer[CORSAIR_V2_WRITE_SIZE];
 
@@ -248,12 +272,16 @@ void CorsairPeripheralV2Controller::LightingControl(uint8_t opt1)
     buffer[3]   = opt1;
     buffer[5]   = 0x00;
 
-    hid_write(dev, buffer, CORSAIR_V2_WRITE_SIZE);
-
-    if(!skip_reads)
+    if(hid_write(dev, buffer, CORSAIR_V2_WRITE_SIZE) != CORSAIR_V2_WRITE_SIZE)
     {
-        hid_read_timeout(dev, buffer, CORSAIR_V2_WRITE_SIZE, CORSAIR_V2_TIMEOUT);
+        return false;
     }
+    if(skip_reads)
+    {
+        return true;
+    }
+    int count = hid_read_timeout(dev, buffer, CORSAIR_V2_WRITE_SIZE, CORSAIR_V2_TIMEOUT);
+    return count >= 3 && buffer[2] == 0;
 }
 
 unsigned int CorsairPeripheralV2Controller::GetKeyboardLayout()
@@ -365,7 +393,7 @@ void CorsairPeripheralV2Controller::ClearPacketBuffer()
         return;
     }
 
-    uint8_t result          = 0;
+    int result              = 0;
     uint8_t buffer[CORSAIR_V2_PACKET_SIZE];
 
     do
@@ -377,6 +405,10 @@ void CorsairPeripheralV2Controller::ClearPacketBuffer()
 
 void CorsairPeripheralV2Controller::SetLEDs(uint8_t *data, uint16_t data_size)
 {
+    if(mouse_idle_enabled && !AllowMouseFrame(CorsairMouseTime()))
+    {
+        return;
+    }
     const uint8_t offset1   = 8;
     const uint8_t offset2   = 4;
     uint16_t remaining      = data_size;
@@ -505,4 +537,375 @@ void CorsairPeripheralV2Controller::UpdateHWMode(uint16_t mode, corsair_v2_color
     }
     */
 
+}
+
+hid_device* CorsairPeripheralV2Controller::OpenMouseEvents()
+{
+#ifdef _WIN32
+    GUID container = {};
+    if(hid_winapi_get_container_id(dev, &container) != 0 || container == GUID{})
+    {
+        return nullptr;
+    }
+#else
+    wchar_t serial[HID_MAX_STR] = {};
+    if(hid_get_serial_number_string(dev, serial, HID_MAX_STR) != 0 || !serial[0])
+    {
+        return nullptr;
+    }
+#endif
+    hid_device* result = nullptr;
+    hid_device_info* devices = hid_enumerate(0x1B1C, mouse_receiver_pid);
+    for(hid_device_info* item = devices; item; item = item->next)
+    {
+        if(item->interface_number != 2 || item->usage_page != 0xFF42 || item->usage != 2)
+        {
+            continue;
+        }
+#ifndef _WIN32
+        if(!item->serial_number || std::wcscmp(serial, item->serial_number) != 0)
+        {
+            continue;
+        }
+#endif
+        hid_device* candidate = hid_open_path(item->path);
+        if(!candidate)
+        {
+            continue;
+        }
+#ifdef _WIN32
+        GUID candidate_container = {};
+        if(hid_winapi_get_container_id(candidate, &candidate_container) != 0 || candidate_container != container)
+        {
+            hid_close(candidate);
+            continue;
+        }
+#endif
+        /*---------------------------------------------------------*\
+        | Refuse an ambiguous sibling rather than another receiver.|
+        \*---------------------------------------------------------*/
+        if(result)
+        {
+            hid_close(candidate);
+            hid_close(result);
+            result = nullptr;
+            break;
+        }
+        result = candidate;
+    }
+    hid_free_enumeration(devices);
+    return result;
+}
+
+void CorsairPeripheralV2Controller::SetMouseConnected(bool connected)
+{
+    if(connected != mouse_connected)
+    {
+        mouse_connected = connected;
+        mouse_activity_after_handoff = connected;
+        mouse_inactivity_valid = false;
+        mouse_next_query_ms = 0;
+        mouse_software_required = true;
+        mouse_retry_after_ms = 0;
+        LOG_DEBUG("[%s] Wireless mouse %s", device_name.c_str(), connected ? "connected" : "disconnected");
+    }
+}
+
+void CorsairPeripheralV2Controller::ReadMouseEvents(unsigned long long now)
+{
+    if(!mouse_events)
+    {
+        if(now < mouse_event_retry_ms)
+        {
+            return;
+        }
+        mouse_event_retry_ms = now + CORSAIR_V2_MOUSE_QUERY_PERIOD;
+        mouse_events = OpenMouseEvents();
+        if(!mouse_events)
+        {
+            return;
+        }
+        mouse_connection_sync = true;
+        mouse_next_query_ms = 0;
+        mouse_inactivity_valid = false;
+        mouse_software_required = true;
+        mouse_retry_after_ms = 0;
+    }
+    /*---------------------------------------------------------*\
+    | Read only the sibling event endpoint. Bound each drain.  |
+    | Byte four is a connected-child bitmask, not a status enum.|
+    \*---------------------------------------------------------*/
+    for(unsigned int i = 0; i < 8; i++)
+    {
+        unsigned char buffer[CORSAIR_V2_PACKET_SIZE] = {};
+        int count = hid_read_timeout(mouse_events, buffer, sizeof(buffer), 0);
+        if(count < 0)
+        {
+            hid_close(mouse_events);
+            mouse_events = nullptr;
+            mouse_event_retry_ms = now + CORSAIR_V2_MOUSE_QUERY_PERIOD;
+            mouse_inactivity_valid = false;
+            if(!mouse_connection_sync)
+            {
+                LOG_WARNING("[%s] Mouse event endpoint unavailable; lighting paused until recovery", device_name.c_str());
+            }
+            mouse_connection_sync = true;
+            return;
+        }
+        if(count == 0)
+        {
+            return;
+        }
+        if(count >= 5 && buffer[0] == 0 && buffer[1] == 1 && buffer[2] == 0x36)
+        {
+            SetMouseConnected((buffer[4] & (1U << (write_cmd - CORSAIR_V2_WRITE_WIRED_ID))) != 0);
+        }
+    }
+}
+
+bool CorsairPeripheralV2Controller::ReadMouseConnection()
+{
+    /*---------------------------------------------------------*\
+    | Query the receiver's child mask only on initialization   |
+    | or event-reader recovery. This does not address the mouse.|
+    \*---------------------------------------------------------*/
+    ClearPacketBuffer();
+    unsigned char request[CORSAIR_V2_WRITE_SIZE] = {};
+    unsigned char response[CORSAIR_V2_PACKET_SIZE] = {};
+    request[1] = CORSAIR_V2_WRITE_WIRED_ID;
+    request[2] = CORSAIR_V2_CMD_GET;
+    request[3] = 0x36;
+    if(hid_write(dev, request, sizeof(request)) != sizeof(request))
+    {
+        return false;
+    }
+    int count = hid_read_timeout(dev, response, sizeof(response), CORSAIR_V2_TIMEOUT);
+    if(count < 4 || response[0] != 0 || response[1] != CORSAIR_V2_CMD_GET || response[2] != 0)
+    {
+        return false;
+    }
+    SetMouseConnected((response[3] & (1U << (write_cmd - CORSAIR_V2_WRITE_WIRED_ID))) != 0);
+    return true;
+}
+
+bool CorsairPeripheralV2Controller::ReadMouseInactivity()
+{
+    ClearPacketBuffer();
+    unsigned char request[CORSAIR_V2_WRITE_SIZE] = {};
+    unsigned char response[CORSAIR_V2_PACKET_SIZE] = {};
+    request[1] = write_cmd;
+    request[2] = CORSAIR_V2_CMD_GET;
+    request[3] = 0x40;
+    if(hid_write(dev, request, sizeof(request)) != sizeof(request))
+    {
+        return false;
+    }
+    int count = hid_read_timeout(dev, response, sizeof(response), CORSAIR_V2_TIMEOUT);
+    if(count < 5 || response[0] != write_cmd - CORSAIR_V2_WRITE_WIRED_ID || response[1] != 2 || response[2] != 0)
+    {
+        return false;
+    }
+    unsigned long long previous_inactivity_ms = mouse_inactivity_ms;
+    mouse_inactivity_ms = (response[3] | (response[4] << 8)) * 1000ULL;
+    if(mouse_handed_back)
+    {
+        /*---------------------------------------------------------*\
+        | Changing rendering mode resets the firmware counter.    |
+        | A subsequent decrease or a later counter origin indicates|
+        | input. Allow two seconds for counter quantization and I/O.|
+        \*---------------------------------------------------------*/
+        unsigned long long now = CorsairMouseTime();
+        mouse_activity_after_handoff |= mouse_inactivity_ms < previous_inactivity_ms ||
+            (now >= mouse_handoff_ms && mouse_inactivity_ms + 2000 < now - mouse_handoff_ms);
+    }
+    return true;
+}
+
+/*---------------------------------------------------------*\
+| Share the device configuration between HW and SW wrappers. |
+\*---------------------------------------------------------*/
+std::string CorsairPeripheralV2Controller::GetMouseIdleConfiguration()
+{
+    if(GetDeviceData()->pid != CORSAIR_DARK_CORE_RGB_PRO_PID || write_cmd != CORSAIR_V2_WRITE_WIRELESS_ID)
+    {
+        return "";
+    }
+
+    nlohmann::json config;
+    config["schema"]["idle_handoff_enabled"]["title"]       = "Return mouse lighting to firmware when idle";
+    config["schema"]["idle_handoff_enabled"]["type"]        = "bool";
+    config["schema"]["idle_timeout_seconds"]["title"]       = "Lighting idle timeout (seconds)";
+    config["schema"]["idle_timeout_seconds"]["type"]        = "integer";
+    config["schema"]["idle_timeout_seconds"]["minimum"]     = 5;
+    config["schema"]["idle_timeout_seconds"]["maximum"]     = 3600;
+    config["configuration"]["idle_handoff_enabled"]         = false;
+    config["configuration"]["idle_timeout_seconds"]         = 900;
+    return config.dump();
+}
+
+void CorsairPeripheralV2Controller::SetMouseIdleConfiguration(const std::string& configuration)
+{
+    nlohmann::json config = nlohmann::json::parse(configuration, nullptr, false);
+    if(config.is_discarded() || !config.contains("configuration"))
+    {
+        return;
+    }
+    const nlohmann::json& settings = config["configuration"];
+    if(!settings.is_object() || !settings.contains("idle_handoff_enabled") ||
+       !settings["idle_handoff_enabled"].is_boolean() || !settings.contains("idle_timeout_seconds") ||
+       !settings["idle_timeout_seconds"].is_number_integer() ||
+       settings["idle_timeout_seconds"] < 5 || settings["idle_timeout_seconds"] > 3600 ||
+       GetDeviceData()->pid != CORSAIR_DARK_CORE_RGB_PRO_PID || write_cmd != CORSAIR_V2_WRITE_WIRELESS_ID)
+    {
+        return;
+    }
+
+    bool enabled = settings["idle_handoff_enabled"].get<bool>();
+    mouse_idle_timeout_ms = settings["idle_timeout_seconds"].get<unsigned int>() * 1000ULL;
+    mouse_idle_handoff_enabled = enabled;
+    if(enabled && !mouse_idle_enabled)
+    {
+        mouse_events = OpenMouseEvents();
+        if(!mouse_events || !ReadMouseConnection() || (mouse_connected && !ReadMouseInactivity()))
+        {
+            LOG_WARNING("[%s] Firmware mouse activity unavailable; idle handoff disabled", device_name.c_str());
+            if(mouse_events)
+            {
+                hid_close(mouse_events);
+                mouse_events = nullptr;
+            }
+            return;
+        }
+        mouse_idle_enabled = true;
+        mouse_inactivity_valid = false;
+    }
+}
+
+bool CorsairPeripheralV2Controller::HasMouseIdleControl()
+{
+    return mouse_idle_enabled;
+}
+
+bool CorsairPeripheralV2Controller::UpdateMouseConnection(unsigned long long now)
+{
+    ReadMouseEvents(now);
+    if(!mouse_events)
+    {
+        return false;
+    }
+    if(mouse_connection_sync)
+    {
+        if(now < mouse_next_query_ms)
+        {
+            return false;
+        }
+        mouse_next_query_ms = now + CORSAIR_V2_MOUSE_QUERY_PERIOD;
+        if(!ReadMouseConnection())
+        {
+            return false;
+        }
+        mouse_connection_sync = false;
+        mouse_next_query_ms = 0;
+    }
+    return mouse_connected;
+}
+
+bool CorsairPeripheralV2Controller::MouseIdleNeedsUpdate()
+{
+    unsigned long long now = CorsairMouseTime();
+    if(!mouse_idle_enabled || !UpdateMouseConnection(now))
+    {
+        return false;
+    }
+    bool idle = MouseIsIdle();
+    return now >= mouse_next_query_ms || idle != mouse_handed_back ||
+        (!idle && mouse_software_required);
+}
+
+bool CorsairPeripheralV2Controller::AllowMouseFrame(unsigned long long now)
+{
+    if(!UpdateMouseConnection(now))
+    {
+        return false;
+    }
+    if(now >= mouse_next_query_ms)
+    {
+        mouse_next_query_ms = now + CORSAIR_V2_MOUSE_QUERY_PERIOD;
+        mouse_inactivity_valid = ReadMouseInactivity();
+        ReadMouseEvents(now);
+        if(!mouse_events || mouse_connection_sync || !mouse_connected)
+        {
+            return false;
+        }
+    }
+    if(MouseIsIdle())
+    {
+        if(!mouse_handed_back)
+        {
+            /*---------------------------------------------------------*\
+            | The command may apply even without an acknowledgement.   |
+            | Attempt handoff only once, then suppress lighting frames.|
+            \*---------------------------------------------------------*/
+            mouse_handed_back = true;
+            if(!ChangeMouseOwnership(false))
+            {
+                LOG_WARNING("[%s] Mouse idle handoff failed", device_name.c_str());
+            }
+        }
+        return false;
+    }
+    if(mouse_handed_back || mouse_software_required)
+    {
+        if(now < mouse_retry_after_ms)
+        {
+            return false;
+        }
+        if(!ChangeMouseOwnership(true))
+        {
+            if(!mouse_retry_after_ms)
+            {
+                LOG_WARNING("[%s] Mouse software lighting initialization failed", device_name.c_str());
+            }
+            mouse_retry_after_ms = now + CORSAIR_V2_MOUSE_QUERY_PERIOD;
+            return false;
+        }
+        mouse_handed_back = false;
+        mouse_software_required = false;
+        mouse_retry_after_ms = 0;
+    }
+    return true;
+}
+
+bool CorsairPeripheralV2Controller::MouseIsIdle()
+{
+    if(!mouse_idle_handoff_enabled)
+    {
+        return false;
+    }
+    if(mouse_handed_back)
+    {
+        return !mouse_activity_after_handoff;
+    }
+    return mouse_inactivity_valid && mouse_inactivity_ms >= mouse_idle_timeout_ms;
+}
+
+bool CorsairPeripheralV2Controller::ChangeMouseOwnership(bool software)
+{
+    ClearPacketBuffer();
+    if(!software)
+    {
+        /*---------------------------------------------------------*\
+        | The command may apply even if its acknowledgement is lost.|
+        \*---------------------------------------------------------*/
+        mouse_handoff_ms = CorsairMouseTime();
+        mouse_inactivity_ms = 0;
+        mouse_activity_after_handoff = false;
+    }
+    if(!SetRenderMode(software ? CORSAIR_V2_MODE_SW : CORSAIR_V2_MODE_HW) ||
+       (software && !LightingControl(0x5F)))
+    {
+        return false;
+    }
+    LOG_DEBUG("[%s] Mouse lighting %s", device_name.c_str(), software ? "software control restored" : "returned to firmware after inactivity");
+    return true;
 }

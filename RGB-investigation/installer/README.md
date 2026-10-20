@@ -1,5 +1,135 @@
 # OpenRGB Custom personal installer
 
+## Mouse idle simplification - 20 October 2026
+
+Version 1.0.20261020.1 packages fork revision 146effae, matching upstream
+fbdd84cb for the mouse idle implementation. It removes the separate policy
+class, redundant checked wrappers/state and driver mutex, using existing
+RGBController locking and queued updates. The reset-aware handoff, receiver
+identity checks, checked wake initialization and polling cadence remain.
+Device-specific idle preferences and all existing lighting profiles are retained.
+
+Fresh driver regressions and the lifecycle fixture passed. The deterministic
+20,000-step comparison reproduced 23,529 packets and trace hash
+4169482241693242891. These are software checks, not a new physical hardware
+validation. Full integrated firmware sleep/wake and Linux/macOS remain untested.
+
+Version 1.0.20261020.1 is installed and running. Installed application/plugin
+hashes match the package; all saved profile colours/effects, application
+preferences, mouse-idle settings and fan/device configuration are unchanged.
+A full pre-upgrade backup is retained privately. The owner confirmed all devices
+animate, idle mouse lighting hands back and stays onboard, and movement restores
+the effect. Full firmware lights-off sleep/wake remains unverified.
+
+## Device-specific mouse idle settings - 19 October 2026
+
+Version 1.0.20261019.2 moves the idle handoff toggle and timeout to the mouse's
+Edit Device page. OpenRGB saves them through its existing Configuration.json
+mechanism. The driver no longer reads CorsairMouseIdle from OpenRGB.json.
+Upstream defaults to disabled/900 seconds; this personal package migrates the
+existing opt-in and timeout (normally enabled/60 seconds).
+
+Configure-Mouse-Idle.ps1 backs up both settings files, writes the per-device
+entry first, then removes the old application property. Existing valid device
+preferences win. Malformed new settings stop migration without deleting the
+legacy fallback. Existing fan configuration and all profile colours/effects
+are preserved; a saved ValWhite mouse description supplies the matching device
+identity if Configuration.json has no mouse entry yet. Repeated runs are safe.
+
+The Windows build, independent standards and behaviour reviews, driver
+failure/recovery checks and migration fixtures passed. The isolated GUI
+confirmed the controls, disabled handoff staying animated, and enabled/60-second
+handoff plus movement resume after correcting the checkbox schema to OpenRGB's
+"bool" type. An actual-widget check covers checkbox callbacks and timeout limits.
+Version 1.0.20261019.2 is installed. Its hashes, enabled/60-second migration,
+unchanged fan configuration and all profile colours/effects passed verification.
+Full firmware
+sleep and battery-life measurement remain separate, pending checks. Linux and
+macOS are unverified. Older sections below describe historical packages.
+
+## Native mouse idle revision - 19 October 2026
+
+Version 1.0.20261019.1 replaces Windows Raw Input tracking with the
+Dark Core RGB Pro SE's firmware inactivity counter (GET 0x40) and Slipstream
+receiver connection notifications (0x36). It reuses the existing Corsair V2
+controller, render commands, update queue and keepalive workers. It adds no
+input listener or worker thread and does not change firmware sleep settings.
+The existing opt-in settings and personal installer's 60-second default remain.
+
+The event interface must belong to the controlled receiver. Windows uses the
+bundled HIDAPI container ID; other systems require a unique, nonempty receiver
+serial match. Capability or interface validation failure at startup leaves the
+original lighting path enabled. Counter reads are limited to once per second
+while connected; known-offline mice receive no lighting frames, queries or
+keepalives. Reader failures pause mouse traffic until receiver state is checked.
+Wake initialization is checked and retried at most once per second.
+
+Changing rendering mode resets the firmware inactivity counter. The driver
+keeps the idle handoff latched across this reset, and resumes on subsequent
+counter evidence of activity or a receiver reconnect. The counter has roughly
+one-second resolution. A very brief input immediately after handoff can be
+indistinguishable from the mode reset and may be missed; this is not equivalent
+to operating-system input tracking. The code allows two seconds for counter
+quantization and transport timing when comparing inferred activity times.
+
+The Windows build, independent correctness/reuse review and private actual-driver
+regressions passed. Those regressions include reset-to-zero, three minutes idle,
+sustained input, per-receiver matching, offline silence and bounded recovery.
+The owner confirmed a two-minute full-application handoff and movement resume,
+and all trial effects including the GPU after correcting copied GPU identities.
+The final full-application lights-off sleep/wake check is still pending. Earlier
+sleep/wake results below apply to the installed Raw Input version or to the
+standalone ten-second counter probe, not this one-second native app revision.
+A brief input immediately after handoff also restored effects in the owner's
+short check; this does not guarantee detection for every subsecond input.
+Linux/macOS builds and hardware and battery-life improvement remain unverified.
+Version 1.0.20261019.1 was installed for longer personal validation. Installed
+application/plugin hashes, all profile colours/effects, OpenRGB settings and
+persistent device configuration passed post-install verification. The installer
+migrates the old SG GPU identity to the tested common Galax controller using
+the existing transactional profile migration. A full pre-upgrade application,
+profile/settings and startup-task backup is retained in the private upgrade
+folder; the previous 1.0.20261018.1 installer remains available for rollback.
+
+## Mouse idle update - 18 October 2026
+
+Version 1.0.20261018.1 adds an opt-in Windows idle handoff for the Dark Core
+RGB Pro SE on Slipstream. This personal installer enables it with a 60-second
+mouse inactivity timeout. Firmware then owns lighting and OpenRGB suppresses
+lighting traffic until mouse movement, buttons or wheel input resumes effects.
+The firmware's own sleep timeout is unchanged. Keyboard input does not reset
+the mouse timer. Other supported devices and wired operation retain their
+existing lighting path.
+
+In the historical 18 October package, Configure-Mouse-Idle.ps1 backed up OpenRGB.json before adding CorsairMouseIdle.
+It preserves an existing block, including an explicit enabled=false opt-out or
+custom timeout. To change it, exit OpenRGB, edit timeout_seconds (5 to 3600),
+and restart. Missing settings in the driver preserve its former behaviour;
+installing this personal package supplies the opt-in. Profiles are unchanged.
+
+The owner tested the isolated 30-second diagnostic on 18 October: effects
+changed to onboard lighting after inactivity, resumed on movement, and after
+16-17 minutes the mouse lights turned off completely and movement restored
+Rainbow Wave. This confirms sleep/wake behaviour, not a measured battery-life
+improvement. Private policy, Raw Input and actual-driver/fake-HID checks passed.
+Independent review also covered a signed HID-read error correction to avoid
+an endless packet-drain loop on disconnect. The final Windows build includes
+that correction; the physical trial preceded it. Linux/macOS were not tested.
+
+The installed package subsequently passed its 60-second handoff/wake check,
+with all saved profile hashes and persistent device configuration preserved.
+
+Pre-submission review found two additional cases: multiple Slipstream receivers
+must not share activity, and a failed lighting-initialization response must keep
+wake recovery pending. The source now correlates interfaces using bundled
+HIDAPI container IDs and retries until both existing initialization steps pass.
+Independent re-review, the Windows build, native listener/container checks and
+private initialization-failure/retry checks passed. These review revisions are
+not included in the installed 1.0.20261018.1 package and have not had another
+full-application physical sleep/wake test. The original hardware result above
+applies to the installed version. The upstream submission contains only the six
+controller files, without this personal packaging or the private tests.
+
 Inno Setup 6.7.3 EXE installer for valerian's tested Windows installation.
 Adds a Windows Installed Apps entry and uninstaller with a stable AppId.
 

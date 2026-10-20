@@ -46,6 +46,12 @@ RGBController_CorsairV2SW::RGBController_CorsairV2SW(CorsairPeripheralV2Controll
     Direct.color_mode               = MODE_COLORS_PER_LED;
     modes.push_back(Direct);
 
+    configuration = controller->GetMouseIdleConfiguration();
+    if(!configuration.empty())
+    {
+        flags |= CONTROLLER_FLAG_MANUALLY_CONFIGURABLE_DEVICE_SPECIFIC;
+    }
+
     SetupZones();
     /*-----------------------------------------------------*\
     | The Corsair K55 RGB PRO requires a packet within      |
@@ -59,8 +65,6 @@ RGBController_CorsairV2SW::RGBController_CorsairV2SW(CorsairPeripheralV2Controll
 
 RGBController_CorsairV2SW::~RGBController_CorsairV2SW()
 {
-    Shutdown();
-
     /*-----------------------------------------------------*\
     | Close keepalive thread                                |
     \*-----------------------------------------------------*/
@@ -68,6 +72,7 @@ RGBController_CorsairV2SW::~RGBController_CorsairV2SW()
     keepalive_thread->join();
     delete keepalive_thread;
 
+    Shutdown();
     delete controller;
 }
 
@@ -226,14 +231,41 @@ void RGBController_CorsairV2SW::KeepaliveThread()
 {
     while(keepalive_thread_run.load())
     {
-        if(active_mode == 0)
+        bool monitor_mouse;
         {
-            if((std::chrono::steady_clock::now() - last_update_time) >
+            /*-----------------------------------------------------*\
+            | Share the core lock with configuration and device I/O.|
+            \*-----------------------------------------------------*/
+            std::shared_lock<std::shared_mutex> access_guard(AccessMutex);
+            std::lock_guard<std::mutex> guard(DeviceMutex);
+            monitor_mouse = controller->HasMouseIdleControl();
+            if(monitor_mouse)
+            {
+                if(controller->MouseIdleNeedsUpdate())
+                {
+                    UpdateLEDsInternal();
+                }
+            }
+            else if(active_mode == 0 && (std::chrono::steady_clock::now() - last_update_time) >
                 std::chrono::milliseconds(CORSAIR_V2_UPDATE_PERIOD))
             {
-                DeviceUpdateLEDs();
+                UpdateLEDsInternal();
             }
         }
-        std::this_thread::sleep_for(CORSAIR_V2_SLEEP_PERIOD);
+        std::this_thread::sleep_for(monitor_mouse ? std::chrono::milliseconds(250) : CORSAIR_V2_SLEEP_PERIOD);
     }
+}
+
+void RGBController_CorsairV2SW::DeviceConfigureDevice()
+{
+    if((flags & CONTROLLER_FLAG_MANUALLY_CONFIGURED_DEVICE_SPECIFIC) == 0)
+    {
+        configuration = controller->GetMouseIdleConfiguration();
+        controller->SetMouseIdleConfiguration(configuration);
+    }
+}
+
+void RGBController_CorsairV2SW::DeviceUpdateDeviceSpecificConfiguration()
+{
+    controller->SetMouseIdleConfiguration(configuration);
 }

@@ -33,6 +33,7 @@
 #define CORSAIR_V2_LIGHT_CTRL2          34          /* 0x22                             */
 #define CORSAIR_V2_UPDATE_PERIOD        30000
 #define CORSAIR_V2_SLEEP_PERIOD         12500ms
+#define CORSAIR_V2_MOUSE_QUERY_PERIOD   1000
 #define CORSAIR_V2_WRITE_PACE           2
 
 #define CORSAIR_V2_BRIGHTNESS_MIN       0
@@ -89,6 +90,9 @@ enum corsair_v2_color
 class CorsairPeripheralV2Controller
 {
 public:
+    /*---------------------------------------------------------*\
+    | Runtime calls are serialized by RGBController::DeviceMutex.|
+    \*---------------------------------------------------------*/
     CorsairPeripheralV2Controller(hid_device* dev_handle, const char* path, std::string name);
     virtual ~CorsairPeripheralV2Controller();
 
@@ -99,10 +103,14 @@ public:
     std::string                     GetSerialString();
     const corsair_v2_device*        GetDeviceData();
     bool                            IsDeviceSupported();
+    std::string                     GetMouseIdleConfiguration();
+    void                            SetMouseIdleConfiguration(const std::string& configuration);
+    bool                            HasMouseIdleControl();
+    bool                            MouseIdleNeedsUpdate();
     unsigned int                    GetKeyboardLayout();
 
-    void                            SetRenderMode(corsair_v2_device_mode mode);
-    void                            LightingControl(uint8_t opt1);
+    bool                            SetRenderMode(corsair_v2_device_mode mode);
+    bool                            LightingControl(uint8_t opt1);
     void                            SetLEDs(uint8_t *data, uint16_t data_size);
     void                            UpdateHWMode(uint16_t mode, corsair_v2_color color_mode, uint8_t speed,
                                                  uint8_t direction, uint8_t brightness, std::vector<RGBColor> colors);
@@ -115,6 +123,35 @@ protected:
     uint8_t                         light_ctrl          = CORSAIR_V2_LIGHT_CTRL2;
 
 private:
+    hid_device*                     OpenMouseEvents();
+    void                            ReadMouseEvents(unsigned long long now);
+    bool                            UpdateMouseConnection(unsigned long long now);
+    bool                            AllowMouseFrame(unsigned long long now);
+    void                            SetMouseConnected(bool connected);
+    bool                            ReadMouseConnection();
+    bool                            ReadMouseInactivity();
+    bool                            MouseIsIdle();
+    bool                            ChangeMouseOwnership(bool software);
+    hid_device*                     mouse_events = nullptr;
+    unsigned int                    mouse_receiver_pid = 0;
+    /*---------------------------------------------------------*\
+    | Activity monitoring remains active after disabling the   |
+    | handoff policy so software ownership can resume safely.  |
+    \*---------------------------------------------------------*/
+    bool                            mouse_idle_enabled = false;
+    bool                            mouse_idle_handoff_enabled = false;
+    bool                            mouse_connected = true;
+    bool                            mouse_connection_sync = false;
+    bool                            mouse_inactivity_valid = false;
+    unsigned long long              mouse_inactivity_ms = 0;
+    unsigned long long              mouse_handoff_ms = 0;
+    bool                            mouse_activity_after_handoff = false;
+    unsigned long long              mouse_next_query_ms = 0;
+    unsigned long long              mouse_event_retry_ms = 0;
+    bool                            mouse_handed_back = false;
+    bool                            mouse_software_required = false;
+    unsigned long long              mouse_retry_after_ms = 0;
+    unsigned long long              mouse_idle_timeout_ms = 900000;
     void                            ClearPacketBuffer();
     unsigned int                    GetAddress(uint8_t address);
     unsigned int                    GetAddressRetry(uint8_t address);
