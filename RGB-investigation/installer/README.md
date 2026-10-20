@@ -17,8 +17,9 @@ validation. Full integrated firmware sleep/wake and Linux/macOS remain untested.
 Version 1.0.20261020.1 is installed and running. Installed application/plugin
 hashes match the package; all saved profile colours/effects, application
 preferences, mouse-idle settings and fan/device configuration are unchanged.
-A full pre-upgrade backup is retained privately. The post-install short hardware
-check is pending; software verification does not establish physical sleep/wake.
+A full pre-upgrade backup is retained privately. The owner confirmed all devices
+animate, idle mouse lighting hands back and stays onboard, and movement restores
+the effect. Full firmware lights-off sleep/wake remains unverified.
 
 ## Device-specific mouse idle settings - 19 October 2026
 
