@@ -14,3 +14,13 @@ public:
     virtual void ReleaseBatteryMonitoring(uint64_t token) = 0;
     virtual nlohmann::json GetBatterySnapshots() = 0;
 };
+
+// Separate optional RTTI capability: preserve both the API-v5 and battery-v1
+// vtables so existing hosts/plugins can continue using cached snapshots.
+class OpenRGBBatteryRefreshInterface
+{
+public:
+    virtual ~OpenRGBBatteryRefreshInterface() = default;
+    virtual unsigned int GetBatteryRefreshVersion() const = 0;
+    virtual bool RequestAsusBatteryRefresh(uint64_t token, bool owner_confirmed_awake) = 0;
+};

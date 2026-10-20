@@ -5,6 +5,7 @@
 #include <QPointer>
 #include <QTimer>
 #include <QLabel>
+#include <QMessageBox>
 #include "OpenRGBPluginInterface.h"
 #include "OpenRGBBatteryStatusInterface.h"
 #include "BatteryStatusPresentation.h"
@@ -32,18 +33,23 @@ public:
     void SettingsManagerUpdated(unsigned int) override {}
 private:
     void Refresh();
+    void ConfirmAsusRefresh();
     void MonitoringChanged(bool enabled);
     void SavePreferences();
     OpenRGBPluginAPIInterface* api = nullptr;
     OpenRGBBatteryStatusInterface* battery = nullptr;
+    OpenRGBBatteryRefreshInterface* refresher = nullptr;
     uint64_t token = 0;
     bool notifications = false;
+    QString refresh_error;
     QPointer<QMenu> menu;
     QPointer<QWidget> widget;
     QPointer<QLabel> summary;
     QPointer<QAction> monitoring_action;
     QPointer<QAction> notification_action;
     QPointer<QTimer> timer;
+    QPointer<QAction> refresh_action;
+    QPointer<QMessageBox> awake_confirmation;
     std::vector<QMenu*> device_menus;
     std::vector<QAction*> device_details;
     BatteryAlertPolicy alerts;

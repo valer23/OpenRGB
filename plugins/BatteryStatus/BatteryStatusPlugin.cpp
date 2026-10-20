@@ -23,6 +23,8 @@ void BatteryStatusPlugin::Load(OpenRGBPluginAPIInterface* host)
     api = host;
     battery = dynamic_cast<OpenRGBBatteryStatusInterface*>(host);
     if(battery && battery->GetBatteryStatusVersion() != 1) { battery = nullptr; }
+    refresher = dynamic_cast<OpenRGBBatteryRefreshInterface*>(host);
+    if(refresher && refresher->GetBatteryRefreshVersion() != 1) { refresher = nullptr; }
     menu = new QMenu("Battery Status");
     menu->setObjectName("BatteryStatusMenu");
     if(!battery)
@@ -42,6 +44,12 @@ void BatteryStatusPlugin::Load(OpenRGBPluginAPIInterface* host)
         auto* details = entry->addAction("Waiting for cached data");
         details->setEnabled(false);
         device_details.push_back(details);
+    }
+    if(refresher)
+    {
+        refresh_action = device_menus[1]->addAction("Refresh headset battery while awake...");
+        refresh_action->setObjectName("BatteryAsusRefresh");
+        connect(refresh_action, &QAction::triggered, this, [this] { ConfirmAsusRefresh(); });
     }
     menu->addSeparator();
     monitoring_action = menu->addAction("Enable battery monitoring");
@@ -107,6 +115,10 @@ void BatteryStatusPlugin::Refresh()
         return;
     }
     const auto rows = battery->GetBatterySnapshots();
+    if(refresh_action)
+    {
+        refresh_action->setEnabled(token && !awake_confirmation && rows.size() > 1 && rows[1]["availability"] != "refreshing");
+    }
     QStringList lines;
     for(size_t i = 0; i < device_menus.size() && i < rows.size(); ++i)
     {
@@ -122,6 +134,7 @@ void BatteryStatusPlugin::Refresh()
         if(row["quality"] == "current" && row["charging"].is_null()) { detail += "; charging status unknown"; }
         const auto description = QString::fromStdString(row["detail"].get<std::string>());
         if(!description.isEmpty()) { detail += "; " + description; }
+        if(i == 1 && !refresh_error.isEmpty()) { detail += "; " + refresh_error; }
         device_details[i]->setText(detail);
         lines << title + "\n" + detail;
         if(token && alerts.ShouldNotify(row, notifications))
@@ -143,10 +156,13 @@ void BatteryStatusPlugin::Refresh()
 
 void BatteryStatusPlugin::Unload()
 {
+    if(awake_confirmation) { awake_confirmation->disconnect(this); delete awake_confirmation; }
+    if(refresh_action) { refresh_action->disconnect(this); refresh_action->setEnabled(false); }
     if(timer) { timer->stop(); delete timer; }
     if(token && battery) { battery->ReleaseBatteryMonitoring(token); }
     token = 0;
     battery = nullptr;
+    refresher = nullptr;
     api = nullptr;
     device_menus.clear();
     device_details.clear();
@@ -162,4 +178,30 @@ BatteryStatusPlugin::~BatteryStatusPlugin()
     Unload();
     if(menu) { delete menu; }
     if(widget) { delete widget; }
+}
+
+void BatteryStatusPlugin::ConfirmAsusRefresh()
+{
+    if(!refresher || !token || awake_confirmation) { return; }
+    refresh_error.clear();
+    awake_confirmation = new QMessageBox(QMessageBox::Question, "Refresh headset battery",
+        "Confirm that the Delta II is powered on and awake. Read its battery and charging status once?\n\n"
+        "If ASUS is using the receiver, the refresh will report unavailable. No ASUS component will be stopped.",
+        QMessageBox::Yes | QMessageBox::Cancel, menu);
+    awake_confirmation->setObjectName("BatteryAwakeConfirmation");
+    awake_confirmation->setDefaultButton(QMessageBox::Cancel);
+    awake_confirmation->setAttribute(Qt::WA_DeleteOnClose);
+    connect(awake_confirmation, &QMessageBox::finished, this, [this](int result) {
+        awake_confirmation = nullptr;
+        if(result == QMessageBox::Yes && refresher && token)
+        {
+            if(!refresher->RequestAsusBatteryRefresh(token, true))
+            {
+                refresh_error = "Refresh could not start: monitoring may be paused or a read is already running";
+            }
+        }
+        Refresh();
+    });
+    awake_confirmation->open();
+    Refresh();
 }

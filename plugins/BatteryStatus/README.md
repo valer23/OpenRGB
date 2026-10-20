@@ -41,3 +41,13 @@ The unverified Corsair notification diagnostic is emitted at debug level at most
 ## Validation still required
 
 Owner-device framing, notification delivery, battery values, charging, sleep/disconnect behavior, headset audio continuity, full-app effects behavior and short mouse idle/wake regressions. Native 15-minute firmware sleep remains pending; no battery-life improvement or other-platform hardware claim is made. No upstream issue, PR or MR is part of this local work.
+
+## Manual Delta II refresh
+
+Matching fork builds now expose a separate optional refresh capability without changing the battery-v1 or OpenRGB API-v5 vtables. Under the Delta II tray submenu, choose **Refresh headset battery while awake...**, then confirm that it is powered on and awake. Cancel sends no request. The core performs one bounded exclusive battery/charging exchange on its own thread; repeated clicks cannot queue extra reads.
+
+This is manual-only: the last reading remains labeled **last known**, with its age. No timer, resume event, profile load, plugin reload or subscriber change authorizes another manual read. Disable monitoring or unload the final subscriber to join in-flight core work and discard a late result. System suspension also stops manual work; resuming does not repeat it.
+
+If ASUS owns the receiver, the refresh reports unavailable and retains the previous reading. Closing the visible widget may not release background ASUS ownership. The plugin does not stop vendor services, close foreign handles or compete with another reader. There are no headset low-battery alerts based on retained manual readings. Old fork hosts retain cached display but do not show the refresh action.
+
+The new manual path requires a live full-app trial before it can be declared owner-hardware validated. Automatic headset polling remains disabled; no no-wake claim follows from manual refresh support.

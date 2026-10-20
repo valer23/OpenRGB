@@ -58,24 +58,7 @@ void AsusBatteryMonitor::Run()
         {
             const auto reply = read();
             if(stop.load() || !cache.Enabled()) { break; }
-            const auto level = reply.find("percentage");
-            if(level != reply.end() && level->is_number_integer() && *level >= 0 && *level <= 100)
-            {
-                const auto charging = reply.find("charging");
-                cache.Publish(BatteryStatusManager::AsusId, level->get<int>(),
-                    charging != reply.end() && charging->is_boolean() ? (charging->get<bool>() ? 1 : 0) : -1,
-                    "receiver"); // A receiver response does not establish the wireless child's awake state.
-            }
-            else
-            {
-                const auto error = reply.find("error");
-                const auto detail = error != reply.end() && error->is_string() ?
-                    error->get<std::string>() : "Invalid battery percentage reply";
-                const auto state = reply.find("availability");
-                const std::string availability = state != reply.end() && state->is_string() &&
-                    (*state == "disconnected" || *state == "unknown") ? state->get<std::string>() : "unavailable";
-                cache.SetState(BatteryStatusManager::AsusId, availability, detail);
-            }
+            ApplyReply(reply, false);
         }
         catch(const std::exception& error)
         {
@@ -88,4 +71,67 @@ void AsusBatteryMonitor::Run()
         std::unique_lock<std::mutex> guard(wait_mutex);
         changed.wait_for(guard, interval, [this] { return stop.load(); });
     }
+}
+
+void AsusBatteryMonitor::ApplyReply(const nlohmann::json& reply, bool manual)
+{
+    const auto level = reply.find("percentage");
+    if(level != reply.end() && level->is_number_integer() && *level >= 0 && *level <= 100)
+    {
+        const auto charging = reply.find("charging");
+        const auto charging_error = reply.find("charging_error");
+        const std::string detail = charging_error != reply.end() && charging_error->is_string() ?
+            charging_error->get<std::string>() : "";
+        cache.Publish(BatteryStatusManager::AsusId, level->get<int>(),
+            charging != reply.end() && charging->is_boolean() ? (charging->get<bool>() ? 1 : 0) : -1,
+            manual ? "manual" : "receiver", detail); // A receiver response does not establish the wireless child's awake state.
+    }
+    else
+    {
+        const auto error = reply.find("error");
+        const auto detail = error != reply.end() && error->is_string() ?
+            error->get<std::string>() : "Invalid battery percentage reply";
+        const auto state = reply.find("availability");
+        const std::string availability = state != reply.end() && state->is_string() &&
+            (*state == "disconnected" || *state == "unknown") ? state->get<std::string>() : "unavailable";
+        cache.SetState(BatteryStatusManager::AsusId, availability, detail);
+    }
+}
+
+bool AsusBatteryMonitor::RequestOnce(Reader reader)
+{
+    std::lock_guard<std::mutex> guard(lifecycle_mutex);
+    if(!cache.Enabled() || once_running.load() || (!stop.load() && worker.joinable())) { return false; }
+    StopLocked(); // Join a completed request before reusing its thread handle.
+    cache.SetState(BatteryStatusManager::AsusId, "refreshing", "One awake-confirmed battery read in progress");
+    stop.store(false);
+    once_running.store(true);
+    try
+    {
+        worker = std::thread([this, reader = std::move(reader)] {
+            try
+            {
+                const auto reply = reader();
+                if(!stop.load() && cache.Enabled()) { ApplyReply(reply, true); }
+            }
+            catch(const std::exception& error)
+            {
+                if(!stop.load()) { cache.SetState(BatteryStatusManager::AsusId, "unavailable", error.what()); }
+            }
+            catch(...)
+            {
+                if(!stop.load()) { cache.SetState(BatteryStatusManager::AsusId, "unavailable", "Battery provider failed"); }
+            }
+            stop.store(true);
+            once_running.store(false);
+        });
+    }
+    catch(const std::exception& error)
+    {
+        stop.store(true);
+        once_running.store(false);
+        cache.SetState(BatteryStatusManager::AsusId, "unavailable", error.what());
+        return false;
+    }
+    return true;
 }

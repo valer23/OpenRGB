@@ -21,5 +21,13 @@ int main()
     row["availability"]="receiver"; assert(!alerts.ShouldNotify(row,true));
     assert(BatteryAvailabilityText(row).contains("sleep state unknown"));
     row["percentage"]=nullptr; assert(BatteryTitle(row).contains("unknown"));
+    row["percentage"]=73; row["availability"]="manual"; row["quality"]="last_known";
+    row["charging"]=true;
+    assert(BatteryAvailabilityText(row).contains("charging at last refresh"));
+    row["charging"]=false;
+    assert(BatteryAvailabilityText(row).contains("not charging at last refresh"));
+    row["charging"]=nullptr;
+    assert(BatteryAvailabilityText(row).contains("charging status unknown"));
+    assert(!alerts.ShouldNotify(row,true));
     std::cout<<"Presentation and discharge-alert tests passed\n";
 }

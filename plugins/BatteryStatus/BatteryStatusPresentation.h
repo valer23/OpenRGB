@@ -18,6 +18,14 @@ inline QString BatteryTitle(const nlohmann::json& row)
 
 inline QString BatteryAvailabilityText(const nlohmann::json& row)
 {
+    if(row["availability"] == "manual")
+    {
+        const QString charging = row["charging"].is_boolean() ?
+            (row["charging"].get<bool>() ? "charging at last refresh" : "not charging at last refresh") :
+            "charging status unknown";
+        return "Manual reading; " + charging + "; refresh again while the headset is awake";
+    }
+    if(row["availability"] == "refreshing") { return "Reading headset battery once"; }
     if(row["availability"] == "receiver") { return "Receiver reachable; headset sleep state unknown"; }
     return QString::fromStdString(row["availability"].get<std::string>());
 }

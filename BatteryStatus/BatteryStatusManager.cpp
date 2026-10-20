@@ -50,7 +50,7 @@ BatteryStatusManager::Sample* BatteryStatusManager::Find(const std::string& id)
     return nullptr;
 }
 
-void BatteryStatusManager::Publish(const std::string& id, int percentage, int charging, const std::string& availability)
+void BatteryStatusManager::Publish(const std::string& id, int percentage, int charging, const std::string& availability, const std::string& detail)
 {
     if(percentage < 0 || percentage > 100) { return; }
     std::lock_guard<std::mutex> guard(mutex);
@@ -59,7 +59,7 @@ void BatteryStatusManager::Publish(const std::string& id, int percentage, int ch
     sample->percentage = percentage;
     sample->charging = charging == 0 || charging == 1 ? charging : -1;
     sample->availability = availability;
-    sample->detail.clear();
+    sample->detail = detail;
     sample->updated = clock();
 }
 

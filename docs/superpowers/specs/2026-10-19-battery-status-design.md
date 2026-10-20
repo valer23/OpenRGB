@@ -88,3 +88,13 @@ Names of internal helpers, exact file split, core provider registration hook, an
 ## Design review
 
 A fresh independent builder check found no important unanswered planning questions and no contradiction with the no-wake or no competing reader constraints. Hardware and build behavior remain untested at this design-only stage.
+
+## 20 October continuation: manual headset refresh
+
+After the static cache investigation found no established external passive source, the proposed alternative was manual awake-confirmed refresh. The owner resumed after that proposal; implement the reversible code path and require an explicit awake confirmation at each actual refresh. This continuation does not authorize unattended headset queries or diagnostic service closures.
+
+Keep automatic Delta II polling disabled. The core accepts a request only with a live subscription, awake confirmation, no suspension and no existing request. It performs one bounded exclusive awake battery/charging exchange asynchronously, using the existing native transport. The optional UI presents Cancel by default, reports refusal/busy results and keeps successful values as last-known with age. No automatic retry or request replay on resume, reconnect, profile load or plugin reload. Final subscriber release and suspend join in-flight work and suppress late publication. No callbacks into plugin code from the worker.
+
+Add a separate RTTI refresh interface instead of extending either existing virtual interface. Hosts without it retain cached display. Existing Corsair passive behavior and alert policy are unchanged. Runtime ASUS ownership conflicts remain an unavailable result; no runtime service/process manipulation.
+
+Release qualification for this alternative still requires a successful live tray-initiated awake read, confirmed last-known rendering, error/cancel behavior and preserved lighting/audio. Hardware evidence from the earlier diagnostic establishes framing only. The original automatic/no-wake acquisition requirement is not claimed achieved.

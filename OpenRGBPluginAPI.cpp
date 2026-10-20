@@ -348,3 +348,8 @@ nlohmann::json OpenRGBPluginAPI::GetBatterySnapshots()
 {
     return BatteryStatusManager::Get().Snapshots();
 }
+
+bool OpenRGBPluginAPI::RequestAsusBatteryRefresh(uint64_t token, bool owner_confirmed_awake)
+{
+    return BatteryMonitoringService::Get().RequestAsusRefresh(token, owner_confirmed_awake);
+}

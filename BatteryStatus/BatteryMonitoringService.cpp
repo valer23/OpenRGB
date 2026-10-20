@@ -6,19 +6,24 @@ BatteryMonitoringService& BatteryMonitoringService::Get()
 {
     static BatteryMonitoringService instance(BatteryStatusManager::Get(), [] {
         return AsusDeltaIIBattery::ReadValidatedReceiverSnapshot(true);
-    }, AsusDeltaIIBattery::ReceiverLevelValidated);
+    }, AsusDeltaIIBattery::ReceiverLevelValidated, std::chrono::seconds(60), [] {
+        return AsusDeltaIIBattery::ReadAwakeSnapshot(true);
+    });
     return instance;
 }
 
 BatteryMonitoringService::BatteryMonitoringService(BatteryStatusManager& cache_value,
-    AsusBatteryMonitor::Reader reader, bool validated, std::chrono::milliseconds interval) :
-    cache(cache_value), asus(cache_value, std::move(reader), interval), asus_level_validated(validated)
+    AsusBatteryMonitor::Reader reader, bool validated, std::chrono::milliseconds interval, AsusBatteryMonitor::Reader awake) :
+    cache(cache_value), asus(cache_value, std::move(reader), interval), asus_level_validated(validated), awake_reader(std::move(awake))
 {
 }
 
 void BatteryMonitoringService::UpdateLocked()
 {
-    asus.SetEnabled(cache.Enabled() && !suspended, asus_level_validated);
+    if(asus_level_validated || suspended || !cache.Enabled())
+    {
+        asus.SetEnabled(cache.Enabled() && !suspended, asus_level_validated);
+    }
     if(suspended)
     {
         cache.SetState(BatteryStatusManager::AsusId, "suspended", "System suspended; retained last-known battery");
@@ -29,6 +34,7 @@ uint64_t BatteryMonitoringService::Acquire()
 {
     std::lock_guard<std::mutex> guard(mutex);
     const auto token = cache.Acquire();
+    subscriptions.insert(token);
     UpdateLocked();
     return token;
 }
@@ -36,6 +42,7 @@ uint64_t BatteryMonitoringService::Acquire()
 void BatteryMonitoringService::Release(uint64_t token)
 {
     std::lock_guard<std::mutex> guard(mutex);
+    subscriptions.erase(token);
     cache.Release(token);
     UpdateLocked();
 }
@@ -52,4 +59,13 @@ void BatteryMonitoringService::SetSuspended(bool value)
         cache.SetState(BatteryStatusManager::AsusId, "unknown", "Revalidating receiver after system resume");
     }
     UpdateLocked();
+}
+
+bool BatteryMonitoringService::RequestAsusRefresh(uint64_t token, bool owner_confirmed_awake)
+{
+    std::lock_guard<std::mutex> guard(mutex);
+    // The optional manual path never weakens automatic acquisition validation.
+    if(!owner_confirmed_awake || suspended || !subscriptions.count(token) ||
+       asus_level_validated || !awake_reader) { return false; }
+    return asus.RequestOnce(awake_reader);
 }

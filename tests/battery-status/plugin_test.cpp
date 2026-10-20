@@ -6,9 +6,11 @@
 #include <QMenu>
 #include <QAction>
 #include <QPointer>
+#include <QMessageBox>
+#include <QPushButton>
 #include <cassert>
 #include <iostream>
-class Host : public PluginAPIStub, public OpenRGBBatteryStatusInterface
+class LegacyHost : public PluginAPIStub, public OpenRGBBatteryStatusInterface
 {
 public:
     BatteryStatusManager cache;
@@ -16,6 +18,15 @@ public:
     uint64_t AcquireBatteryMonitoring() override { return cache.Acquire(); }
     void ReleaseBatteryMonitoring(uint64_t token) override { cache.Release(token); }
     nlohmann::json GetBatterySnapshots() override { return cache.Snapshots(); }
+};
+class Host : public LegacyHost, public OpenRGBBatteryRefreshInterface
+{
+public:
+    int requests=0;
+    bool confirmed=false;
+    unsigned int GetBatteryRefreshVersion() const override { return 1; }
+    bool RequestAsusBatteryRefresh(uint64_t token, bool awake) override
+    { assert(token != 0); ++requests; confirmed=awake; return true; }
 };
 int main(int argc, char** argv)
 {
@@ -46,6 +57,10 @@ int main(int argc, char** argv)
     plugin->Load(&old_host);
     assert(plugin->GetTrayMenu()->actions()[0]->text().contains("unavailable"));
     plugin->Unload();
+    LegacyHost legacy;
+    plugin->Load(&legacy);
+    assert(!plugin->GetTrayMenu()->findChild<QAction*>("BatteryAsusRefresh"));
+    plugin->Unload();
     Host host;
     // This cast also has to work across the actual plugin DLL boundary.
     plugin->Load(&host);
@@ -58,12 +73,29 @@ int main(int argc, char** argv)
     monitor->setChecked(false); assert(!host.cache.Enabled());
     assert(menu->actions()[0]->text().contains("last known"));
     monitor->setChecked(true); assert(host.cache.Enabled());
+    auto* refresh=menu->findChild<QAction*>("BatteryAsusRefresh");
+    assert(refresh && refresh->isEnabled());
+    refresh->trigger();
+    auto* confirm=menu->findChild<QMessageBox*>("BatteryAwakeConfirmation");
+    assert(confirm && confirm->defaultButton()==confirm->button(QMessageBox::Cancel));
+    assert(host.requests==0);
+    confirm->done(QMessageBox::Cancel);
+    assert(host.requests==0);
+    refresh->trigger();
+    confirm=menu->findChild<QMessageBox*>("BatteryAwakeConfirmation");
+    assert(confirm);
+    confirm->done(QMessageBox::Yes);
+    assert(host.requests==1 && host.confirmed);
+    monitor->setChecked(false); assert(!refresh->isEnabled());
+    monitor->setChecked(true);
     auto* widget=plugin->GetWidget(); assert(widget);
     plugin->OnProfileAboutToLoad(); plugin->OnProfileLoad({}); plugin->OnProfileSave();
     assert(host.cache.Enabled());
     assert(host.cache.Snapshots()[0]["percentage"]==76);
     delete widget; // The real host may destroy its page before unloading the plugin.
+    refresh->trigger(); // Unload with a confirmation outstanding must cancel it.
     plugin->Unload(); assert(!host.cache.Enabled());
+    assert(host.requests==1);
     // PluginManager invokes Unload BEFORE the GUI removes this menu.
     assert(!menu.isNull());
     assert(menu->winId());

@@ -22,7 +22,7 @@ public:
     bool Enabled() const { return enabled.load(); }
     void SetCorsairValidated(bool validated) { corsair_validated.store(validated); }
     bool CorsairValidated() const { return corsair_validated.load(); }
-    void Publish(const std::string& id, int percentage, int charging, const std::string& availability);
+    void Publish(const std::string& id, int percentage, int charging, const std::string& availability, const std::string& detail = "");
     void SetState(const std::string& id, const std::string& availability, const std::string& detail = "");
     nlohmann::json Snapshots();
 private:

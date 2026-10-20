@@ -19,7 +19,7 @@
 #include "ResourceManager.h"
 #include "SettingsManager.h"
 
-class OpenRGBPluginAPI : public OpenRGBPluginAPIInterface, public OpenRGBBatteryStatusInterface
+class OpenRGBPluginAPI : public OpenRGBPluginAPIInterface, public OpenRGBBatteryStatusInterface, public OpenRGBBatteryRefreshInterface
 {
 public:
     OpenRGBPluginAPI();
@@ -27,6 +27,8 @@ public:
     uint64_t AcquireBatteryMonitoring() override;
     void ReleaseBatteryMonitoring(uint64_t token) override;
     nlohmann::json GetBatterySnapshots() override;
+    unsigned int GetBatteryRefreshVersion() const override { return 1; }
+    bool RequestAsusBatteryRefresh(uint64_t token, bool owner_confirmed_awake) override;
 
     /*-----------------------------------------------------*\
     | LogManager APIs                                       |
