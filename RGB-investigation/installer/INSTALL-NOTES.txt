@@ -2,6 +2,8 @@ OpenRGB Custom - personal build for valerian
 
 Includes the tested KFA2 GPU, Lian Li fan and ASUS logo support, the Effects Plugin and your saved lighting profiles.
 
+Version 1.0.20261020.1 packages the reviewed mouse idle simplification. Existing device settings and profiles are preserved. Software regressions and packet comparison passed; the refactor still requires physical verification.
+
 Version 1.0.20261019.2 moves mouse idle preferences to Edit Device / Configuration.json, preserving the old toggle and timeout with backups. Existing device preferences take precedence; invalid saved values stop migration. Profiles and fan configuration are preserved.
 
 Version 1.0.20261019.1 replaces Windows mouse input tracking with the tested native inactivity counter and Slipstream notifications. The short idle/wake checks passed; the full firmware sleep check remains pending during longer personal use. The existing 60-second preference is retained. GPU profile identities are migrated to the tested common Galax controller, with backups and existing colours/effects preserved.

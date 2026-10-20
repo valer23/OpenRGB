@@ -1,5 +1,25 @@
 # OpenRGB Custom personal installer
 
+## Mouse idle simplification - 20 October 2026
+
+Version 1.0.20261020.1 packages fork revision 146effae, matching upstream
+fbdd84cb for the mouse idle implementation. It removes the separate policy
+class, redundant checked wrappers/state and driver mutex, using existing
+RGBController locking and queued updates. The reset-aware handoff, receiver
+identity checks, checked wake initialization and polling cadence remain.
+Device-specific idle preferences and all existing lighting profiles are retained.
+
+Fresh driver regressions and the lifecycle fixture passed. The deterministic
+20,000-step comparison reproduced 23,529 packets and trace hash
+4169482241693242891. These are software checks, not a new physical hardware
+validation. Full integrated firmware sleep/wake and Linux/macOS remain untested.
+
+Version 1.0.20261020.1 is installed and running. Installed application/plugin
+hashes match the package; all saved profile colours/effects, application
+preferences, mouse-idle settings and fan/device configuration are unchanged.
+A full pre-upgrade backup is retained privately. The post-install short hardware
+check is pending; software verification does not establish physical sleep/wake.
+
 ## Device-specific mouse idle settings - 19 October 2026
 
 Version 1.0.20261019.2 moves the idle handoff toggle and timeout to the mouse's
