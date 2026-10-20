@@ -41,6 +41,11 @@ $driverIncludes=@('-Itests/battery-status/stubs','-IControllers/CorsairPeriphera
 if($LASTEXITCODE -ne 0){throw 'Actual Corsair driver test compilation failed'}
 & "$buildRoot\corsair_driver_test.exe"
 if($LASTEXITCODE -ne 0){throw 'Actual Corsair driver tests failed'}
+& "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra @driverIncludes tests/battery-status/corsair_packet_trace_test.cpp "$buildRoot\CorsairUnderTest.cpp" BatteryStatus/BatteryStatusManager.cpp -o "$buildRoot\corsair_packet_trace_test.exe"
+if($LASTEXITCODE -ne 0){throw 'Installed Corsair packet comparison compilation failed'}
+& "$buildRoot\corsair_packet_trace_test.exe"
+if($LASTEXITCODE -ne 0){throw 'Battery hooks changed installed mouse control packets'}
+
 
 & "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' '-Idependencies/json' tests/battery-status/asus_monitor_test.cpp BatteryStatus/BatteryStatusManager.cpp BatteryStatus/AsusBatteryMonitor.cpp -o "$buildRoot\asus_monitor_test.exe"
 if($LASTEXITCODE -ne 0){throw 'ASUS monitor test compilation failed'}

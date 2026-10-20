@@ -1,5 +1,52 @@
 # OpenRGB Custom personal installer
 
+## Mouse idle simplification - 20 October 2026
+
+Version 1.0.20261020.1 packages fork revision 146effae, matching upstream
+fbdd84cb for the mouse idle implementation. It removes the separate policy
+class, redundant checked wrappers/state and driver mutex, using existing
+RGBController locking and queued updates. The reset-aware handoff, receiver
+identity checks, checked wake initialization and polling cadence remain.
+Device-specific idle preferences and all existing lighting profiles are retained.
+
+Fresh driver regressions and the lifecycle fixture passed. The deterministic
+20,000-step comparison reproduced 23,529 packets and trace hash
+4169482241693242891. These are software checks, not a new physical hardware
+validation. Full integrated firmware sleep/wake and Linux/macOS remain untested.
+
+Version 1.0.20261020.1 is installed and running. Installed application/plugin
+hashes match the package; all saved profile colours/effects, application
+preferences, mouse-idle settings and fan/device configuration are unchanged.
+A full pre-upgrade backup is retained privately. The owner confirmed all devices
+animate, idle mouse lighting hands back and stays onboard, and movement restores
+the effect. Full firmware lights-off sleep/wake remains unverified.
+
+## Device-specific mouse idle settings - 19 October 2026
+
+Version 1.0.20261019.2 moves the idle handoff toggle and timeout to the mouse's
+Edit Device page. OpenRGB saves them through its existing Configuration.json
+mechanism. The driver no longer reads CorsairMouseIdle from OpenRGB.json.
+Upstream defaults to disabled/900 seconds; this personal package migrates the
+existing opt-in and timeout (normally enabled/60 seconds).
+
+Configure-Mouse-Idle.ps1 backs up both settings files, writes the per-device
+entry first, then removes the old application property. Existing valid device
+preferences win. Malformed new settings stop migration without deleting the
+legacy fallback. Existing fan configuration and all profile colours/effects
+are preserved; a saved ValWhite mouse description supplies the matching device
+identity if Configuration.json has no mouse entry yet. Repeated runs are safe.
+
+The Windows build, independent standards and behaviour reviews, driver
+failure/recovery checks and migration fixtures passed. The isolated GUI
+confirmed the controls, disabled handoff staying animated, and enabled/60-second
+handoff plus movement resume after correcting the checkbox schema to OpenRGB's
+"bool" type. An actual-widget check covers checkbox callbacks and timeout limits.
+Version 1.0.20261019.2 is installed. Its hashes, enabled/60-second migration,
+unchanged fan configuration and all profile colours/effects passed verification.
+Full firmware
+sleep and battery-life measurement remain separate, pending checks. Linux and
+macOS are unverified. Older sections below describe historical packages.
+
 ## Native mouse idle revision - 19 October 2026
 
 Version 1.0.20261019.1 replaces Windows Raw Input tracking with the
@@ -54,7 +101,7 @@ The firmware's own sleep timeout is unchanged. Keyboard input does not reset
 the mouse timer. Other supported devices and wired operation retain their
 existing lighting path.
 
-Configure-Mouse-Idle.ps1 backs up OpenRGB.json before adding CorsairMouseIdle.
+In the historical 18 October package, Configure-Mouse-Idle.ps1 backed up OpenRGB.json before adding CorsairMouseIdle.
 It preserves an existing block, including an explicit enabled=false opt-out or
 custom timeout. To change it, exit OpenRGB, edit timeout_seconds (5 to 3600),
 and restart. Missing settings in the driver preserve its former behaviour;

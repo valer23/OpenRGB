@@ -67,7 +67,11 @@ extern "C" int hid_winapi_get_container_id(hid_device* dev,GUID* id) {if(identit
 extern "C" int hid_get_serial_number_string(hid_device*,wchar_t* text,size_t) {if(identity_bad)return -1;std::wcscpy(text,L"target");return 0;}
 extern "C" void hid_close(hid_device* dev) {if(dev==event_handle)++event_closes;}
 struct Device:CorsairPeripheralV2Controller {
- Device():CorsairPeripheralV2Controller(control,"control","test"){}
+ Device():CorsairPeripheralV2Controller(control,"control","test") {
+  SetMouseIdleConfiguration(nlohmann::json{{"configuration",{
+    {"idle_handoff_enabled",mouse_test_settings["enabled"]},
+    {"idle_timeout_seconds",mouse_test_settings["timeout_seconds"]}}}}.dump());
+ }
  void SetLedsDirect(std::vector<RGBColor*>) override {}
  void Frame() {unsigned char colours[3]={1,2,3};SetLEDs(colours,3);}
 };
@@ -132,7 +136,7 @@ int main()
   mouse_test_now+=1000;d.Frame();CHECK(Mode(1)==0 && Colours()==0);writes.clear();
   mouse_test_now+=1000;idle=0;d.Frame();CHECK(Mode(2)==1 && Colours()==1);writes.clear();
   fail_events=true;CHECK(!d.MouseIdleNeedsUpdate());d.Frame();CHECK(writes.empty());
-  fail_events=false;mouse_test_now+=1000;mask=0;CHECK(d.MouseIdleNeedsUpdate());d.Frame();CHECK(writes.size()==1 && writes[0][1]==8 && Counter()==0);writes.clear();
+  fail_events=false;mouse_test_now+=1000;mask=0;CHECK(!d.MouseIdleNeedsUpdate());d.Frame();CHECK(writes.size()==1 && writes[0][1]==8 && Counter()==0);writes.clear();
   mouse_test_now+=100000;d.Frame();CHECK(writes.empty());
  }
  CHECK(writes.empty()); // confirmed asleep destructor must not address mouse

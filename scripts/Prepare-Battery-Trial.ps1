@@ -34,7 +34,7 @@ $settings['BatteryStatus']=@{enabled=$true;notifications=$false}
 $settings['BatteryStatusHardware']=@{corsair_notifications_validated=$true}
 $settings | ConvertTo-Json -Depth 100 | Set-Content -LiteralPath $settingsPath -Encoding utf8
 $manifest=@{
-    base='cb1385facc3337b0db7f9956624dbc111a80be38'
+    base='ceae345b1532185e261f7c470e8a882e8f3c76f7'
     sourceCommit=(& git -C $repoRoot rev-parse HEAD)
     installedExeSHA256=(Get-FileHash -LiteralPath (Join-Path $InstalledRoot 'OpenRGB-Custom.exe')).Hash
     trialExeSHA256=(Get-FileHash -LiteralPath "$trialRoot\OpenRGB-Battery-Trial.exe").Hash

@@ -73,7 +73,11 @@ extern "C" int hid_winapi_get_container_id(hid_device* dev,GUID* id) {if(identit
 extern "C" int hid_get_serial_number_string(hid_device*,wchar_t* text,size_t) {if(identity_bad)return -1;std::wcscpy(text,L"target");return 0;}
 extern "C" void hid_close(hid_device* dev) {if(dev==event_handle)++event_closes;}
 struct Device:CorsairPeripheralV2Controller {
- Device():CorsairPeripheralV2Controller(control,"control","test"){}
+ Device():CorsairPeripheralV2Controller(control,"control","test") {
+  SetMouseIdleConfiguration(nlohmann::json{{"configuration",{
+    {"idle_handoff_enabled",mouse_test_settings["enabled"]},
+    {"idle_timeout_seconds",mouse_test_settings["timeout_seconds"]}}}}.dump());
+ }
  void SetLedsDirect(std::vector<RGBColor*>) override {}
  void Frame() {unsigned char colours[3]={1,2,3};SetLEDs(colours,3);}
 };

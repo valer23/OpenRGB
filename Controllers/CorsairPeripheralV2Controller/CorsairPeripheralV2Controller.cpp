@@ -18,8 +18,7 @@
 #ifdef _WIN32
 #include <hidapi_winapi.h>
 #endif
-#include "ResourceManager.h"
-#include "SettingsManager.h"
+#include <nlohmann/json.hpp>
 #include "BatteryStatus/BatteryStatusManager.h"
 #include "BatteryStatus/BatteryProtocol.h"
 
@@ -156,37 +155,6 @@ CorsairPeripheralV2Controller::CorsairPeripheralV2Controller(hid_device* dev_han
         BatteryStatusManager::Get().SetState(BatteryStatusManager::CorsairId, "unavailable",
             "Native mouse activity and owner-hardware battery validation required");
     }
-    /*---------------------------------------------------------*\
-    | Opt-in only for Dark Core Pro SE through Slipstream.     |
-    \*---------------------------------------------------------*/
-    if(pid == CORSAIR_DARK_CORE_RGB_PRO_PID && write_cmd == CORSAIR_V2_WRITE_WIRELESS_ID)
-    {
-        json settings = ResourceManager::get()->GetSettingsManager()->GetSettings("CorsairMouseIdle");
-        if(settings.is_object() && settings.contains("enabled") && settings["enabled"].is_boolean() && settings["enabled"].get<bool>())
-        {
-            if(settings.contains("timeout_seconds") && settings["timeout_seconds"].is_number_integer() &&
-               settings["timeout_seconds"] >= 5 && settings["timeout_seconds"] <= 3600)
-            {
-                mouse_idle_timeout_ms = settings["timeout_seconds"].get<unsigned int>() * 1000ULL;
-            }
-            mouse_events = OpenMouseEvents();
-            if(!mouse_events || !ReadMouseConnection() || !mouse_connected || !ReadMouseInactivity())
-            {
-                LOG_WARNING("[%s] Firmware mouse activity unavailable; idle handoff disabled", device_name.c_str());
-                if(mouse_events)
-                {
-                    hid_close(mouse_events);
-                    mouse_events = nullptr;
-                }
-            }
-            else
-            {
-                mouse_idle_enabled = true;
-                mouse_inactivity_valid = false;
-                LOG_INFO("[%s] Firmware mouse idle handoff enabled (%llu ms)", device_name.c_str(), mouse_idle_timeout_ms);
-            }
-        }
-    }
 }
 
 CorsairPeripheralV2Controller::~CorsairPeripheralV2Controller()
@@ -273,12 +241,7 @@ std::string CorsairPeripheralV2Controller::GetSerialString()
     return(StringUtils::wstring_to_string(serial_string));
 }
 
-void CorsairPeripheralV2Controller::SetRenderMode(corsair_v2_device_mode mode)
-{
-    SetRenderModeChecked(mode);
-}
-
-bool CorsairPeripheralV2Controller::SetRenderModeChecked(corsair_v2_device_mode mode)
+bool CorsairPeripheralV2Controller::SetRenderMode(corsair_v2_device_mode mode)
 {
     uint8_t buffer[CORSAIR_V2_WRITE_SIZE];
 
@@ -304,12 +267,7 @@ bool CorsairPeripheralV2Controller::SetRenderModeChecked(corsair_v2_device_mode 
     return count >= 3 && buffer[2] == 0;
 }
 
-void CorsairPeripheralV2Controller::LightingControl(uint8_t opt1)
-{
-    LightingControlChecked(opt1);
-}
-
-bool CorsairPeripheralV2Controller::LightingControlChecked(uint8_t opt1)
+bool CorsairPeripheralV2Controller::LightingControl(uint8_t opt1)
 {
     uint8_t buffer[CORSAIR_V2_WRITE_SIZE];
 
@@ -458,58 +416,17 @@ void CorsairPeripheralV2Controller::ClearPacketBuffer()
 
 void CorsairPeripheralV2Controller::SetLEDs(uint8_t *data, uint16_t data_size)
 {
-    std::unique_lock<std::mutex> mouse_guard(mouse_lighting_mutex, std::defer_lock);
-    if(mouse_idle_enabled)
+    if(mouse_idle_enabled && !AllowMouseFrame(CorsairMouseTime()))
     {
-        mouse_guard.lock();
-        unsigned long long now = CorsairMouseTime();
-        ReadMouseEvents(now);
-        if(!mouse_events)
+        if(mouse_battery_target && mouse_events && mouse_connected && !mouse_connection_sync)
         {
-            return;
+            BatteryStatusManager::Get().SetState(BatteryStatusManager::CorsairId,
+                MouseIsIdle() ? "idle" : "unavailable",
+                MouseIsIdle() ? "Onboard lighting; passive battery updates only" : "Lighting initialization pending");
         }
-        if(mouse_connection_sync)
-        {
-            if(now < mouse_next_query_ms)
-            {
-                return;
-            }
-            mouse_next_query_ms = now + CORSAIR_V2_MOUSE_QUERY_PERIOD;
-            if(!ReadMouseConnection())
-            {
-                return;
-            }
-            mouse_connection_sync = false;
-            mouse_next_query_ms = 0;
-        }
-        if(!mouse_connected)
-        {
-            return;
-        }
-        if(now >= mouse_next_query_ms)
-        {
-            mouse_next_query_ms = now + CORSAIR_V2_MOUSE_QUERY_PERIOD;
-            mouse_inactivity_valid = ReadMouseInactivity();
-            ReadMouseEvents(now);
-            if(!mouse_events || mouse_connection_sync || !mouse_connected)
-            {
-                return;
-            }
-        }
-        if(!mouse_idle_policy.AllowFrame(MouseIsIdle(), now,
-            [this](bool software) { return ChangeMouseOwnership(software); }))
-        {
-            if(mouse_battery_target)
-            {
-                BatteryStatusManager::Get().SetState(BatteryStatusManager::CorsairId,
-                    MouseIsIdle() ? "idle" : "unavailable", MouseIsIdle() ? "Onboard lighting; battery queries paused" : "Lighting initialization pending");
-            }
-            return;
-        }
-        UpdateMouseBatteryState();
-        if(!mouse_events || mouse_connection_sync || !mouse_connected) { return; }
-        mouse_last_frame_ms = now;
+        return;
     }
+    if(mouse_idle_enabled) { UpdateMouseBatteryState(); }
     const uint8_t offset1   = 8;
     const uint8_t offset2   = 4;
     uint16_t remaining      = data_size;
@@ -711,7 +628,8 @@ void CorsairPeripheralV2Controller::SetMouseConnected(bool connected)
         mouse_activity_after_handoff = connected;
         mouse_inactivity_valid = false;
         mouse_next_query_ms = 0;
-        mouse_idle_policy.RequireSoftwareMode();
+        mouse_software_required = true;
+        mouse_retry_after_ms = 0;
         LOG_DEBUG("[%s] Wireless mouse %s", device_name.c_str(), connected ? "connected" : "disconnected");
     }
 }
@@ -733,7 +651,8 @@ void CorsairPeripheralV2Controller::ReadMouseEvents(unsigned long long now)
         mouse_connection_sync = true;
         mouse_next_query_ms = 0;
         mouse_inactivity_valid = false;
-        mouse_idle_policy.RequireSoftwareMode();
+        mouse_software_required = true;
+        mouse_retry_after_ms = 0;
     }
     /*---------------------------------------------------------*\
     | Read only the sibling event endpoint. Bound each drain.  |
@@ -753,12 +672,11 @@ void CorsairPeripheralV2Controller::ReadMouseEvents(unsigned long long now)
             }
             mouse_event_retry_ms = now + CORSAIR_V2_MOUSE_QUERY_PERIOD;
             mouse_inactivity_valid = false;
-            mouse_connection_sync = true;
-            if(!mouse_event_failure_reported)
+            if(!mouse_connection_sync)
             {
                 LOG_WARNING("[%s] Mouse event endpoint unavailable; lighting paused until recovery", device_name.c_str());
-                mouse_event_failure_reported = true;
             }
+            mouse_connection_sync = true;
             return;
         }
         if(count == 0)
@@ -783,7 +701,7 @@ void CorsairPeripheralV2Controller::ReadMouseEvents(unsigned long long now)
             {
                 mouse_battery_seen = true;
                 cache.Publish(BatteryStatusManager::CorsairId, *percentage, -1,
-                    mouse_idle_policy.IsHandedBack() ? "idle" : "active");
+                    mouse_handed_back ? "idle" : "active");
             }
         }
         if(count >= 5 && buffer[0] == 0 && buffer[1] == 1 && buffer[2] == 0x36)
@@ -815,7 +733,6 @@ bool CorsairPeripheralV2Controller::ReadMouseConnection()
         return false;
     }
     SetMouseConnected((response[3] & (1U << (write_cmd - CORSAIR_V2_WRITE_WIRED_ID))) != 0);
-    mouse_event_failure_reported = false;
     return true;
 }
 
@@ -836,8 +753,9 @@ bool CorsairPeripheralV2Controller::ReadMouseInactivity()
     {
         return false;
     }
+    unsigned long long previous_inactivity_ms = mouse_inactivity_ms;
     mouse_inactivity_ms = (response[3] | (response[4] << 8)) * 1000ULL;
-    if(mouse_idle_policy.IsHandedBack())
+    if(mouse_handed_back)
     {
         /*---------------------------------------------------------*\
         | Changing rendering mode resets the firmware counter.    |
@@ -845,11 +763,70 @@ bool CorsairPeripheralV2Controller::ReadMouseInactivity()
         | input. Allow two seconds for counter quantization and I/O.|
         \*---------------------------------------------------------*/
         unsigned long long now = CorsairMouseTime();
-        mouse_activity_after_handoff |= mouse_inactivity_ms < mouse_handoff_counter_ms ||
+        mouse_activity_after_handoff |= mouse_inactivity_ms < previous_inactivity_ms ||
             (now >= mouse_handoff_ms && mouse_inactivity_ms + 2000 < now - mouse_handoff_ms);
-        mouse_handoff_counter_ms = mouse_inactivity_ms;
     }
     return true;
+}
+
+/*---------------------------------------------------------*\
+| Share the device configuration between HW and SW wrappers. |
+\*---------------------------------------------------------*/
+std::string CorsairPeripheralV2Controller::GetMouseIdleConfiguration()
+{
+    if(GetDeviceData()->pid != CORSAIR_DARK_CORE_RGB_PRO_PID || write_cmd != CORSAIR_V2_WRITE_WIRELESS_ID)
+    {
+        return "";
+    }
+
+    nlohmann::json config;
+    config["schema"]["idle_handoff_enabled"]["title"]       = "Return mouse lighting to firmware when idle";
+    config["schema"]["idle_handoff_enabled"]["type"]        = "bool";
+    config["schema"]["idle_timeout_seconds"]["title"]       = "Lighting idle timeout (seconds)";
+    config["schema"]["idle_timeout_seconds"]["type"]        = "integer";
+    config["schema"]["idle_timeout_seconds"]["minimum"]     = 5;
+    config["schema"]["idle_timeout_seconds"]["maximum"]     = 3600;
+    config["configuration"]["idle_handoff_enabled"]         = false;
+    config["configuration"]["idle_timeout_seconds"]         = 900;
+    return config.dump();
+}
+
+void CorsairPeripheralV2Controller::SetMouseIdleConfiguration(const std::string& configuration)
+{
+    nlohmann::json config = nlohmann::json::parse(configuration, nullptr, false);
+    if(config.is_discarded() || !config.contains("configuration"))
+    {
+        return;
+    }
+    const nlohmann::json& settings = config["configuration"];
+    if(!settings.is_object() || !settings.contains("idle_handoff_enabled") ||
+       !settings["idle_handoff_enabled"].is_boolean() || !settings.contains("idle_timeout_seconds") ||
+       !settings["idle_timeout_seconds"].is_number_integer() ||
+       settings["idle_timeout_seconds"] < 5 || settings["idle_timeout_seconds"] > 3600 ||
+       GetDeviceData()->pid != CORSAIR_DARK_CORE_RGB_PRO_PID || write_cmd != CORSAIR_V2_WRITE_WIRELESS_ID)
+    {
+        return;
+    }
+
+    bool enabled = settings["idle_handoff_enabled"].get<bool>();
+    mouse_idle_timeout_ms = settings["idle_timeout_seconds"].get<unsigned int>() * 1000ULL;
+    mouse_idle_handoff_enabled = enabled;
+    if(enabled && !mouse_idle_enabled)
+    {
+        mouse_events = OpenMouseEvents();
+        if(!mouse_events || !ReadMouseConnection() || (mouse_connected && !ReadMouseInactivity()))
+        {
+            LOG_WARNING("[%s] Firmware mouse activity unavailable; idle handoff disabled", device_name.c_str());
+            if(mouse_events)
+            {
+                hid_close(mouse_events);
+                mouse_events = nullptr;
+            }
+            return;
+        }
+        mouse_idle_enabled = true;
+        mouse_inactivity_valid = false;
+    }
 }
 
 bool CorsairPeripheralV2Controller::HasMouseIdleControl()
@@ -857,43 +834,107 @@ bool CorsairPeripheralV2Controller::HasMouseIdleControl()
     return mouse_idle_enabled;
 }
 
+bool CorsairPeripheralV2Controller::UpdateMouseConnection(unsigned long long now)
+{
+    ReadMouseEvents(now);
+    if(!mouse_events)
+    {
+        return false;
+    }
+    if(mouse_connection_sync)
+    {
+        if(now < mouse_next_query_ms)
+        {
+            return false;
+        }
+        mouse_next_query_ms = now + CORSAIR_V2_MOUSE_QUERY_PERIOD;
+        if(!ReadMouseConnection())
+        {
+            return false;
+        }
+        mouse_connection_sync = false;
+        mouse_next_query_ms = 0;
+    }
+    return mouse_connected;
+}
+
 bool CorsairPeripheralV2Controller::MouseIdleNeedsUpdate()
 {
-    if(mouse_idle_enabled)
+    unsigned long long now = CorsairMouseTime();
+    if(!mouse_idle_enabled || !UpdateMouseConnection(now))
     {
-        std::lock_guard<std::mutex> guard(mouse_lighting_mutex);
-        unsigned long long now = CorsairMouseTime();
-        ReadMouseEvents(now);
-        if(!mouse_events)
-        {
-            return false;
-        }
-        if(mouse_connection_sync)
-        {
-            return now >= mouse_next_query_ms;
-        }
-        if(!mouse_connected)
-        {
-            return false;
-        }
-        bool idle = MouseIsIdle();
-        return now >= mouse_next_query_ms || mouse_idle_policy.NeedsUpdate(idle) ||
-            (!idle && now - mouse_last_frame_ms >= CORSAIR_V2_UPDATE_PERIOD);
+        return false;
     }
-    return false;
+    bool idle = MouseIsIdle();
+    return now >= mouse_next_query_ms || idle != mouse_handed_back ||
+        (!idle && mouse_software_required);
+}
+
+bool CorsairPeripheralV2Controller::AllowMouseFrame(unsigned long long now)
+{
+    if(!UpdateMouseConnection(now))
+    {
+        return false;
+    }
+    if(now >= mouse_next_query_ms)
+    {
+        mouse_next_query_ms = now + CORSAIR_V2_MOUSE_QUERY_PERIOD;
+        mouse_inactivity_valid = ReadMouseInactivity();
+        ReadMouseEvents(now);
+        if(!mouse_events || mouse_connection_sync || !mouse_connected)
+        {
+            return false;
+        }
+    }
+    if(MouseIsIdle())
+    {
+        if(!mouse_handed_back)
+        {
+            /*---------------------------------------------------------*\
+            | The command may apply even without an acknowledgement.   |
+            | Attempt handoff only once, then suppress lighting frames.|
+            \*---------------------------------------------------------*/
+            mouse_handed_back = true;
+            if(!ChangeMouseOwnership(false))
+            {
+                LOG_WARNING("[%s] Mouse idle handoff failed", device_name.c_str());
+            }
+        }
+        return false;
+    }
+    if(mouse_handed_back || mouse_software_required)
+    {
+        if(now < mouse_retry_after_ms)
+        {
+            return false;
+        }
+        if(!ChangeMouseOwnership(true))
+        {
+            if(!mouse_retry_after_ms)
+            {
+                LOG_WARNING("[%s] Mouse software lighting initialization failed", device_name.c_str());
+            }
+            mouse_retry_after_ms = now + CORSAIR_V2_MOUSE_QUERY_PERIOD;
+            return false;
+        }
+        mouse_handed_back = false;
+        mouse_software_required = false;
+        mouse_retry_after_ms = 0;
+    }
+    return true;
 }
 
 bool CorsairPeripheralV2Controller::MouseIsIdle()
 {
-    if(mouse_idle_policy.IsHandedBack())
+    if(!mouse_idle_handoff_enabled)
+    {
+        return false;
+    }
+    if(mouse_handed_back)
     {
         return !mouse_activity_after_handoff;
     }
-    if(!mouse_inactivity_valid)
-    {
-        return mouse_idle_policy.IsHandedBack();
-    }
-    return mouse_inactivity_ms >= mouse_idle_timeout_ms;
+    return mouse_inactivity_valid && mouse_inactivity_ms >= mouse_idle_timeout_ms;
 }
 
 bool CorsairPeripheralV2Controller::ChangeMouseOwnership(bool software)
@@ -901,23 +942,19 @@ bool CorsairPeripheralV2Controller::ChangeMouseOwnership(bool software)
     ClearPacketBuffer();
     if(!software)
     {
-        // The command may apply even if its acknowledgement is lost.
+        /*---------------------------------------------------------*\
+        | The command may apply even if its acknowledgement is lost.|
+        \*---------------------------------------------------------*/
         mouse_handoff_ms = CorsairMouseTime();
-        mouse_handoff_counter_ms = 0;
+        mouse_inactivity_ms = 0;
         mouse_activity_after_handoff = false;
     }
-    if(!SetRenderModeChecked(software ? CORSAIR_V2_MODE_SW : CORSAIR_V2_MODE_HW) ||
-       (software && !LightingControlChecked(0x5F)))
+    if(!SetRenderMode(software ? CORSAIR_V2_MODE_SW : CORSAIR_V2_MODE_HW) ||
+       (software && !LightingControl(0x5F)))
     {
-        if(!mouse_transition_failed)
-        {
-            LOG_WARNING("[%s] Mouse idle ownership change failed", device_name.c_str());
-        }
-        mouse_transition_failed = true;
         return false;
     }
-    mouse_transition_failed = false;
-    LOG_INFO("[%s] Mouse lighting %s", device_name.c_str(), software ? "resumed on input" : "returned to firmware after inactivity");
+    LOG_DEBUG("[%s] Mouse lighting %s", device_name.c_str(), software ? "software control restored" : "returned to firmware after inactivity");
     return true;
 }
 
