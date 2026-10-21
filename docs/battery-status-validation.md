@@ -86,3 +86,9 @@ The corrected diagnostic included the verified ArmourySocketServer launcher15964
 The release signal restored LightingService toRunning and requested the ASUS launcher relaunch, with no restoration errors. The diagnostic helper sent0USB commands; the core-owned tray action performed the authorized awake acquisition. Automatic ASUS polling remains disabled. Keeping ASUS readers running can still prevent future manual refreshes; retained data remains last-known, with age. No automatic vendor stop or sleep-safety claim is made.
 
 Remaining qualifications: charging transitions, independent battery accuracy, physical hotplug/system suspend tests and other platforms. These limits are stated in the fork PR; the strict automatic headset acquisition design is not claimed completed.
+
+## 21 October: passive ASUS cache full-app trial
+
+Built cache-provider revision0c0870cf after the hardware-free suite passed. Replaced only the exited isolated trial core/plugin, retaining rollback binaries and verifying all11 profile hashes. The elevated trial launched as PID45408; ASUS Framework, LightingService and Fan Control PID28840 remained running. The startup log loaded the usual Halloween - The Dark profile/effect. The owner confirmed ASUS percentage and ASUS cached report visible, mouse battery working, and headset audio/usual lighting working.
+
+This verifies the current installed ASUS log format and tray integration. ASUS supplies the measurements; OpenRGB adds no headset USB reader or requests. Existing ASUS logging remains a dependency. Cached report age is not proof of physical measurement time or headset sleep state. Automatic headset hardware queries remain disabled. The installed OpenRGB-Custom executable was not replaced.
