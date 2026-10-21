@@ -28,6 +28,16 @@ public:
     bool RequestAsusBatteryRefresh(uint64_t token, bool awake) override
     { assert(token != 0); ++requests; confirmed=awake; return true; }
 };
+class ModeHost : public Host, public OpenRGBBatteryModeInterface
+{
+public:
+    unsigned int GetBatteryModeVersion() const override { return 1; }
+    bool SetAsusBatteryMode(const std::string& mode) override
+    {
+        assert(mode=="cache" || mode=="direct");
+        cache.SetAsusCacheMode(mode=="cache");return true;
+    }
+};
 int main(int argc, char** argv)
 {
     QApplication app(argc,argv);
@@ -108,6 +118,33 @@ int main(int argc, char** argv)
     auto* cached_refresh=plugin->GetTrayMenu()->findChild<QAction*>("BatteryAsusRefresh");
     assert(cached_refresh && !cached_refresh->isVisible() && !cached_refresh->isEnabled());
     cached_refresh->trigger();assert(cached_host.requests==0);
+    plugin->Unload();
+    ModeHost modes;
+    modes.preferences["unrelated"]=42;
+    plugin->Load(&modes);
+    auto* mode_menu=plugin->GetTrayMenu();
+    auto* cache_mode=mode_menu->findChild<QAction*>("BatteryAsusCacheMode");
+    auto* direct_mode=mode_menu->findChild<QAction*>("BatteryAsusDirectMode");
+    auto* mode_refresh=mode_menu->findChild<QAction*>("BatteryAsusRefresh");
+    assert(cache_mode && direct_mode && cache_mode->isChecked() && !direct_mode->isChecked());
+    assert(!mode_refresh->isVisible() && modes.requests==0);
+    direct_mode->trigger();
+    assert(direct_mode->isChecked() && !cache_mode->isChecked());
+    assert(mode_refresh->isVisible() && mode_refresh->isEnabled() && modes.requests==0);
+    assert(modes.preferences["asus_mode"]=="direct" && modes.preferences["unrelated"]==42);
+    mode_refresh->trigger();
+    assert(mode_menu->findChild<QMessageBox*>("BatteryAwakeConfirmation"));
+    cache_mode->trigger(); // Switching invalidates an outstanding awake confirmation.
+    assert(!mode_menu->findChild<QMessageBox*>("BatteryAwakeConfirmation"));
+    assert(modes.requests==0 && !mode_refresh->isVisible());
+    direct_mode->trigger();
+    plugin->Unload();plugin->Load(&modes);
+    assert(plugin->GetTrayMenu()->findChild<QAction*>("BatteryAsusDirectMode")->isChecked());
+    assert(modes.requests==0); // Persisted direct selection never performs a read.
+    plugin->Unload();
+    modes.preferences["asus_mode"]="invalid";
+    plugin->Load(&modes);
+    assert(plugin->GetTrayMenu()->findChild<QAction*>("BatteryAsusCacheMode")->isChecked());
     plugin->Unload();
     QPointer<QMenu> final_menu = plugin->GetTrayMenu();
     assert(loader.unload());

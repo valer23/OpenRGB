@@ -336,6 +336,9 @@ uint64_t OpenRGBPluginAPI::AcquireBatteryMonitoring()
     const auto settings = settings_manager->GetSettings("BatteryStatusHardware");
     battery.SetCorsairValidated(!settings.is_object() || !settings.contains("corsair_notifications_validated") ||
         !settings["corsair_notifications_validated"].is_boolean() || settings["corsair_notifications_validated"].get<bool>());
+    const auto preferences=settings_manager->GetSettings("BatteryStatus");
+    const bool direct=preferences.is_object() && preferences.value("asus_mode",nlohmann::json())=="direct";
+    BatteryMonitoringService::Get().SetAsusMode(direct ? "direct" : "cache");
     return BatteryMonitoringService::Get().Acquire();
 }
 
@@ -352,4 +355,9 @@ nlohmann::json OpenRGBPluginAPI::GetBatterySnapshots()
 bool OpenRGBPluginAPI::RequestAsusBatteryRefresh(uint64_t token, bool owner_confirmed_awake)
 {
     return BatteryMonitoringService::Get().RequestAsusRefresh(token, owner_confirmed_awake);
+}
+
+bool OpenRGBPluginAPI::SetAsusBatteryMode(const std::string& mode)
+{
+    return BatteryMonitoringService::Get().SetAsusMode(mode);
 }

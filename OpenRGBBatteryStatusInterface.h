@@ -24,3 +24,12 @@ public:
     virtual unsigned int GetBatteryRefreshVersion() const = 0;
     virtual bool RequestAsusBatteryRefresh(uint64_t token, bool owner_confirmed_awake) = 0;
 };
+
+// Optional mode selection; existing API-v5, status-v1 and refresh-v1 vtables stay unchanged.
+class OpenRGBBatteryModeInterface
+{
+public:
+    virtual ~OpenRGBBatteryModeInterface() = default;
+    virtual unsigned int GetBatteryModeVersion() const = 0;
+    virtual bool SetAsusBatteryMode(const std::string& mode) = 0;
+};

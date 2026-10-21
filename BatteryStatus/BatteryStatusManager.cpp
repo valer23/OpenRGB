@@ -26,6 +26,17 @@ BatteryStatusManager::BatteryStatusManager(Clock clock_value) : clock(std::move(
     samples[1].detail = "Automatic queries disabled: sleep-safe acquisition not yet validated";
 }
 
+void BatteryStatusManager::SetAsusCacheMode(bool value)
+{
+    std::lock_guard<std::mutex> guard(mutex);
+    if(asus_cache_mode.exchange(value)==value) { return; }
+    auto& sample=samples[1];
+    sample.percentage=-1;sample.charging=-1;sample.updated=0;sample.age_at_publish=0;
+    sample.availability="unknown";
+    sample.detail=value ? "Waiting for an existing ASUS cached report" :
+        "Direct receiver: refresh manually while the headset is awake";
+}
+
 uint64_t BatteryStatusManager::Acquire()
 {
     std::lock_guard<std::mutex> guard(mutex);

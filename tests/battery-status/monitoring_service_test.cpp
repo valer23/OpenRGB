@@ -63,6 +63,57 @@ int main()
         passive.Release(token);
         assert(files==2 && usb==0);
     }
+    // Explicit cache/direct switching never grants permission for a USB read.
+    {
+        BatteryStatusManager modes;
+        std::atomic<int> files{0},usb{0};
+        BatteryMonitoringService service(modes,[&] {
+            ++files;return nlohmann::json{{"error","Existing ASUS log unavailable"}};
+        },false,1ms,[&] {
+            ++usb;return nlohmann::json{{"percentage",70},{"charging",false}};
+        },true);
+        auto token=service.Acquire();
+        auto deadline=std::chrono::steady_clock::now()+2s;
+        while(files<2 && std::chrono::steady_clock::now()<deadline)std::this_thread::sleep_for(1ms);
+        assert(files>=2 && usb==0);
+        assert(!service.RequestAsusRefresh(token,true));
+        assert(!service.SetAsusMode("auto"));
+        assert(service.SetAsusMode("direct"));
+        const auto stopped_files=files.load();
+        assert(modes.Snapshots()[1]["acquisition"]=="manual");
+        service.SetSuspended(true);service.SetSuspended(false);
+        auto second=service.Acquire();service.Release(second);
+        std::this_thread::sleep_for(10ms);
+        assert(usb==0 && files==stopped_files);
+        assert(!service.RequestAsusRefresh(token,false));
+        assert(service.RequestAsusRefresh(token,true));
+        deadline=std::chrono::steady_clock::now()+2s;
+        while(modes.Snapshots()[1]["percentage"].is_null() && std::chrono::steady_clock::now()<deadline)std::this_thread::sleep_for(1ms);
+        assert(usb==1 && modes.Snapshots()[1]["percentage"]==70);
+        assert(service.SetAsusMode("cache"));
+        assert(modes.Snapshots()[1]["percentage"].is_null()); // Do not relabel a direct sample as an ASUS report.
+        assert(!service.RequestAsusRefresh(token,true));
+        service.Release(token);
+        assert(usb==1 && modes.Snapshots()[1]["acquisition"]=="asus_log");
+    }
+    // A mode change joins an in-flight manual request and discards its result.
+    {
+        BatteryStatusManager modes;
+        std::promise<void> entered,finish;
+        auto done=finish.get_future().share();
+        BatteryMonitoringService service(modes,[] { return nlohmann::json{{"error","No ASUS cache"}}; },
+            false,1h,[&] { entered.set_value();done.wait();return nlohmann::json{{"percentage",99}}; });
+        const auto token=service.Acquire();
+        assert(service.RequestAsusRefresh(token,true));
+        assert(entered.get_future().wait_for(2s)==std::future_status::ready);
+        auto changed=std::async(std::launch::async,[&] { return service.SetAsusMode("cache"); });
+        assert(changed.wait_for(30ms)==std::future_status::timeout);
+        finish.set_value();
+        assert(changed.wait_for(2s)==std::future_status::ready && changed.get());
+        assert(modes.Snapshots()[1]["percentage"].is_null());
+        assert(!service.RequestAsusRefresh(token,true));
+        service.Release(token);
+    }
     // One awake-confirmed request runs off the caller thread, without polling.
     {
         BatteryStatusManager manual_cache;

@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #include "BatteryStatusPlugin.h"
 #include <QApplication>
+#include <QActionGroup>
 #include <QSystemTrayIcon>
 #include <QVBoxLayout>
 
@@ -25,6 +26,8 @@ void BatteryStatusPlugin::Load(OpenRGBPluginAPIInterface* host)
     if(battery && battery->GetBatteryStatusVersion() != 1) { battery = nullptr; }
     refresher = dynamic_cast<OpenRGBBatteryRefreshInterface*>(host);
     if(refresher && refresher->GetBatteryRefreshVersion() != 1) { refresher = nullptr; }
+    modes = dynamic_cast<OpenRGBBatteryModeInterface*>(host);
+    if(modes && modes->GetBatteryModeVersion()!=1) { modes=nullptr; }
     menu = new QMenu("Battery Status");
     menu->setObjectName("BatteryStatusMenu");
     if(!battery)
@@ -37,6 +40,11 @@ void BatteryStatusPlugin::Load(OpenRGBPluginAPIInterface* host)
         !settings["enabled"].is_boolean() || settings["enabled"].get<bool>();
     notifications = settings.is_object() && settings.contains("notifications") &&
         settings["notifications"].is_boolean() && settings["notifications"].get<bool>();
+    if(modes)
+    {
+        const bool direct=settings.is_object() && settings.value("asus_mode",nlohmann::json())=="direct";
+        modes->SetAsusBatteryMode(direct ? "direct" : "cache");
+    }
     for(const auto* name : {"Corsair Dark Core RGB Pro SE", "ASUS ROG Delta II"})
     {
         auto* entry = menu->addMenu(QString::fromUtf8(name) + ": unknown");
@@ -44,6 +52,20 @@ void BatteryStatusPlugin::Load(OpenRGBPluginAPIInterface* host)
         auto* details = entry->addAction("Waiting for cached data");
         details->setEnabled(false);
         device_details.push_back(details);
+    }
+    if(modes)
+    {
+        auto* source_menu=device_menus[1]->addMenu("Battery source");
+        auto* group=new QActionGroup(source_menu);
+        cache_mode_action=source_menu->addAction("ASUS cache");
+        direct_mode_action=source_menu->addAction("Direct receiver (manual)");
+        cache_mode_action->setObjectName("BatteryAsusCacheMode");
+        direct_mode_action->setObjectName("BatteryAsusDirectMode");
+        for(auto* action:{cache_mode_action.data(),direct_mode_action.data()})
+        { action->setCheckable(true);group->addAction(action); }
+        group->setExclusive(true);
+        connect(cache_mode_action,&QAction::triggered,this,[this] { SelectAsusMode(true); });
+        connect(direct_mode_action,&QAction::triggered,this,[this] { SelectAsusMode(false); });
     }
     if(refresher)
     {
@@ -102,7 +124,12 @@ void BatteryStatusPlugin::SavePreferences()
 {
     if(api && monitoring_action)
     {
-        api->SetSettings("BatteryStatus", {{"enabled", monitoring_action->isChecked()}, {"notifications", notifications}});
+        auto settings=api->GetSettings("BatteryStatus");
+        if(!settings.is_object()) { settings=nlohmann::json::object(); }
+        settings["enabled"]=monitoring_action->isChecked();
+        settings["notifications"]=notifications;
+        if(modes && direct_mode_action) { settings["asus_mode"]=direct_mode_action->isChecked() ? "direct" : "cache"; }
+        api->SetSettings("BatteryStatus",settings);
         api->SaveSettings();
     }
 }
@@ -115,6 +142,11 @@ void BatteryStatusPlugin::Refresh()
         return;
     }
     const auto rows = battery->GetBatterySnapshots();
+    if(cache_mode_action && direct_mode_action && rows.size()>1)
+    {
+        const bool cached=rows[1].value("acquisition",nlohmann::json())=="asus_log";
+        cache_mode_action->setChecked(cached);direct_mode_action->setChecked(!cached);
+    }
     if(refresh_action)
     {
         const bool cached = rows.size() > 1 && rows[1].value("acquisition", nlohmann::json()) == "asus_log";
@@ -165,6 +197,7 @@ void BatteryStatusPlugin::Unload()
     token = 0;
     battery = nullptr;
     refresher = nullptr;
+    modes = nullptr;
     api = nullptr;
     device_menus.clear();
     device_details.clear();
@@ -173,6 +206,9 @@ void BatteryStatusPlugin::Unload()
     if(menu) { menu->disconnect(this); }
     if(monitoring_action) { monitoring_action->disconnect(this); }
     if(notification_action) { notification_action->disconnect(this); }
+    if(cache_mode_action) { cache_mode_action->disconnect(this); }
+    if(direct_mode_action) { direct_mode_action->disconnect(this); }
+    cache_mode_action=nullptr;direct_mode_action=nullptr;
 }
 
 BatteryStatusPlugin::~BatteryStatusPlugin()
@@ -182,9 +218,20 @@ BatteryStatusPlugin::~BatteryStatusPlugin()
     if(widget) { delete widget; }
 }
 
+void BatteryStatusPlugin::SelectAsusMode(bool cached)
+{
+    if(!modes) { return; }
+    // A confirmation applies only to the source selected when it was opened.
+    if(awake_confirmation) { awake_confirmation->disconnect(this);delete awake_confirmation; }
+    refresh_error.clear();
+    if(!modes->SetAsusBatteryMode(cached ? "cache" : "direct"))
+    { refresh_error="Battery source could not be changed"; }
+    Refresh();SavePreferences();
+}
+
 void BatteryStatusPlugin::ConfirmAsusRefresh()
 {
-    if(!refresher || !token || awake_confirmation) { return; }
+    if(!refresher || !token || awake_confirmation || (cache_mode_action && cache_mode_action->isChecked())) { return; }
     refresh_error.clear();
     awake_confirmation = new QMessageBox(QMessageBox::Question, "Refresh headset battery",
         "Confirm that the Delta II is powered on and awake. Read its battery and charging status once?\n\n"

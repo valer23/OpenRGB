@@ -19,7 +19,7 @@ public:
     explicit BatteryStatusManager(Clock clock = {});
     uint64_t Acquire();
     void Release(uint64_t token);
-    void SetAsusCacheMode(bool value) { asus_cache_mode.store(value); }
+    void SetAsusCacheMode(bool value);
     bool Enabled() const { return enabled.load(); }
     void SetCorsairValidated(bool validated) { corsair_validated.store(validated); }
     bool CorsairValidated() const { return corsair_validated.load(); }

@@ -92,3 +92,7 @@ Remaining qualifications: charging transitions, independent battery accuracy, ph
 Built cache-provider revision0c0870cf after the hardware-free suite passed. Replaced only the exited isolated trial core/plugin, retaining rollback binaries and verifying all11 profile hashes. The elevated trial launched as PID45408; ASUS Framework, LightingService and Fan Control PID28840 remained running. The startup log loaded the usual Halloween - The Dark profile/effect. The owner confirmed ASUS percentage and ASUS cached report visible, mouse battery working, and headset audio/usual lighting working.
 
 This verifies the current installed ASUS log format and tray integration. ASUS supplies the measurements; OpenRGB adds no headset USB reader or requests. Existing ASUS logging remains a dependency. Cached report age is not proof of physical measurement time or headset sleep state. Automatic headset hardware queries remain disabled. The installed OpenRGB-Custom executable was not replaced.
+
+## Explicit ASUS modes
+
+The source selector defaults to ASUS cache; Direct receiver remains manual and awake-confirmed. Hardware-free coverage verifies missing logs never invoke USB, source changes never initiate a direct read, resume/subscriber changes cannot authorize one, switching sources joins/discards an in-flight result, and source changes clear only headset data. Actual plugin DLL tests cover exclusive selection, saved preferences, safe invalid-value default, older hosts and cancellation of an open confirmation. The mode-selection UI still awaits a full-app owner trial.

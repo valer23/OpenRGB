@@ -34,11 +34,13 @@ public:
 private:
     void Refresh();
     void ConfirmAsusRefresh();
+    void SelectAsusMode(bool cached);
     void MonitoringChanged(bool enabled);
     void SavePreferences();
     OpenRGBPluginAPIInterface* api = nullptr;
     OpenRGBBatteryStatusInterface* battery = nullptr;
     OpenRGBBatteryRefreshInterface* refresher = nullptr;
+    OpenRGBBatteryModeInterface* modes = nullptr;
     uint64_t token = 0;
     bool notifications = false;
     QString refresh_error;
@@ -49,6 +51,8 @@ private:
     QPointer<QAction> notification_action;
     QPointer<QTimer> timer;
     QPointer<QAction> refresh_action;
+    QPointer<QAction> cache_mode_action;
+    QPointer<QAction> direct_mode_action;
     QPointer<QMessageBox> awake_confirmation;
     std::vector<QMenu*> device_menus;
     std::vector<QAction*> device_details;

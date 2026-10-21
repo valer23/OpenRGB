@@ -13,6 +13,15 @@ The provider discovers the existing diagnosis LogPath registry setting and the c
 
 A standalone file-only read returned83%, not charging, while ASUS, Fan Control and the old trial remained running. The owner validated the updated full-app cache display: ASUS percentage and cached-report label visible, mouse battery working, and headset audio/usual lighting continuing normally with ASUS and Fan Control running. Earlier manual trials showed77% mouse and84% headset with audio and lighting continuing normally.
 
+## ASUS source selection
+
+Under the Delta II tray submenu, choose Battery source:
+
+- **ASUS cache** (default): read existing ASUS diagnostic reports automatically. Missing, stale or unavailable reports never trigger receiver queries or switch modes.
+- **Direct receiver (manual)**: works without Armoury Crate. Choose Refresh headset battery while awake and confirm for one bounded battery/charging exchange. Source selection, startup, reload, resume and monitoring changes never initiate direct reads. A competing receiver owner causes refusal; the plugin never closes foreign handles or stops services.
+
+The choice is saved as BatteryStatus.asus_mode (`cache` or `direct`). Missing/invalid values use cache. Changing source cancels outstanding confirmation, joins in-flight work, and clears only the headset sample so reports from one source cannot be mislabeled as the other. The mouse reader is unchanged. Older hosts without source-selection capability retain their existing display/refresh behavior.
+
 ## Development and trial
 
 From the repository root in PowerShell:

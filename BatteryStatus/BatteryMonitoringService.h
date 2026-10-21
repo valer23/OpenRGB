@@ -14,6 +14,7 @@ public:
     uint64_t Acquire();
     void Release(uint64_t token);
     void SetSuspended(bool value);
+    bool SetAsusMode(const std::string& mode);
     bool RequestAsusRefresh(uint64_t token, bool owner_confirmed_awake);
 private:
     void UpdateLocked();
@@ -21,7 +22,7 @@ private:
     BatteryStatusManager& cache;
     AsusBatteryMonitor asus;
     const bool asus_level_validated;
-    const bool passive_cache;
+    bool passive_cache;
     AsusBatteryMonitor::Reader awake_reader;
     std::set<uint64_t> subscriptions;
     std::mutex mutex;
