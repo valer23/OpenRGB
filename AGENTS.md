@@ -34,9 +34,13 @@ validation was performed.
 
 ## Use the shared mechanisms
 
-- Use the shared I2C/SMBus interface and appropriate detector rather than a
-  vendor GPU API inside a device controller. Determine transport from evidence,
-  not whether the product is called a GPU, motherboard or peripheral.
+- For I2C devices, use the shared bus interface and appropriate detector rather
+  than embedding vendor I2C calls. Reuse existing vendor illumination APIs when
+  the evidence matches them. Determine transport from the protocol, not the
+  product category.
+- For missing or duplicate RAM, trace backend availability, bus/port selection,
+  registration and SPD/detector routing before changing the RAM controller.
+  Distinguish transport synchronization from RGBController locks.
 - For HID, match report ID, size, interface, usage and transfer type. Feature,
   control-output and interrupt-output reports are not interchangeable. Check
   dependency API/version support across the intended platforms; do not substitute
@@ -56,35 +60,31 @@ validation was performed.
 ## Establish the protocol and preserve device behaviour
 
 - Separate captured bytes, inferred meanings and physical observations. Capture
-  controlled changes and distinguish setup, mode selection and repeated frames.
+  controlled changes and distinguish setup, mode selection and repeated frames,
+  including setup delays, frame cadence and when cached setup becomes invalid.
   Do not invent an unknown field or assume successful USB delivery changed LEDs.
 - Match detection narrowly and validate transfer lengths, routes and replies.
   Stop dependent commands on failure. Bound retries and avoid waking an idle or
   disconnected wireless device with repeated traffic. Verify sleep/wake separately
   from lighting ownership; a rendering change may reset an inactivity counter.
-- Limit hardware actions to the requested function. Do not probe unrelated buses
-  or change cooling, clocks, voltage, firmware or unverified lighting outputs.
+- Limit hardware actions to the requested function. For lighting-only tasks, do
+  not change cooling, clocks, voltage, firmware or unrelated device outputs.
+  Do not probe unrelated buses.
 - Preserve existing device behaviour and profile identities where practical.
   A restored software profile does not prove automatic device-side saving. Set
   save capabilities only when the relevant persistence behaviour is verified.
 
 ## Keep the implementation and diff small
 
-- Follow CONTRIBUTING.md and nearby code. Recheck C arrays/constants, casts,
-  assignment alignment and boxed comments instead of imposing another style.
-  Preserve compliant file headers, attribution and comments verbatim; avoid
-  unrelated reformatting and comments that merely restate the code.
-- Challenge abstractions, wrappers and duplicated scheduling that add no distinct
-  responsibility. Reuse an existing mechanism before adding an abstraction.
-  Small overrides in two existing classes do not
-  justify a new common base on their own.
-- Give each state field a distinct invariant. Remove redundant state, not failure
-  recovery: connection knowledge, monitoring availability, requested policy and
-  attempted versus acknowledged transitions can represent different facts.
-- Keep routine transition logs at an appropriate level and failure logs bounded.
-  Avoid separate logging state when transition state provides the same information.
-  Inspect the complete
-  MR diff, not just the latest edit; line count alone does not establish quality.
+- Follow CONTRIBUTING.md and nearby code, including its C-style conventions and
+  boxed comments. Preserve attribution and avoid unrelated header, comment and
+  formatting churn; update comments when their described behaviour changes.
+- Justify abstractions, wrappers, locks and scheduling by distinct responsibilities.
+  Reuse existing mechanisms and give each state field a distinct invariant.
+  Simplify redundant state without losing recovery or confusing attempted and
+  acknowledged transitions.
+- Bound failure logs and avoid duplicating transition state solely for logging.
+  Review the complete MR diff; line count alone does not establish quality.
 
 ## Verify and submit honestly
 
@@ -94,15 +94,19 @@ validation was performed.
 - Exercise the changed path and relevant failures, reconnects, mode changes and
   shutdown. For software effects, check plugin loading and the detected device
   identities, modes and zone sizes before blaming the driver.
-- Report compilation, automated checks and physical tests separately, with the
-  exact revision/platform and remaining gaps. Do not repeat long hardware tests
-  without explaining what uncertainty they resolve.
+- Report four validation categories separately: compilation with real headers and
+  dependencies; automated protocol/lifecycle checks; actual application/UI
+  integration; and physical hardware verification. Record the revision, platform
+  and untested items in each category. Explain which uncertainty a repeated long
+  hardware test resolves.
 - Use a dedicated source branch and preserve upstream's linear history. Rebase
   on the intended current base and repeat affected checks after resolving conflicts.
 - Keep one functional area per MR. Follow the [New Device template](.gitlab/merge_request_templates/New%20Device.md)
-  when applicable, including its issue, protocol evidence and validation fields.
-  Leave unverified items unchecked; keep personal installers, captures, generated
-  artifacts and incidental test frameworks out of the submitted patch.
+  when applicable. Include the required device metadata for permissions and
+  supported-device documentation, and protocol evidence in the linked issue or
+  developer wiki. Leave unverified items unchecked. Keep personal installers,
+  capture files, generated artifacts and incidental test frameworks out of the
+  code patch unless requested.
 - Review architecture, necessity and project style separately from functionality.
   Apply feedback to each MR and verify its actual remote head. A working local
   build, another corrected MR or an agent's approval is not sufficient evidence.
