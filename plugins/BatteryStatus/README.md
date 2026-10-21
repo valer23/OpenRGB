@@ -11,7 +11,7 @@ The matching fork core is required for telemetry. On an older API-v5 core the pl
 
 The provider discovers the existing diagnosis LogPath registry setting and the current user's MD5-named Framework directory. It reads bounded tails of known Service.04 date/rotation files, matches tray battery event10200/model6906, and ignores incomplete, invalid and future reports. No headset alerts use this cached data. Automatic hardware queries remain disabled by ReceiverLevelValidated. The manual USB refresh action is hidden in this cache-provider mode, with no hardware fallback.
 
-A standalone file-only read returned83%, not charging, while ASUS, Fan Control and the old trial remained running. The updated full-app cache display still needs owner validation. Earlier manual trials showed77% mouse and84% headset with audio and lighting continuing normally.
+A standalone file-only read returned83%, not charging, while ASUS, Fan Control and the old trial remained running. The owner validated the updated full-app cache display: ASUS percentage and cached-report label visible, mouse battery working, and headset audio/usual lighting continuing normally with ASUS and Fan Control running. Earlier manual trials showed77% mouse and84% headset with audio and lighting continuing normally.
 
 ## Development and trial
 
