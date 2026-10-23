@@ -6,17 +6,25 @@ the existing NEO controller; the device identity, one-logo zone and running
 Static mode are unchanged.
 
 In **Edit Device**, choose a **Shutdown effect (experimental)** and a separate
-six-digit **Shutdown colour (RRGGBB)**. Defaults are **Leave unchanged** and
+six-digit **Shutdown colour (RRGGBB)**, with a **Choose colour...** button reusing
+the main-page colour wheel. The picker and hex editor stage the same value;
+Cancel leaves the value unchanged. Defaults are **Leave unchanged** and
 red. Accepting these settings stores them in Configuration.json. It does not
 write standby settings, including when configuration is reloaded at startup.
 
 In the trial build, **Save To Device** explicitly applies the staged shutdown
 settings. It does not copy the running mode or colour into standby. The six
-captured choices are Static, Breathing, Strobing, Color cycle, Rainbow and
-Starry Night. One colour is used for both onboard units. Partition is not a
+captured effects are Static, Breathing, Strobing, Color cycle, Rainbow and
+Starry Night, alongside **Off**. Off sends the captured standby-disable command
+followed by Static black on both units; the colour field is ignored. Enabled
+effects send standby-enable first, so switching back from Off is explicit.
+The enable/disable command is a motherboard standby switch without an output
+selector; it may also affect motherboard-connected ARGB during shutdown. This
+must be checked physically before claiming logo-only enable/disable control.
+One colour is used for both onboard units. Partition is not a
 seventh firmware effect: observed ASUS traffic uses shared effect group 0,
 with separate colours for units 0 and 1. Independent per-output effects,
-Off, speed controls and ARGB headers are outside this trial.
+speed controls and per-header ARGB colour/effect controls are outside this trial.
 
 The save path uses the existing HID handle and core SaveMode locks. It refuses
 known ASUS motherboard lighting processes (LightingService.exe and
@@ -28,7 +36,9 @@ lighting owner. No additional HID reader or background polling is started.
 Before writes, it validates standby capabilities, group 0's exact onboard-only
 mask and both onboard unit types. It preserves the existing speed/direction
 bytes, uses captured 64-byte control-output reports, and checks effect/colour
-readback afterward. Malformed/short transfers stop dependent commands. A failed
+readback afterward. Standby-enable delivery is checked for transfer length;
+the enable state itself has no validated readback in this implementation.
+Malformed/short transfers stop dependent commands. A failed
 later write can leave a partial change; no automatic rollback is attempted.
 Results and refusals are reported in the OpenRGB log.
 
@@ -45,6 +55,11 @@ provide 41 09/89 standby capabilities and 41 29/A9 unit descriptors. No older
 EC35/EC36 Aura packets are used. Sanitized Static-blue packets are retained in
 the existing driver regression fixtures; raw captures and decompilation stay
 outside the source patch.
+
+An additional owner-labelled Off/On capture confirms 41 21 01 00 and
+41 21 01 01 respectively, with the Off path selecting Static black and On
+restoring the effect/colour. State 1 selects standby; these are distinct from
+the existing live activation 41 21 00 01. No ID00-as-Off assumption is used.
 
 Validation is reported separately for production compilation, automated
 protocol/lifecycle tests, actual application/UI integration and physical

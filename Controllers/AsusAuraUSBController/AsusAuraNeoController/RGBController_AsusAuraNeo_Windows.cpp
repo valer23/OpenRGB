@@ -63,13 +63,13 @@ RGBController_AsusAuraNeo::RGBController_AsusAuraNeo(hid_device* handle, const s
     settings["schema"]["shutdown_effect"] =
     {
         {"title", "Shutdown effect (experimental)"}, {"type", "string"}, {"order", 0},
-        {"description", "Stage an onboard shutdown effect, then use Save To Device to apply. Leave unchanged sends no standby commands. No service is stopped. Power-off persistence is not yet verified."},
-        {"enum", {"Leave unchanged", "Static", "Breathing", "Strobing", "Color cycle", "Rainbow", "Starry Night"}}
+        {"description", "Stage a shutdown effect, then use Save To Device to apply. Off mirrors ASUS's motherboard standby switch, which may also affect motherboard-connected ARGB. Leave unchanged sends no commands. No service is stopped. Power-off persistence is not yet verified."},
+        {"enum", {"Leave unchanged", "Off", "Static", "Breathing", "Strobing", "Color cycle", "Rainbow", "Starry Night"}}
     };
     settings["schema"]["shutdown_color"] =
     {
-        {"title", "Shutdown colour (RRGGBB)"}, {"type", "string"}, {"order", 1},
-        {"description", "Six hexadecimal digits, for example FF0000 for red. Shared by both onboard outputs. Used by effects with a fixed colour; independent of the running colour."}
+        {"title", "Shutdown colour (RRGGBB)"}, {"type", "string"}, {"format", "color"}, {"order", 1},
+        {"description", "Choose a colour or enter six hexadecimal digits, for example FF0000 for red. Shared by both onboard outputs and independent of the running colour. Ignored for Off."}
     };
     settings["configuration"]["shutdown_effect"] = "Leave unchanged";
     settings["configuration"]["shutdown_color"] = "FF0000";
@@ -242,8 +242,8 @@ void RGBController_AsusAuraNeo::DeviceSaveMode()
     | belongs exclusively to this explicit, core-locked    |
     | save path. Never initialize or change running mode.  |
     \*-----------------------------------------------------*/
-    static const char* effect_names[] = {"Static", "Breathing", "Strobing", "Color cycle", "Rainbow", "Starry Night"};
-    static const unsigned char effect_ids[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x0D};
+    static const char* effect_names[] = {"Static", "Breathing", "Strobing", "Color cycle", "Rainbow", "Starry Night", "Off"};
+    static const unsigned char effect_ids[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x0D, 0x01};
     std::string effect_name;
     std::string color_text;
     try
@@ -254,7 +254,7 @@ void RGBController_AsusAuraNeo::DeviceSaveMode()
         {
             return;
         }
-        color_text = settings.at("shutdown_color").get<std::string>();
+        color_text = effect_name == "Off" ? "000000" : settings.at("shutdown_color").get<std::string>();
     }
     catch(...)
     {
@@ -262,7 +262,7 @@ void RGBController_AsusAuraNeo::DeviceSaveMode()
         return;
     }
     unsigned int effect = 0;
-    for(; effect < 6; effect++)
+    for(; effect < 7; effect++)
     {
         if(effect_name == effect_names[effect])
         {
@@ -270,7 +270,7 @@ void RGBController_AsusAuraNeo::DeviceSaveMode()
         }
     }
     unsigned int rgb = 0;
-    if(effect == 6 || color_text.size() != 6)
+    if(effect == 7 || color_text.size() != 6)
     {
         LOG_ERROR("[ASUS Aura NEO] Invalid shutdown effect or RRGGBB colour; no commands sent");
         return;
@@ -371,8 +371,23 @@ void RGBController_AsusAuraNeo::DeviceSaveMode()
         LOG_ERROR("[ASUS Aura NEO] ASUS lighting became active; no settings written");
         return;
     }
+    /*-----------------------------------------------------*\
+    | Captured Off/On toggle: standby state 1, enable 0/1.  |
+    | Off then selects Static black on both onboard units. |
+    | Never use state 0 here: that controls running lights.|
+    \*-----------------------------------------------------*/
+    Report enable_report = {};
+    enable_report[0] = 0x41;
+    enable_report[1] = 0x21;
+    enable_report[2] = 0x01;
+    enable_report[3] = effect_name == "Off" ? 0 : 1;
+    if(!Send(enable_report))
+    {
+        return;
+    }
     if(!Send(effect_report))
     {
+        LOG_ERROR("[ASUS Aura NEO] Shutdown apply incomplete; standby enable state may have changed");
         return;
     }
     for(unsigned int unit = 0; unit < 2; unit++)
@@ -410,5 +425,5 @@ void RGBController_AsusAuraNeo::DeviceSaveMode()
             return;
         }
     }
-    LOG_INFO("[ASUS Aura NEO] Shutdown effect applied and read back; power-off persistence requires physical verification");
+    LOG_INFO("[ASUS Aura NEO] Shutdown %s command delivered; effect/colour readback matched. Standby enable state and power-off persistence require physical verification", effect_name.c_str());
 }

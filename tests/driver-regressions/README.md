@@ -30,6 +30,9 @@ captured Static-blue standby packets, advertised effect filtering, route and
 length validation, bounded stale-input handling, competing-reader refusal,
 all six captured effects, retained parameters, partial writes and failed
 readback. The runner enables `ASUS_NEO_SHUTDOWN_TRIAL` for this offline test.
+The separate Off fixture matches all four captured disable/Static-black writes;
+the transition test verifies that selecting an effect after Off enables standby
+again, and that Off ignores an unused invalid colour field.
 Compile the same test without that define to verify normal builds also refuse
 an explicit SDK save. The tests do not prove UI rendering or S5 persistence.
 

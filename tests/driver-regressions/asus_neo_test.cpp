@@ -25,6 +25,7 @@ static bool competing = false;
 static bool reply_pending = false;
 static int fault = 0;
 static unsigned int stale_remaining = 0;
+static bool standby_enabled = true;
 static unsigned char reply[64] = {};
 static unsigned char effect_state[64] = {0x41, 0xA5, 0, 1, 5, 0, 0, 0, 3};
 static unsigned char unit_state[2][64] =
@@ -71,6 +72,11 @@ extern "C" int hid_send_output_report(hid_device*, const unsigned char* data, si
         if(fault == 6) { reply[0] = 0xEC; }
         if(fault == 7 && data[1] != 9) { reply[3] = 0; }
         reply_pending = true;
+    }
+    else if(data[1] == 0x21 && data[2] == 1)
+    {
+        assert(data[3] <= 1);
+        standby_enabled = data[3] != 0;
     }
     else if(data[1] == 0x23)
     {
@@ -129,6 +135,7 @@ int main()
 {
     const std::vector<std::vector<unsigned char>> fixtures = Fixtures("tests/driver-regressions/fixtures/asus-neo-onboard.tsv", 9);
     const std::vector<std::vector<unsigned char>> shutdown_blue = Fixtures("tests/driver-regressions/fixtures/asus-neo-shutdown-blue.tsv", 3);
+    const std::vector<std::vector<unsigned char>> shutdown_off = Fixtures("tests/driver-regressions/fixtures/asus-neo-shutdown-off.tsv", 4);
     hid_device* handle = reinterpret_cast<hid_device*>(1);
     {
         RGBController_AsusAuraNeo controller(handle, "test-path");
@@ -137,6 +144,8 @@ int main()
         assert(controller.modes.size() == 1 && controller.modes[0].name == "Static");
         assert(controller.flags & CONTROLLER_FLAG_MANUALLY_CONFIGURABLE_DEVICE_SPECIFIC);
         assert(nlohmann::json::parse(controller.configuration)["schema"]["shutdown_effect"]["type"] == "string");
+        assert(nlohmann::json::parse(controller.configuration)["schema"]["shutdown_effect"]["enum"][1] == "Off");
+        assert(nlohmann::json::parse(controller.configuration)["schema"]["shutdown_color"]["format"] == "color");
         controller.colors[0] = ToRGBColor(255, 0, 0);
         controller.DeviceUpdateMode();
         assert(sent.size() == 5);
@@ -195,21 +204,38 @@ int main()
         controller.DeviceSaveMode();
         assert(sent.empty());
         controller.DeviceSaveMode();
-        assert(sent.size() == 10);
-        const unsigned char commands[] = {9, 0x25, 0x29, 0x29, 0x23, 0x28, 0x28, 0x25, 0x29, 0x29};
-        for(unsigned int i = 0; i < 10; i++)
+        assert(sent.size() == 11);
+        const unsigned char commands[] = {9, 0x25, 0x29, 0x29, 0x21, 0x23, 0x28, 0x28, 0x25, 0x29, 0x29};
+        for(unsigned int i = 0; i < 11; i++)
         {
             assert(sent[i][0] == 0x41 && sent[i][1] == commands[i]);
             assert(sent[i][1] == 9 || sent[i][3] == 1);
         }
-        assert(sent[4][4] == 1 && sent[4][7] == 0xAA);
-        assert(sent[5][2] == 0 && sent[6][2] == 1);
-        assert(sent[5][4] == 0 && sent[5][5] == 0 && sent[5][6] == 0xFF);
+        assert(sent[4][2] == 1 && sent[4][3] == 1 && standby_enabled);
+        assert(sent[5][4] == 1 && sent[5][7] == 0xAA);
+        assert(sent[6][2] == 0 && sent[7][2] == 1);
+        assert(sent[6][4] == 0 && sent[6][5] == 0 && sent[6][6] == 0xFF);
         for(unsigned int i = 0; i < 3; i++)
         {
-            assert(sent[4 + i] == shutdown_blue[i]);
+            assert(sent[5 + i] == shutdown_blue[i]);
         }
-        assert(!sent.empty() && sent[5] != fixtures[7]); // Standby, not live stream.
+        assert(!sent.empty() && sent[6] != fixtures[7]); // Standby, not live stream.
+        config["configuration"]["shutdown_effect"] = "Off";
+        config["configuration"]["shutdown_color"] = "ignored for Off";
+        controller.configuration = config.dump();
+        sent.clear();
+        controller.DeviceSaveMode();
+        assert(sent.size() == 11 && !standby_enabled);
+        for(unsigned int i = 0; i < 4; i++)
+        {
+            assert(sent[4 + i] == shutdown_off[i]);
+        }
+        config["configuration"]["shutdown_effect"] = "Static";
+        config["configuration"]["shutdown_color"] = "0000FF";
+        controller.configuration = config.dump();
+        sent.clear();
+        controller.DeviceSaveMode();
+        assert(sent.size() == 11 && standby_enabled); // Off -> On explicitly enables.
         for(int failure = 1; failure <= 8; failure++)
         {
             fault = failure;
@@ -217,7 +243,7 @@ int main()
             controller.DeviceSaveMode();
             for(const std::vector<unsigned char>& packet : sent)
             {
-                assert(packet[1] != 0x23 && packet[1] != 0x28);
+                assert(packet[1] != 0x21 && packet[1] != 0x23 && packet[1] != 0x28);
             }
         }
         fault = 0;
@@ -230,11 +256,11 @@ int main()
             controller.configuration = config.dump();
             sent.clear();
             controller.DeviceSaveMode();
-            assert(sent.size() == 10 && sent[4][4] == ids[i]);
-            assert(sent[4][5] == 7 && sent[4][6] == 1);
+            assert(sent.size() == 11 && sent[5][4] == ids[i] && standby_enabled);
+            assert(sent[5][5] == 7 && sent[5][6] == 1);
         }
         effect_state[5] = 0; effect_state[6] = 0;
-        for(int failure = 5; failure <= 7; failure++)
+        for(int failure = 5; failure <= 8; failure++)
         {
             sent.clear(); fail_at = failure; failure_result = 63;
             controller.DeviceSaveMode();
@@ -244,7 +270,7 @@ int main()
         fault = 9;
         sent.clear();
         controller.DeviceSaveMode();
-        assert(sent.size() == 8); // Failed readback stops dependent reads.
+        assert(sent.size() == 9); // Failed readback stops dependent reads.
         fault = 0;
     }
     logged_errors = 0;
