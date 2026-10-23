@@ -1,0 +1,93 @@
+# Explicit, one-shot diagnostic; never changes ASUS framework or OpenRGB processes.
+param([switch]$ConfirmHeadsetOn,[switch]$TemporarilyStopLightingService,[switch]$DiagnoseOnly,[ValidateSet('Awake','SleepTest')][string]$Mode='Awake',[switch]$ConfirmHeadsetAsleep,[switch]$AuthorizeSleepTest,[switch]$WaitForAutoPowerOff)
+$ErrorActionPreference='Stop'
+if(-not $TemporarilyStopLightingService){throw 'Requires explicit -TemporarilyStopLightingService; no changes made'}
+if(-not $DiagnoseOnly){
+    if($Mode -eq 'SleepTest'){
+        if((-not $ConfirmHeadsetAsleep -and -not $WaitForAutoPowerOff) -or -not $AuthorizeSleepTest){throw 'SleepTest requires an observed baseline or explicit asleep confirmation, plus -AuthorizeSleepTest; no changes made'}
+    } elseif(-not $ConfirmHeadsetOn){throw 'Awake trial requires -ConfirmHeadsetOn; no changes made'}
+}
+$principal=[Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
+if(-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){throw 'Use administrator PowerShell. No changes made.'}
+$repoRoot=(Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$probeRoot=Join-Path $repoRoot 'build-battery\probe'
+$probe=Join-Path $probeRoot 'BatteryStatusProbe.exe'
+if(-not(Test-Path -LiteralPath $probe)){throw 'Prepared probe is missing'}
+$controller=Get-Service -Name LightingService
+$controller.Refresh()
+$pendingState=$controller.Status.ToString()
+if($pendingState -in @('StartPending','StopPending')){
+    $target=if($pendingState -eq 'StartPending'){[System.ServiceProcess.ServiceControllerStatus]::Running}else{[System.ServiceProcess.ServiceControllerStatus]::Stopped}
+    Write-Host 'Waiting up to ten seconds for LightingService to finish its existing transition; no service command or headset query is sent.'
+    $controller.WaitForStatus($target,[TimeSpan]::FromSeconds(10))
+    $controller.Refresh()
+}
+$initialServiceState=$controller.Status.ToString()
+if($initialServiceState -notin @('Running','Stopped')){throw 'LightingService did not reach a stable state; no changes made'}
+# Refresh exact-PDO ownership; do not stop anything if another reader remains.
+& (Join-Path $PSScriptRoot 'Find-DeltaII-Owner.ps1')
+$ownership=Get-Content -LiteralPath (Join-Path $probeRoot 'headset-handle-owner.json') -Raw | ConvertFrom-Json
+if($ownership.status -ne 'completed'){throw 'Owner scan did not complete; nothing stopped'}
+$serviceInfo=Get-CimInstance Win32_Service -Filter "Name='LightingService'"
+$otherOwners=@($ownership.owners | Where-Object { $_.pid -ne $serviceInfo.ProcessId -or $_.process -ne 'LightingService' })
+if($otherOwners.Count -and -not $DiagnoseOnly){throw 'Another reader still holds the headset. Close the Armoury device page/app normally, then retry this script. No service or device changes made.'}
+if(@($controller.DependentServices).Count){throw 'Unexpected dependent services; no changes made'}
+$runId='lighting-trial-'+(Get-Date -Format 'yyyyMMdd-HHmmss-fff')
+$stdout=Join-Path $probeRoot ($runId+'.json')
+$stderr=Join-Path $probeRoot ($runId+'.stderr.log')
+$resultPath=Join-Path $probeRoot 'lighting-trial-result.json'
+$result=[ordered]@{service='LightingService';before=$initialServiceState;diagnoseOnly=[bool]$DiagnoseOnly;mode=$Mode;baselineLightsOff=$false;ownersWhileStopped=$null;stopRequested=$false;probeAttempted=$false;probeExitCode=$null;probeResult=$null;error=$null;restoreError=$null;after=$null;stdout=$stdout;stderr=$stderr}
+$previousPath=$env:PATH
+try {
+    $env:PATH='C:\Users\valerian\git-repos\OpenRGB-KFA2\RGB-investigation\toolchain\Tools\mingw1310_64\bin;'+$env:PATH
+    if($initialServiceState -eq 'Running'){
+        Write-Host 'Temporarily stopping LightingService. Leave this window open until restoration finishes.'
+        $controller.Stop();$result.stopRequested=$true
+        $controller.WaitForStatus([System.ServiceProcess.ServiceControllerStatus]::Stopped,[TimeSpan]::FromSeconds(10))
+    } else {Write-Host 'LightingService is already stopped; its initial state will be preserved.'}
+    & (Join-Path $PSScriptRoot 'Find-DeltaII-Owner.ps1')
+    $during=Get-Content -LiteralPath (Join-Path $probeRoot 'headset-handle-owner.json') -Raw | ConvertFrom-Json
+    if($during.status -ne 'completed'){throw 'During-stop ownership scan failed; no battery query issued'}
+    $result.ownersWhileStopped=@($during.owners)
+    $during | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath (Join-Path $probeRoot ($runId+'-owners.json')) -Encoding utf8
+    if(-not $DiagnoseOnly){
+        if(@($during.owners).Count){throw 'A reader holds the headset while LightingService is stopped; no battery query issued'}
+    if($Mode -eq 'SleepTest' -and $WaitForAutoPowerOff){
+        Write-Host 'No headset query has been sent. Keep USB charging unplugged, playback stopped, and the headset untouched.'
+        Write-Host 'Wait for BOTH the side ROG logos and the blue 2.4GHz button light to turn off by themselves. If they do not, cancel this test.'
+        $baseline=Read-Host 'Type off only after observing that natural lights-off transition; anything else cancels with no query'
+        if($baseline.Trim().ToLowerInvariant() -ne 'off'){throw 'Natural lights-off baseline not confirmed; no battery query issued'}
+        $result.baselineLightsOff=$true
+    }
+    $probeArguments=if($Mode -eq 'SleepTest'){@('--sleep-test','--authorize-one-battery-query','--confirm-headset-asleep')}else{@('--awake-read','--confirm-headset-on')}
+    $child=Start-Process -FilePath $probe -ArgumentList $probeArguments -WindowStyle Hidden -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+    $result.probeAttempted=$true
+    if(-not $child.WaitForExit(6000)){$child.Kill();$child.WaitForExit();throw 'Six-second deadline exceeded; no retry'}
+    $result.probeExitCode=$child.ExitCode
+    $result.probeResult=Get-Content -LiteralPath $stdout -Raw | ConvertFrom-Json
+    if($Mode -eq 'SleepTest' -and $result.probeResult.level_query_attempted){
+        $result.probeResult | ConvertTo-Json -Depth 10 | Write-Host
+        Write-Host 'Observe the headset now without touching it. ASUS service restoration waits for your answer to avoid confusing vendor activity with this query.'
+        $wakePrompt=if($WaitForAutoPowerOff){'Did either side ROG logo or the blue 2.4GHz button light come back on? Enter yes, no, or uncertain'}else{'Did the naturally asleep headset wake? Enter yes, no, or uncertain'}
+        $observedWake=Read-Host $wakePrompt
+        $result['ownerObservedWake']=switch($observedWake.Trim().ToLowerInvariant()){'yes'{$true};'no'{$false};default{$null}}
+    }
+    }
+} catch {$result.error=$_.Exception.Message}
+finally {
+    $env:PATH=$previousPath
+    if($result.stopRequested){
+        Write-Host 'Restoring LightingService...'
+        try {
+            $controller.Refresh()
+            if($controller.Status -eq [System.ServiceProcess.ServiceControllerStatus]::StopPending){$controller.WaitForStatus([System.ServiceProcess.ServiceControllerStatus]::Stopped,[TimeSpan]::FromSeconds(10));$controller.Refresh()}
+            if($controller.Status -eq [System.ServiceProcess.ServiceControllerStatus]::Stopped){$controller.Start()}
+            $controller.WaitForStatus([System.ServiceProcess.ServiceControllerStatus]::Running,[TimeSpan]::FromSeconds(10))
+        } catch {$result.restoreError=$_.Exception.Message}
+    }
+    $controller.Refresh();$result.after=$controller.Status.ToString()
+    $result | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $resultPath -Encoding utf8
+}
+$result | ConvertTo-Json -Depth 20 | Write-Host
+if($result.restoreError -or $result.after -ne $result.before){throw 'SERVICE STATE MISMATCH: inspect LightingService and the saved result before closing this window'}
+Write-Host "LightingService state: $($result.after) (initially $($result.before)). Result saved to $resultPath"

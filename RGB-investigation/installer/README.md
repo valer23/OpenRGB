@@ -1,5 +1,13 @@
 # OpenRGB Custom personal installer
 
+## Battery plugin and permanent upgrade - 23 October 2026
+
+Version1.0.20261023.1 is built from abca73b0 and installed through the existing Inno Setup application identity. Windows Installed Apps reports the new version and retains its uninstaller. Both effects and battery DLLs are packaged. The window and tray identify the fork as OpenRGB Custom. The elevated startup task continues to target the permanent installation; the launcher respects the saved on-open profile, disables SDK autoconnection, and leaves vendor services running.
+
+Setup exited0. Installed core SHA256:16E6A3EAEFE9BB1181BFC1ADFD71B281213023B6E31B92D67138CD484DCAC71B. All11 profile hashes and Configuration.json were unchanged. The new launch registered the mouse and loaded Halloween - The Dark. Fan Control remained running and LightingService remained running. The previous in-place upgrade was owner-confirmed with both plugins and mouse lighting working; the final branded installer has startup/log verification. Cold login with an asleep mouse remains unqualified: the earlier boot log skipped registration after unknown receiver capabilities. No sleep-safe automatic battery query was enabled to compensate.
+
+Private upgrade backups remain under the installed application's upgrade-backups directory. The generated setup and logs remain ignored.
+
 ## Mouse idle simplification - 20 October 2026
 
 Version 1.0.20261020.1 packages fork revision 146effae, matching upstream

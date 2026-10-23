@@ -122,3 +122,8 @@ compile_commands.json
 
 # Generated i18n files
 *.qm
+
+# Isolated battery feature build outputs
+build-battery/
+
+!scripts/Build-Battery-Core.ps1

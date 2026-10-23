@@ -2,6 +2,8 @@ OpenRGB Custom - personal build for valerian
 
 Includes the tested KFA2 GPU, Lian Li fan and ASUS logo support, the Effects Plugin and your saved lighting profiles.
 
+Version 1.0.20261023.1 installs the validated battery core/plugin with explicit ASUS cache and manual Direct receiver modes. Startup respects the saved on-open profile instead of forcing ValWhite, and never stops ASUS services. Existing device configuration, mouse sleep settings, effects and lighting profiles are preserved. Battery monitoring defaults to ASUS cache with notifications off.
+
 Version 1.0.20261020.1 packages the reviewed mouse idle simplification. Existing device settings and profiles are preserved. Software regressions and packet comparison passed; the refactor still requires physical verification.
 
 Version 1.0.20261019.2 moves mouse idle preferences to Edit Device / Configuration.json, preserving the old toggle and timeout with backups. Existing device preferences take precedence; invalid saved values stop migration. Profiles and fan configuration are preserved.
@@ -14,7 +16,7 @@ The previous SG upgrade corrects the GPU model to KFA2 RTX 3080 Ti SG 1-Click OC
 
 Installs in the existing C:\Users\valerian\Apps\OpenRGB-Custom folder. Existing settings and profiles are retained. The current PawnIO installation is reused; this installer does not install or remove the shared PawnIO kernel driver.
 
-Creates a Start menu shortcut, an elevated logon startup task and a Windows Installed Apps entry. Startup uses ValWhite. ASUS LightingService is paused for the OpenRGB session and restored when the app exits. Fan Control is unaffected.
+Creates a Start menu shortcut, an elevated logon startup task and a Windows Installed Apps entry. Startup uses the saved OpenRGB on-open profile. Vendor services remain running. Fan Control is unaffected.
 
 Uninstall removes packaged application files and the startup task, and keeps settings, profiles and existing backups. Close OpenRGB from its tray menu before installation, upgrade or uninstall.
 

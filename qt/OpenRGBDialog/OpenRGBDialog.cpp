@@ -7,6 +7,7 @@
 |   SPDX-License-Identifier: GPL-2.0-or-later               |
 \*---------------------------------------------------------*/
 
+#include "BatteryStatus/BatteryMonitoringService.h"
 #include <thread>
 #include "AutoStart.h"
 #include "OpenRGBDialog.h"
@@ -152,6 +153,7 @@ bool OpenRGBDialog::IsMinimizeOnClose()
 OpenRGBDialog::OpenRGBDialog(QWidget *parent) : QMainWindow(parent), ui(new Ui::OpenRGBDialog)
 {
     ui->setupUi(this);
+    setWindowTitle("OpenRGB Custom");
 
 #ifdef __APPLE__
     /*-----------------------------------------------------*\
@@ -412,7 +414,7 @@ OpenRGBDialog::OpenRGBDialog(QWidget *parent) : QMainWindow(parent), ui(new Ui::
 
     connect(trayIcon,SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(on_ReShow(QSystemTrayIcon::ActivationReason)));
 
-    trayIcon->setToolTip("OpenRGB");
+    trayIcon->setToolTip("OpenRGB Custom");
     trayIcon->setContextMenu(trayMenu);
 
     /*-----------------------------------------------------*\
@@ -1503,6 +1505,7 @@ void OpenRGBDialog::UpdateProfileList()
 
 void OpenRGBDialog::OnSuspend()
 {
+    BatteryMonitoringService::Get().SetSuspended(true);
     if(ResourceManager::get()->GetProfileManager()->LoadAutoProfileSuspend())
     {
         plugin_manager->UnloadPlugins();
@@ -1513,6 +1516,7 @@ void OpenRGBDialog::OnResume()
 {
     plugin_manager->LoadPlugins();
     ResourceManager::get()->GetProfileManager()->LoadAutoProfileResume();
+    BatteryMonitoringService::Get().SetSuspended(false);
 }
 
 void OpenRGBDialog::on_Exit()

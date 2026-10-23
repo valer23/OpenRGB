@@ -132,6 +132,11 @@ private:
     bool                            ReadMouseInactivity();
     bool                            MouseIsIdle();
     bool                            ChangeMouseOwnership(bool software);
+    void                            UpdateMouseBatteryState();
+    bool                            mouse_battery_target = false;
+    bool                            mouse_battery_seen = false;
+    bool                            mouse_battery_note_seen = false;
+    unsigned long long              mouse_battery_note_ms = 0;
     hid_device*                     mouse_events = nullptr;
     unsigned int                    mouse_receiver_pid = 0;
     /*---------------------------------------------------------*\

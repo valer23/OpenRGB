@@ -19,6 +19,8 @@
 #include <hidapi_winapi.h>
 #endif
 #include <nlohmann/json.hpp>
+#include "BatteryStatus/BatteryStatusManager.h"
+#include "BatteryStatus/BatteryProtocol.h"
 
 using namespace std::chrono_literals;
 
@@ -147,11 +149,20 @@ CorsairPeripheralV2Controller::CorsairPeripheralV2Controller(hid_device* dev_han
                 break;
         }
     }
-
+    mouse_battery_target = pid == 0x1B7E && mouse_receiver_pid == 0x1BA6 && write_cmd == 0x09;
+    if(mouse_battery_target)
+    {
+        BatteryStatusManager::Get().SetState(BatteryStatusManager::CorsairId, "unavailable",
+            "Native mouse activity and owner-hardware battery validation required");
+    }
 }
 
 CorsairPeripheralV2Controller::~CorsairPeripheralV2Controller()
 {
+    if(mouse_battery_target)
+    {
+        BatteryStatusManager::Get().SetState(BatteryStatusManager::CorsairId, "disconnected", "Mouse controller removed");
+    }
     /*---------------------------------------------------------*\
     | Hand rendering back to the device's onboard firmware      |
     |   before releasing it.  Some devices (e.g. K70 Core RGB)  |
@@ -407,8 +418,15 @@ void CorsairPeripheralV2Controller::SetLEDs(uint8_t *data, uint16_t data_size)
 {
     if(mouse_idle_enabled && !AllowMouseFrame(CorsairMouseTime()))
     {
+        if(mouse_battery_target && mouse_events && mouse_connected && !mouse_connection_sync)
+        {
+            BatteryStatusManager::Get().SetState(BatteryStatusManager::CorsairId,
+                MouseIsIdle() ? "idle" : "unavailable",
+                MouseIsIdle() ? "Onboard lighting; passive battery updates only" : "Lighting initialization pending");
+        }
         return;
     }
+    if(mouse_idle_enabled) { UpdateMouseBatteryState(); }
     const uint8_t offset1   = 8;
     const uint8_t offset2   = 4;
     uint16_t remaining      = data_size;
@@ -602,6 +620,11 @@ void CorsairPeripheralV2Controller::SetMouseConnected(bool connected)
     if(connected != mouse_connected)
     {
         mouse_connected = connected;
+        if(mouse_battery_target)
+        {
+            BatteryStatusManager::Get().SetState(BatteryStatusManager::CorsairId,
+                connected ? "unknown" : "disconnected", connected ? "Waiting for checked lighting restoration" : "Wireless child disconnected");
+        }
         mouse_activity_after_handoff = connected;
         mouse_inactivity_valid = false;
         mouse_next_query_ms = 0;
@@ -643,6 +666,10 @@ void CorsairPeripheralV2Controller::ReadMouseEvents(unsigned long long now)
         {
             hid_close(mouse_events);
             mouse_events = nullptr;
+            if(mouse_battery_target)
+            {
+                BatteryStatusManager::Get().SetState(BatteryStatusManager::CorsairId, "unavailable", "Receiver event reader recovering");
+            }
             mouse_event_retry_ms = now + CORSAIR_V2_MOUSE_QUERY_PERIOD;
             mouse_inactivity_valid = false;
             if(!mouse_connection_sync)
@@ -655,6 +682,27 @@ void CorsairPeripheralV2Controller::ReadMouseEvents(unsigned long long now)
         if(count == 0)
         {
             return;
+        }
+        // Battery notifications carry an explicit property key, unlike GET replies.
+        // Reuse this matched receiver reader; never query GET0F on the GET40 stream.
+        if(mouse_battery_target && mouse_idle_enabled && mouse_connected && !mouse_connection_sync)
+        {
+            auto& cache = BatteryStatusManager::Get();
+            const auto percentage = BatteryProtocol::CorsairNotification(buffer, static_cast<size_t>(count));
+            if(cache.Enabled() && count >= 6 && buffer[1] == 1 && buffer[2] == 0x0F &&
+               (!mouse_battery_note_seen || now - mouse_battery_note_ms >= 60000))
+            {
+                mouse_battery_note_seen = true;
+                mouse_battery_note_ms = now;
+                LOG_DEBUG("[BatteryStatus] Receiver battery notification candidate: %02X %02X %02X %02X %02X %02X (validation=%s)",
+                    buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], cache.CorsairValidated() ? "enabled" : "pending");
+            }
+            if(cache.Enabled() && cache.CorsairValidated() && percentage)
+            {
+                mouse_battery_seen = true;
+                cache.Publish(BatteryStatusManager::CorsairId, *percentage, -1,
+                    mouse_handed_back ? "idle" : "active");
+            }
         }
         if(count >= 5 && buffer[0] == 0 && buffer[1] == 1 && buffer[2] == 0x36)
         {
@@ -908,4 +956,31 @@ bool CorsairPeripheralV2Controller::ChangeMouseOwnership(bool software)
     }
     LOG_DEBUG("[%s] Mouse lighting %s", device_name.c_str(), software ? "software control restored" : "returned to firmware after inactivity");
     return true;
+}
+
+
+// No battery request is sent on the shared control stream. GET0F and GET40
+// replies cannot be distinguished after a timeout; passive notifications can.
+void CorsairPeripheralV2Controller::UpdateMouseBatteryState()
+{
+    if(!mouse_battery_target) { return; }
+    auto& cache = BatteryStatusManager::Get();
+    if(!cache.Enabled()) { return; }
+    if(!cache.CorsairValidated())
+    {
+        cache.SetState(BatteryStatusManager::CorsairId, "unavailable", "Receiver battery notifications require owner-hardware validation");
+    }
+    else if(!mouse_events || mouse_connection_sync || !mouse_inactivity_valid)
+    {
+        cache.SetState(BatteryStatusManager::CorsairId, "unavailable", "Native receiver state unavailable; no battery queries are sent");
+    }
+    else if(!mouse_connected)
+    {
+        cache.SetState(BatteryStatusManager::CorsairId, "disconnected", "Wireless child disconnected");
+    }
+    else
+    {
+        cache.SetState(BatteryStatusManager::CorsairId, mouse_battery_seen ? "active" : "unknown",
+            mouse_battery_seen ? "" : "Waiting for a validated receiver battery notification; no battery queries are sent");
+    }
 }

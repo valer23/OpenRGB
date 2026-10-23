@@ -1,0 +1,21 @@
+{
+  "capture": {
+    "localTime": "2026-10-19T14:21:55+02:00",
+    "mode": "SleepTest",
+    "sleepStateEstablished": false,
+    "ownerObservedWake": null,
+    "exclusiveAccess": true,
+    "queriesSent": 1,
+    "chargingQueried": false,
+    "asusServicesRestored": true,
+    "qualification": "Owner could not identify the pre-test sleep state or wake. This exchange is not no-wake evidence."
+  },
+  "snapshot": {
+    "device": "ASUS ROG Delta II",
+    "percentage": 100,
+    "charging": null,
+    "level_report_prefix": [204,18,7,0,0,5,100,20,1,0,0,0],
+    "automatic_polling_enabled": false,
+    "no_wake_validated": false
+  }
+}

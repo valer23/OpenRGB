@@ -173,6 +173,14 @@ HEADERS +=                                                                      
     NetworkClient.h                                                                             \
     NetworkProtocol.h                                                                           \
     NetworkServer.h                                                                             \
+    OpenRGBBatteryStatusInterface.h \
+    BatteryStatus/BatteryStatusManager.h \
+    BatteryStatus/BatteryMonitoringService.h \
+    BatteryStatus/AsusBatteryLog.h \
+    BatteryStatus/AsusBatteryMonitor.h \
+    BatteryStatus/AsusDeltaIIBattery.h \
+    BatteryStatus/BatteryProtocol.h \
+    BatteryStatus/WindowsHidTransfer.h \
     OpenRGBPluginInterface.h                                                                    \
     PluginManager.h                                                                             \
     ProfileManager.h                                                                            \
@@ -247,6 +255,12 @@ SOURCES +=                                                                      
     NetworkClient.cpp                                                                           \
     NetworkProtocol.cpp                                                                         \
     NetworkServer.cpp                                                                           \
+    BatteryStatus/BatteryStatusManager.cpp \
+    BatteryStatus/BatteryMonitoringService.cpp \
+    BatteryStatus/AsusBatteryLog.cpp \
+    BatteryStatus/AsusBatteryMonitor.cpp \
+    BatteryStatus/AsusDeltaIIBattery.cpp \
+    BatteryStatus/WindowsHidTransfer.cpp \
     OpenRGBPluginAPI.cpp                                                                        \
     PluginManager.cpp                                                                           \
     ProfileManager.cpp                                                                          \
@@ -368,6 +382,8 @@ win32:SOURCES +=                                                                
     wmi/wmi.cpp                                                                                 \
     AutoStart/AutoStart-Windows.cpp                                                             \
     startup/main_Windows.cpp                                                                    \
+
+win32:LIBS += -lhid -lsetupapi
 
 win32:HEADERS += $$CONTROLLER_H_WINDOWS
 
