@@ -29,7 +29,7 @@ try {
     }
     if(Test-Path -LiteralPath (Join-Path $PSScriptRoot 'asus_neo_test.cpp')) {
         $exe = Join-Path $testOutput 'asus-neo.exe'
-        & $Compiler -Idependencies/hidapi-hotplug-win/include @common -IControllers/AsusAuraUSBController/AsusAuraNeoController tests/driver-regressions/asus_neo_test.cpp Controllers/AsusAuraUSBController/AsusAuraNeoController/RGBController_AsusAuraNeo_Windows.cpp -o $exe
+        & $Compiler -DASUS_NEO_SHUTDOWN_TRIAL -Idependencies/hidapi-hotplug-win/include @common -IControllers/AsusAuraUSBController/AsusAuraNeoController tests/driver-regressions/asus_neo_test.cpp Controllers/AsusAuraUSBController/AsusAuraNeoController/RGBController_AsusAuraNeo_Windows.cpp -o $exe
         if($LASTEXITCODE -ne 0) {throw 'ASUS NEO regression test compilation failed.'}
         & $exe
         if($LASTEXITCODE -ne 0) {throw 'ASUS NEO regression tests failed.'}

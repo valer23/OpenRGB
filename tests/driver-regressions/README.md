@@ -25,6 +25,14 @@ transfers at every setup/colour stage, retry setup, and callback bounds.
 The Windows hotplug HIDAPI include supplies the control output-report API.
 No tests access lighting devices.
 
+The shutdown extension additionally checks staged/default settings, exact
+captured Static-blue standby packets, advertised effect filtering, route and
+length validation, bounded stale-input handling, competing-reader refusal,
+all six captured effects, retained parameters, partial writes and failed
+readback. The runner enables `ASUS_NEO_SHUTDOWN_TRIAL` for this offline test.
+Compile the same test without that define to verify normal builds also refuse
+an explicit SDK save. The tests do not prove UI rendering or S5 persistence.
+
 The separate `pawnio_port_test.py` takes the production PawnIO source path,
 MinGW compiler path and temporary output directory as its three arguments.
 It compiles the actual PIIX4 port selection and registration blocks against

@@ -11,6 +11,41 @@
 #include "DetectionManager.h"
 #include "RGBController_AsusAuraNeo_Windows.h"
 #include <memory>
+#include <windows.h>
+#include <tlhelp32.h>
+
+bool AsusAuraNeoHasCompetingLighting()
+{
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if(snapshot == INVALID_HANDLE_VALUE)
+    {
+        return true;
+    }
+
+    PROCESSENTRY32W entry = {};
+    entry.dwSize = sizeof(entry);
+    bool competing = false;
+    if(!Process32FirstW(snapshot, &entry))
+    {
+        CloseHandle(snapshot);
+        return true;
+    }
+    do
+    {
+        if(lstrcmpiW(entry.szExeFile, L"LightingService.exe") == 0 ||
+           lstrcmpiW(entry.szExeFile, L"AsusMBManager.exe") == 0)
+        {
+            competing = true;
+            break;
+        }
+    } while(Process32NextW(snapshot, &entry));
+    if(!competing && GetLastError() != ERROR_NO_MORE_FILES)
+    {
+        competing = true;
+    }
+    CloseHandle(snapshot);
+    return competing;
+}
 
 DetectedControllers DetectAsusAuraNeo(hid_device_info* info, const std::string&)
 {
