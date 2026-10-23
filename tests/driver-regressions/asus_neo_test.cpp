@@ -22,6 +22,10 @@ static int fail_at = -1;
 static int failure_result = -1;
 static unsigned int closes = 0;
 static bool competing = false;
+static unsigned int service_calls = 0;
+static unsigned int service_effect = 0;
+static unsigned int service_rgb = 0;
+static bool service_success = true;
 static bool reply_pending = false;
 static int fault = 0;
 static unsigned int stale_remaining = 0;
@@ -37,6 +41,14 @@ static unsigned char unit_state[2][64] =
 bool AsusAuraNeoHasCompetingLighting()
 {
     return competing;
+}
+
+bool AsusAuraNeoSaveViaService(unsigned int effect, unsigned int rgb)
+{
+    service_calls++;
+    service_effect = effect;
+    service_rgb = rgb;
+    return service_success;
 }
 
 extern "C" int hid_send_output_report(hid_device*, const unsigned char* data, size_t length)
@@ -284,8 +296,51 @@ int main()
         controller.configuration = config.dump();
         controller.DeviceSaveMode();
         assert(sent.empty()); // Includes explicit SDK SaveMode in a normal build.
+        config["configuration"]["shutdown_writer"] = "ASUS service";
+        controller.configuration = config.dump();
+        controller.DeviceSaveMode();
+        assert(service_calls == 0 && sent.empty());
         assert((controller.modes[0].flags & MODE_FLAG_MANUAL_SAVE) == 0);
     }
+#endif
+
+#ifdef ASUS_NEO_SHUTDOWN_TRIAL
+    {
+        sent.clear();
+        RGBController_AsusAuraNeo controller(handle, "test-path");
+        nlohmann::json config = nlohmann::json::parse(controller.configuration);
+        config["configuration"]["shutdown_writer"] = "ASUS service";
+        controller.configuration = config.dump();
+        controller.DeviceSaveMode();
+        assert(service_calls == 0 && sent.empty()); // Leave unchanged guards both writers.
+        config["configuration"]["shutdown_effect"] = "Static";
+        config["configuration"]["shutdown_color"] = "A600FF";
+        controller.configuration = config.dump();
+        competing = true; // ASUS owns the receiver; use its service without direct HID.
+        controller.DeviceSaveMode();
+        assert(service_calls == 1 && service_effect == 1 && service_rgb == 0xA600FF && sent.empty());
+        service_success = false;
+        controller.DeviceSaveMode();
+        assert(service_calls == 2 && sent.empty()); // Never fall back after service failure.
+        service_success = true;
+        config["configuration"]["shutdown_effect"] = "Off";
+        config["configuration"]["shutdown_color"] = "ignored for Off";
+        controller.configuration = config.dump();
+        controller.DeviceSaveMode();
+        assert(service_calls == 3 && service_effect == 0 && service_rgb == 0 && sent.empty());
+        competing = false;
+        config["configuration"]["shutdown_writer"] = "invalid";
+        controller.configuration = config.dump();
+        controller.DeviceSaveMode();
+        assert(service_calls == 3 && sent.empty());
+        config["configuration"]["shutdown_effect"] = "Static";
+        config["configuration"]["shutdown_color"] = "FF0000";
+        config["configuration"]["shutdown_writer"] = 7;
+        controller.configuration = config.dump();
+        controller.DeviceSaveMode();
+        assert(service_calls == 3 && sent.empty());
+    }
+    logged_errors = 0;
 #endif
 
     // Every partial initialization/colour failure stops the remaining sequence.

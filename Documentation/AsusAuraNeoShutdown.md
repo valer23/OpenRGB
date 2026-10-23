@@ -12,6 +12,17 @@ Cancel leaves the value unchanged. Defaults are **Leave unchanged** and
 red. Accepting these settings stores them in Configuration.json. It does not
 write standby settings, including when configuration is reloaded at startup.
 
+**Shutdown writer** explicitly chooses **Direct device** (the default) or
+**ASUS service**. Older configurations retain Direct device. There is no
+automatic fallback between writers. Both apply only on Save To Device.
+The ASUS service writer requires LightingService already running and updates
+its saved Non-S0 preference through the same COM SetProfile route used by
+ASUS's motherboard SDK. It opens no HID reader and starts/stops no service.
+The saved profile is checked afterward, including preservation of the live
+S0 profile. A successful service call alone does not prove physical shutdown
+behaviour. Direct device remains useful without ASUS installed, but ASUS's
+startup restoration may overwrite a direct device save.
+
 In the trial build, **Save To Device** explicitly applies the staged shutdown
 settings. It does not copy the running mode or colour into standby. The six
 captured effects are Static, Breathing, Strobing, Color cycle, Rainbow and
@@ -26,7 +37,7 @@ seventh firmware effect: observed ASUS traffic uses shared effect group 0,
 with separate colours for units 0 and 1. Independent per-output effects,
 speed controls and per-header ARGB colour/effect controls are outside this trial.
 
-The save path uses the existing HID handle and core SaveMode locks. It refuses
+The direct save path uses the existing HID handle and core SaveMode locks. It refuses
 known ASUS motherboard lighting processes (LightingService.exe and
 AsusMBManager.exe), or an unavailable process inventory, without stopping
 anything. This is a conservative process check, not an exclusive device lock
@@ -64,6 +75,16 @@ the existing live activation 41 21 00 01. No ID00-as-Off assumption is used.
 Validation is reported separately for production compilation, automated
 protocol/lifecycle tests, actual application/UI integration and physical
 hardware behaviour. Compilation and mocked readback do not prove power-off
-persistence. The first physical test must separately establish that the selected
-effect survives shutdown, normal lighting is unchanged, and restoring Rainbow
-works. No automatic shutdown or reboot is part of the implementation.
+persistence. On 23 October 2026, the owner applied Off in trial revision
+0791f856 and reported that the logo remained dark for 20 minutes while shut
+down. After boot, LightingService was Running/Automatic, and Fan Control and
+the usual installed OpenRGB Custom were running. On a second shutdown without
+reapplying, the owner reported that the logo returned to Rainbow. Persistence
+across the intervening boot therefore failed; the source of the reset is not
+fully isolated. ASUS's startup log shows enabled standby lighting and the
+saved Non-S0 Rainbow profile being restored. A one-time Off save through its
+service subsequently changed both saved standby modes to 101 (Off), with
+the live S0 profile unchanged. Service-path physical persistence remains to
+be tested. Keep the trial gate in place. Other
+effects, unrelated standby headers and restoring Rainbow still need physical
+verification. No automatic shutdown or reboot is part of the implementation.

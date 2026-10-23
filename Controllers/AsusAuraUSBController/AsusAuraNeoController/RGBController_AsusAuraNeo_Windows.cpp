@@ -9,6 +9,7 @@
 | SPDX-License-Identifier: GPL-2.0-or-later                 |
 \*---------------------------------------------------------*/
 #include "RGBController_AsusAuraNeo_Windows.h"
+#include "AsusAuraNeoService_Windows.h"
 #include "LogManager.h"
 #include <chrono>
 #include <thread>
@@ -65,7 +66,7 @@ RGBController_AsusAuraNeo::RGBController_AsusAuraNeo(hid_device* handle, const s
     settings["schema"]["shutdown_effect"] =
     {
         {"title", "Shutdown effect (experimental)"}, {"type", "string"}, {"order", 0},
-        {"description", "Stage a shutdown effect, then use Save To Device to apply. Off mirrors ASUS's motherboard standby switch, which may also affect motherboard-connected ARGB. Leave unchanged sends no commands. No service is stopped. Power-off persistence is not yet verified."},
+        {"description", "Stage a shutdown effect, then use Save To Device to apply. Off mirrors ASUS's motherboard standby switch, which may also affect motherboard-connected ARGB. Leave unchanged sends no commands. No service is stopped. Persistence across boot remains experimental."},
         {"enum", {"Leave unchanged", "Off", "Static", "Breathing", "Strobing", "Color cycle", "Rainbow", "Starry Night"}}
     };
     settings["schema"]["shutdown_color"] =
@@ -73,8 +74,15 @@ RGBController_AsusAuraNeo::RGBController_AsusAuraNeo(hid_device* handle, const s
         {"title", "Shutdown colour (RRGGBB)"}, {"type", "string"}, {"format", "color"}, {"order", 1},
         {"description", "Choose a colour or enter six hexadecimal digits, for example FF0000 for red. Shared by both onboard outputs and independent of the running colour. Ignored for Off."}
     };
+    settings["schema"]["shutdown_writer"] =
+    {
+        {"title", "Shutdown writer"}, {"type", "string"}, {"order", 2},
+        {"description", "ASUS service updates the running LightingService's saved shutdown preference without direct USB access. Direct device requires ASUS motherboard lighting to be inactive; ASUS may overwrite it on startup. Neither writer starts/stops services or falls back to the other writer. Settings loads send no commands."},
+        {"enum", {"Direct device", "ASUS service"}}
+    };
     settings["configuration"]["shutdown_effect"] = "Leave unchanged";
     settings["configuration"]["shutdown_color"] = "FF0000";
+    settings["configuration"]["shutdown_writer"] = "Direct device";
     configuration = settings.dump();
 }
 
@@ -272,6 +280,7 @@ void RGBController_AsusAuraNeo::DeviceSaveMode()
     static const unsigned char effect_ids[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x0D, 0x01};
     std::string effect_name;
     std::string color_text;
+    std::string writer;
     try
     {
         nlohmann::json settings = nlohmann::json::parse(configuration).at("configuration");
@@ -281,6 +290,7 @@ void RGBController_AsusAuraNeo::DeviceSaveMode()
             return;
         }
         color_text = effect_name == "Off" ? "000000" : settings.at("shutdown_color").get<std::string>();
+        writer = settings.value("shutdown_writer", std::string("Direct device"));
     }
     catch(...)
     {
@@ -313,6 +323,16 @@ void RGBController_AsusAuraNeo::DeviceSaveMode()
             return;
         }
         rgb = (rgb << 4) | digit;
+    }
+    if(writer == "ASUS service")
+    {
+        AsusAuraNeoSaveViaService(effect_name == "Off" ? 0 : effect_ids[effect], rgb);
+        return;
+    }
+    if(writer != "Direct device")
+    {
+        LOG_ERROR("[ASUS Aura NEO] Unknown shutdown writer; no commands sent");
+        return;
     }
     if(AsusAuraNeoHasCompetingLighting())
     {

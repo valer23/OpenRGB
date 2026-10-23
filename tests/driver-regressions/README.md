@@ -35,6 +35,11 @@ the transition test verifies that selecting an effect after Off enables standby
 again, and that Off ignores an unused invalid colour field.
 Compile the same test without that define to verify normal builds also refuse
 an explicit SDK save. The tests do not prove UI rendering or S5 persistence.
+Writer-selection tests also verify that ASUS service saves send no HID queries,
+service failures never trigger direct fallback, Leave unchanged suppresses both
+writers, and invalid writer settings fail before any I/O. These tests mock the
+service boundary; Windows COM integration and saved-profile behaviour are
+verified separately.
 
 The separate `pawnio_port_test.py` takes the production PawnIO source path,
 MinGW compiler path and temporary output directory as its three arguments.
