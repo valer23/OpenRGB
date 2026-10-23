@@ -27,7 +27,7 @@ Capture identities:
 
 `AuraSdk_x64.dll` SHA256 `83709fec9e2210eb41d2be905211ae2bafedeec5d19c7f3f9b88d57186afec96` implements headset-type ownership (`40000`), but Enumerate activates HALs before filtering and the headset HAL opens its own receiver reader. Thus ordinary SDK enumeration does not yet meet the existing-owner requirement.
 
-LightingService's SetLedMatrix path targets other device types. The Armoury HTTP framework checks related/trusted callers. Neither is an approved headset integration path. No ownership bypass or global Aura takeover is implemented.
+LightingService's SetLedMatrix path targets other device types. SetScript calls AllExecuterStop and starts its global sync engine, so it is also excluded from headset-only control. The Armoury HTTP framework checks related/trusted callers. Neither is an approved headset integration path. No ownership bypass or global Aura takeover is implemented.
 
 ## Remaining gates
 

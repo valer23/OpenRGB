@@ -76,15 +76,15 @@ if($LASTEXITCODE -ne 0){throw 'ASUS log reader tests failed'}
 if($LASTEXITCODE -ne 0){throw 'Windows HID transport test compilation failed'}
 & "$buildRoot\windows_hid_transfer_test.exe"
 if($LASTEXITCODE -ne 0){throw 'Windows HID transport tests failed'}
-& "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' '-Idependencies/json' tests/battery-status/monitoring_service_test.cpp BatteryStatus/BatteryStatusManager.cpp BatteryStatus/AsusBatteryMonitor.cpp BatteryStatus/BatteryMonitoringService.cpp BatteryStatus/AsusBatteryLog.cpp BatteryStatus/AsusDeltaIIBattery.cpp BatteryStatus/WindowsHidTransfer.cpp -lhid -lsetupapi -ladvapi32 -o "$buildRoot\monitoring_service_test.exe"
+& "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' '-Idependencies/json' tests/battery-status/monitoring_service_test.cpp BatteryStatus/BatteryStatusManager.cpp BatteryStatus/AsusBatteryMonitor.cpp BatteryStatus/BatteryMonitoringService.cpp BatteryStatus/AsusBatteryLog.cpp BatteryStatus/AsusDeltaIIBattery.cpp Controllers/AsusAuraUSBController/AsusDeltaIIController/AsusDeltaIIReceiver_Windows.cpp BatteryStatus/WindowsHidTransfer.cpp -lhid -lsetupapi -ladvapi32 -o "$buildRoot\monitoring_service_test.exe"
 if($LASTEXITCODE -ne 0){throw 'Core monitoring service test compilation failed'}
 & "$buildRoot\monitoring_service_test.exe"
 if($LASTEXITCODE -ne 0){throw 'Core monitoring service tests failed'}
-& "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' '-Idependencies/json' tests/battery-status/validation_gate_test.cpp BatteryStatus/AsusDeltaIIBattery.cpp BatteryStatus/WindowsHidTransfer.cpp -lhid -lsetupapi -o "$buildRoot\validation_gate_test.exe"
+& "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' '-Idependencies/json' tests/battery-status/validation_gate_test.cpp BatteryStatus/AsusDeltaIIBattery.cpp Controllers/AsusAuraUSBController/AsusDeltaIIController/AsusDeltaIIReceiver_Windows.cpp BatteryStatus/WindowsHidTransfer.cpp -lhid -lsetupapi -o "$buildRoot\validation_gate_test.exe"
 if($LASTEXITCODE -ne 0){throw 'Validation gate test compilation failed'}
 & "$buildRoot\validation_gate_test.exe"
 if($LASTEXITCODE -ne 0){throw 'Validation gate test failed'}
-& "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' '-Idependencies/json' scripts/BatteryStatusProbe.cpp BatteryStatus/AsusDeltaIIBattery.cpp BatteryStatus/WindowsHidTransfer.cpp -lhid -lsetupapi -o "$buildRoot\BatteryStatusProbe.exe"
+& "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' '-Idependencies/json' scripts/BatteryStatusProbe.cpp BatteryStatus/AsusDeltaIIBattery.cpp Controllers/AsusAuraUSBController/AsusDeltaIIController/AsusDeltaIIReceiver_Windows.cpp BatteryStatus/WindowsHidTransfer.cpp -lhid -lsetupapi -o "$buildRoot\BatteryStatusProbe.exe"
 if($LASTEXITCODE -ne 0){throw 'Validation probe compilation failed'}
 
 & "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra @driverIncludes tests/battery-status/review_safety_test.cpp "$buildRoot\CorsairUnderTest.cpp" BatteryStatus/BatteryStatusManager.cpp -o "$buildRoot\review_safety_test.exe"
