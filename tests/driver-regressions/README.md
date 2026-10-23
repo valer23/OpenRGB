@@ -29,12 +29,11 @@ The shutdown extension additionally checks staged/default settings, exact
 captured Static-blue standby packets, advertised effect filtering, route and
 length validation, bounded stale-input handling, competing-reader refusal,
 all six captured effects, retained parameters, partial writes and failed
-readback. The runner enables `ASUS_NEO_SHUTDOWN_TRIAL` for this offline test.
+readback. These checks exercise the normal explicit-save entry point.
 The separate Off fixture matches all four captured disable/Static-black writes;
 the transition test verifies that selecting an effect after Off enables standby
 again, and that Off ignores an unused invalid colour field.
-Compile the same test without that define to verify normal builds also refuse
-an explicit SDK save. The tests do not prove UI rendering or S5 persistence.
+The tests do not prove UI rendering or S5 persistence.
 Writer-selection tests also verify that ASUS service saves send no HID queries,
 service failures never trigger direct fallback, Leave unchanged suppresses both
 writers, and invalid writer settings fail before any I/O. These tests mock the

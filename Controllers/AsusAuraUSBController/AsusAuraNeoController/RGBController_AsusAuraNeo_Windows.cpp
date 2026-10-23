@@ -25,8 +25,8 @@
     @effects :o:
     @detectors DetectAsusAuraNeo
     @comment Windows only. Static onboard-logo colour streaming is supported.
-             Experimental shutdown effects require explicit Save To Device.
-             Shutdown persistence awaits physical verification. ARGB headers
+             Shutdown effects require explicit Save To Device. ASUS-service Off
+             persistence is owner-verified across two shutdowns. ARGB headers
              and independent per-output effects are unsupported.
              Avoid simultaneous ASUS LightingService lighting control.
 \*-------------------------------------------------------------------*/
@@ -44,10 +44,7 @@ RGBController_AsusAuraNeo::RGBController_AsusAuraNeo(hid_device* handle, const s
     static_mode.name       = "Static";
     static_mode.value      = 0;
     static_mode.flags      = MODE_FLAG_HAS_PER_LED_COLOR;
-#ifdef ASUS_NEO_SHUTDOWN_TRIAL
-    /* Explicit trial opt-in until physical S5 persistence is verified. */
     static_mode.flags     |= MODE_FLAG_MANUAL_SAVE;
-#endif
     static_mode.color_mode = MODE_COLORS_PER_LED;
     modes.push_back(static_mode);
     zone logo;
@@ -267,10 +264,6 @@ bool RGBController_AsusAuraNeo::Query(const Report& request, Report& response)
 
 void RGBController_AsusAuraNeo::DeviceSaveMode()
 {
-#ifndef ASUS_NEO_SHUTDOWN_TRIAL
-    LOG_WARNING("[ASUS Aura NEO] Shutdown apply is disabled outside the experimental trial build");
-    return;
-#endif
     /*-----------------------------------------------------*\
     | Settings/profile loads only stage JSON. Standby I/O   |
     | belongs exclusively to this explicit, core-locked    |

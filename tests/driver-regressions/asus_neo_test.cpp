@@ -151,6 +151,7 @@ int main()
     hid_device* handle = reinterpret_cast<hid_device*>(1);
     {
         RGBController_AsusAuraNeo controller(handle, "test-path");
+        assert((controller.modes[0].flags & MODE_FLAG_MANUAL_SAVE) != 0);
         assert(sent.empty()); // Detection is read-only.
         assert(controller.zones.size() == 1 && controller.colors.size() == 1);
         assert(controller.modes.size() == 1 && controller.modes[0].name == "Static");
@@ -182,7 +183,6 @@ int main()
     }
     assert(closes == 1);
 
-#ifdef ASUS_NEO_SHUTDOWN_TRIAL
     // Staging/default/reloading settings never touches hardware. Save is the
     // only standby path and refuses invalid input or an active ASUS reader.
     fail_at = -1;
@@ -287,24 +287,8 @@ int main()
         fault = 0;
     }
     logged_errors = 0;
-#else
-    sent.clear();
-    {
-        RGBController_AsusAuraNeo controller(handle, "test-path");
-        nlohmann::json config = nlohmann::json::parse(controller.configuration);
-        config["configuration"]["shutdown_effect"] = "Static";
-        controller.configuration = config.dump();
-        controller.DeviceSaveMode();
-        assert(sent.empty()); // Includes explicit SDK SaveMode in a normal build.
-        config["configuration"]["shutdown_writer"] = "ASUS service";
-        controller.configuration = config.dump();
-        controller.DeviceSaveMode();
-        assert(service_calls == 0 && sent.empty());
-        assert((controller.modes[0].flags & MODE_FLAG_MANUAL_SAVE) == 0);
-    }
-#endif
 
-#ifdef ASUS_NEO_SHUTDOWN_TRIAL
+
     {
         sent.clear();
         RGBController_AsusAuraNeo controller(handle, "test-path");
@@ -341,7 +325,6 @@ int main()
         assert(service_calls == 3 && sent.empty());
     }
     logged_errors = 0;
-#endif
 
     // Every partial initialization/colour failure stops the remaining sequence.
     // A short positive transfer is also a failure, not just a negative return.

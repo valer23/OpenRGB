@@ -23,10 +23,10 @@ S0 profile. A successful service call alone does not prove physical shutdown
 behaviour. Direct device remains useful without ASUS installed, but ASUS's
 startup restoration may overwrite a direct device save.
 
-In the trial build, **Save To Device** explicitly applies the staged shutdown
+**Save To Device** explicitly applies the staged shutdown
 settings. It does not copy the running mode or colour into standby. The six
 captured effects are Static, Breathing, Strobing, Color cycle, Rainbow and
-Starry Night, alongside **Off**. Off sends the captured standby-disable command
+Starry Night, alongside **Off**. In Direct device mode, Off sends the captured standby-disable command
 followed by Static black on both units; the colour field is ignored. Enabled
 effects send standby-enable first, so switching back from Off is explicit.
 The enable/disable command is a motherboard standby switch without an output
@@ -53,9 +53,9 @@ Malformed/short transfers stop dependent commands. A failed
 later write can leave a partial change; no automatic rollback is attempted.
 Results and refusals are reported in the OpenRGB log.
 
-`ASUS_NEO_SHUTDOWN_TRIAL` must be defined to enable both the Save UI flag and
-the write entry point, including SDK calls. Normal builds cannot apply these
-settings. Keep the gate until physical power-off persistence is verified.
+Normal builds expose explicit saving. Settings and profile loads still send no
+standby commands. Direct-device persistence without ASUS startup restoration
+has not been independently tested across multiple boots.
 
 ## Evidence and validation
 
@@ -84,7 +84,10 @@ across the intervening boot therefore failed; the source of the reset is not
 fully isolated. ASUS's startup log shows enabled standby lighting and the
 saved Non-S0 Rainbow profile being restored. A one-time Off save through its
 service subsequently changed both saved standby modes to 101 (Off), with
-the live S0 profile unchanged. Service-path physical persistence remains to
-be tested. Keep the trial gate in place. Other
+the live S0 profile unchanged. The owner then saved Off through the application's
+ASUS service writer in revision 7759297e and reported that the logo stayed Off
+during two full shutdowns, with a normal Windows/ASUS boot between them and no
+reapply. Off persistence through ASUS startup is therefore physically verified
+for this board and installation. Other
 effects, unrelated standby headers and restoring Rainbow still need physical
 verification. No automatic shutdown or reboot is part of the implementation.
