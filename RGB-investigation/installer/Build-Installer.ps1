@@ -13,6 +13,7 @@ foreach($name in @('generic','iconengines','imageformats','networkinformation','
 $settings=Join-Path $payload 'Settings'
 New-Item -ItemType Directory -Path (Join-Path $settings 'plugins'),(Join-Path $settings 'profiles') -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $AppRoot 'Settings\plugins\OpenRGBEffectsPlugin.dll') -Destination (Join-Path $settings 'plugins') -Force
+Copy-Item -LiteralPath (Join-Path $AppRoot 'Settings\plugins\OpenRGBBatteryStatusPlugin.dll') -Destination (Join-Path $settings 'plugins') -Force
 Copy-Item -LiteralPath (Join-Path $AppRoot 'Settings\OpenRGB.json') -Destination $settings -Force
 Get-ChildItem -LiteralPath (Join-Path $AppRoot 'Settings\profiles') -Filter '*.json' -File | Copy-Item -Destination (Join-Path $settings 'profiles') -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Configure-Startup.ps1') -Destination $payload -Force

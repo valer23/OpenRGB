@@ -1,4 +1,4 @@
-#define AppVersion "1.0.20261020.1"
+#define AppVersion "1.0.20261023.1"
 [Setup]
 AppId={{8972A52B-C337-48F8-9E74-82CE6AD51A29}
 AppName=OpenRGB Custom
@@ -24,6 +24,7 @@ InfoBeforeFile=INSTALL-NOTES.txt
 [Files]
 Source: "payload\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "Settings\*"
 Source: "payload\Settings\plugins\OpenRGBEffectsPlugin.dll"; DestDir: "{app}\Settings\plugins"; Flags: ignoreversion
+Source: "payload\Settings\plugins\OpenRGBBatteryStatusPlugin.dll"; DestDir: "{app}\Settings\plugins"; Flags: ignoreversion
 Source: "payload\Settings\OpenRGB.json"; DestDir: "{app}\Settings"; Flags: onlyifdoesntexist uninsneveruninstall
 Source: "payload\Settings\profiles\*.json"; DestDir: "{app}\Settings\profiles"; Flags: onlyifdoesntexist uninsneveruninstall
 

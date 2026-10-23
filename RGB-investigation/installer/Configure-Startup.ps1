@@ -64,4 +64,4 @@ $trigger = New-ScheduledTaskTrigger -AtLogOn -User $user
 $trigger.Delay = 'PT30S'
 $principal = New-ScheduledTaskPrincipal -UserId $identity.User.Value -LogonType Interactive -RunLevel Highest
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
-Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'OpenRGB Custom lighting; restores ASUS LightingService on exit.' -Force | Out-Null
+Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'OpenRGB Custom with battery plugin; uses saved startup profile and leaves vendor services running.' -Force | Out-Null

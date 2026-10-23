@@ -153,6 +153,7 @@ bool OpenRGBDialog::IsMinimizeOnClose()
 OpenRGBDialog::OpenRGBDialog(QWidget *parent) : QMainWindow(parent), ui(new Ui::OpenRGBDialog)
 {
     ui->setupUi(this);
+    setWindowTitle("OpenRGB Custom");
 
 #ifdef __APPLE__
     /*-----------------------------------------------------*\
@@ -413,7 +414,7 @@ OpenRGBDialog::OpenRGBDialog(QWidget *parent) : QMainWindow(parent), ui(new Ui::
 
     connect(trayIcon,SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(on_ReShow(QSystemTrayIcon::ActivationReason)));
 
-    trayIcon->setToolTip("OpenRGB");
+    trayIcon->setToolTip("OpenRGB Custom");
     trayIcon->setContextMenu(trayMenu);
 
     /*-----------------------------------------------------*\
