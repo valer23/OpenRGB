@@ -128,6 +128,7 @@ nlohmann::json AsusBatteryLog::Parse(const std::string& text,uint64_t now_ms)
 {
     json latest=nullptr,sample=nullptr;
     uint64_t latest_time=0,sample_time=0;
+    bool latest_conflict=false,sample_conflict=false;
     size_t offset=0,records=0;
     while(offset<text.size() && records++<2048)
     {
@@ -149,10 +150,25 @@ nlohmann::json AsusBatteryLog::Parse(const std::string& text,uint64_t now_ms)
         if(msg.value("cmd",json())!="10200" || msg.value("modelNumber",json())!="6906" ||
            !msg.contains("powerStatus") || !msg["powerStatus"].is_number_integer() ||
            msg["powerStatus"] < -2 || msg["powerStatus"] > 100) { continue; }
-        if(!latest.is_null() && *stamp==latest_time && latest!=msg) { return Missing("Conflicting ASUS cache reports at one timestamp"); }
-        if(latest.is_null() || *stamp>latest_time) { latest=msg;latest_time=*stamp; }
-        if(msg["powerStatus"]>=0 && (sample.is_null() || *stamp>sample_time)) { sample=msg;sample_time=*stamp; }
+        // Compare only fields consumed by this provider. ASUS may broadcast the
+        // same measurement twice, adding unrelated metadata such as isHPC.
+        const auto boolean=[&msg](const char* key)->json {
+            const auto found=msg.find(key);
+            return found!=msg.end() && found->is_boolean() ? *found : json(nullptr);
+        };
+        const json report={{"powerStatus",msg["powerStatus"]},
+            {"isCharging",boolean("isCharging")},{"isDeviceAlive",boolean("isDeviceAlive")}};
+        if(latest.is_null() || *stamp>latest_time)
+        { latest=report;latest_time=*stamp;latest_conflict=false; }
+        else if(*stamp==latest_time && latest!=report) { latest_conflict=true; }
+        if(msg["powerStatus"]>=0)
+        {
+            if(sample.is_null() || *stamp>sample_time)
+            { sample=report;sample_time=*stamp;sample_conflict=false; }
+            else if(*stamp==sample_time && sample!=report) { sample_conflict=true; }
+        }
     }
+    if(latest_conflict || sample_conflict) { return Missing("Conflicting ASUS cache reports at one timestamp"); }
     if(sample.is_null()) { return Missing("No complete Delta II battery report in the existing ASUS logs"); }
     const auto charge=sample.find("isCharging");
     const bool offline=latest.contains("isDeviceAlive") && latest["isDeviceAlive"]==false;
