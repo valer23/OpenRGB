@@ -13,6 +13,8 @@
 #include <chrono>
 #include <thread>
 
+#define ASUS_NEO_STALE_REPORT_LIMIT 128
+
 /**------------------------------------------------------------------*\
     @name ASUS ROG STRIX B850-F GAMING WIFI7 NEO (logo)
     @category Motherboard
@@ -188,19 +190,25 @@ bool RGBController_AsusAuraNeo::Query(const Report& request, Report& response)
     | Use this controller's handle under the core's lock.   |
     | Drain stale input with a bound; never start a reader. |
     \*-----------------------------------------------------*/
-    for(unsigned int i = 0; i < 16; i++)
+    for(unsigned int i = 0; i < ASUS_NEO_STALE_REPORT_LIMIT; i++)
     {
         int length = hid_read_timeout(device, response.data(), response.size(), 0);
         if(length < 0)
         {
+            LOG_ERROR("[ASUS Aura NEO] Input drain failed before query 0x%02X", request[1]);
             return false;
         }
         if(length == 0)
         {
+            if(i != 0)
+            {
+                LOG_INFO("[ASUS Aura NEO] Drained %u queued input reports before query 0x%02X", i, request[1]);
+            }
             break;
         }
-        if(i == 15)
+        if(i == ASUS_NEO_STALE_REPORT_LIMIT - 1)
         {
+            LOG_ERROR("[ASUS Aura NEO] Input queue still busy after %u reports; query 0x%02X not sent", ASUS_NEO_STALE_REPORT_LIMIT, request[1]);
             return false;
         }
     }
@@ -208,11 +216,13 @@ bool RGBController_AsusAuraNeo::Query(const Report& request, Report& response)
     {
         return false;
     }
+    unsigned int received = 0;
     for(unsigned int i = 0; i < 16; i++)
     {
         int length = hid_read_timeout(device, response.data(), response.size(), 40);
         if(length < 0)
         {
+            LOG_ERROR("[ASUS Aura NEO] Input read failed for query 0x%02X", request[1]);
             return false;
         }
         if(length == 0)
@@ -221,12 +231,28 @@ bool RGBController_AsusAuraNeo::Query(const Report& request, Report& response)
         }
         if(length != (int)response.size())
         {
+            LOG_ERROR("[ASUS Aura NEO] Query 0x%02X reply length %d; expected %u", request[1], length, (unsigned int)response.size());
             return false;
         }
+        received++;
         if(response[0] == 0x41 && response[1] == (request[1] | 0x80) && response[2] == request[2])
         {
-            return request[1] == 0x09 || response[3] == request[3];
+            if(request[1] != 0x09 && response[3] != request[3])
+            {
+                LOG_ERROR("[ASUS Aura NEO] Query 0x%02X reply state %u; expected %u", request[1], response[3], request[3]);
+                return false;
+            }
+            return true;
         }
+    }
+    if(received == 0)
+    {
+        LOG_ERROR("[ASUS Aura NEO] No input reply for query 0x%02X after bounded wait", request[1]);
+    }
+    else
+    {
+        LOG_ERROR("[ASUS Aura NEO] No matching reply for query 0x%02X (%u reports; last prefix %02X %02X %02X %02X)",
+                  request[1], received, response[0], response[1], response[2], response[3]);
     }
     return false;
 }

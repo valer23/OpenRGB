@@ -200,9 +200,10 @@ int main()
         config["configuration"]["shutdown_effect"] = "Static";
         config["configuration"]["shutdown_color"] = "0000FF";
         controller.configuration = config.dump();
-        stale_remaining = 16;
+        stale_remaining = 128;
         controller.DeviceSaveMode();
         assert(sent.empty());
+        stale_remaining = 64; // A backlog larger than the original 16-report cap.
         controller.DeviceSaveMode();
         assert(sent.size() == 11);
         const unsigned char commands[] = {9, 0x25, 0x29, 0x29, 0x21, 0x23, 0x28, 0x28, 0x25, 0x29, 0x29};
