@@ -1,0 +1,12 @@
+{
+  "source": {"capture": "delta-lighting-20261024-001919.pcap", "date": "2026-10-24", "vid": "0B05", "pid": "1AFA", "scope": "Owner-driven built-in mode changes; no direct animation or sleep validation", "acknowledgement": "Matching command echoes; capture also contains queued replies for other keys. No sequence number proves one-to-one attribution."},
+  "samples": [
+    {"step": "Choose Static RED (FF0000), brightness 100. Apply if offered. Wait 3 seconds, then Enter", "request": [204, 81, 40, 0, 0, 1, 100, 255, 0, 0, 0, 0], "reply": [204, 81, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0], "request_bytes": 64, "reply_bytes": 64},
+    {"step": "Keep Static and choose BLUE (0000FF). Apply if offered. Wait 3 seconds, then Enter", "request": [204, 81, 40, 0, 0, 1, 100, 0, 0, 255, 0, 0], "reply": [204, 81, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0], "request_bytes": 64, "reply_bytes": 64},
+    {"step": "Select Breathing, keep colour/brightness. Apply if offered. Wait 3 seconds, then Enter", "request": [204, 81, 40, 0, 0, 2, 50, 89, 0, 164, 0, 0], "reply": [204, 81, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0], "request_bytes": 64, "reply_bytes": 64},
+    {"step": "Select Strobing, keep colour/brightness. Apply if offered. Wait 3 seconds, then Enter", "request": [204, 81, 40, 0, 0, 3, 50, 255, 0, 0, 0, 0], "reply": [204, 81, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0], "request_bytes": 64, "reply_bytes": 64},
+    {"step": "Select Color cycle. Apply if offered. Wait 3 seconds, then Enter", "request": [204, 81, 40, 0, 0, 4, 100, 255, 0, 0, 0, 0], "reply": [204, 81, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0], "request_bytes": 64, "reply_bytes": 64},
+    {"step": "Select Rainbow. Apply if offered. Wait 3 seconds, then Enter", "request": [204, 81, 40, 0, 0, 5, 100, 255, 0, 0, 0, 0], "reply": [204, 81, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0], "request_bytes": 64, "reply_bytes": 64},
+    {"step": "Turn headset RGB Off through the lighting page. Wait 3 seconds, then Enter", "request": [204, 81, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0], "reply": [204, 81, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0], "request_bytes": 64, "reply_bytes": 64}
+  ]
+}
