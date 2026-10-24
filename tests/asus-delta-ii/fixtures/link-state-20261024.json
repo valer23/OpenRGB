@@ -1,0 +1,7 @@
+{
+  "source": {"capture": "delta-power-state-20261024-222803.pcap", "sha256": "c6ba95efd994730d9928bc55010d84b4261c1021ed395215e27d1c30cf12ed69", "vid": "0B05", "pid": "1AFA", "limits": "One owner-labelled manual OFF/ON cycle; not natural-idle or RF no-wake validation."},
+  "samples": [
+    {"frame": 1, "manual_state": "off", "data": [204, 18, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]},
+    {"frame": 3, "manual_state": "on", "data": [204, 18, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}
+  ]
+}

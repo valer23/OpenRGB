@@ -66,3 +66,10 @@ The nine changing1Hz frames had logged write-completion intervals1001–1011ms (
 The wrapper incorrectly reported final restore failure after observing process exit before reading the final output records. Native completion and all final acknowledgements are present; the owner also confirmed the last test passed. Offline tests now cover output flush/final reread. An earlier launch sent zero writes before a live-log sharing error; explicit shared-read handling is reproduced/tested with an actual live PowerShell writer. Both attempts restored services; installed executable/configuration hashes remained unchanged and Fan Control/OpenRGB continued running. These private harness fixes require no repeat of successful physical tests.
 
 ASUS existing-owner integration and a reliable sleep policy remain open. No new RGBController has been installed or published.
+
+
+## Passive manual power-switch report
+
+Owner-labelled capture `delta-power-state-20261024-222803.pcap` (SHA256 `c6ba95efd994730d9928bc55010d84b4261c1021ed395215e27d1c30cf12ed69`) contains unsolicited64byte reports `CC1200000100` on manual headset OFF and `CC1200000101` on ON, followed by zero padding. The owner observed all lights off, then Breathing purple logos/blue button on. The installed audio HAL's input parser180045540 stores the corresponding state byte and dispatches its callback, agreeing with these observations. All vendor services, OpenRGB and Fan Control remained running; collector sent no commands.
+
+The strict parser labels this LinkState, not awake state. One manual power cycle does not establish natural-idle behavior, RF sleep semantics or a renewable streaming permission. Tests reject unknown states, altered headers/reserved bytes, wrong sizes, null and unrelated reports. Connected alone does not authorize output. Natural-idle comparison remains pending.

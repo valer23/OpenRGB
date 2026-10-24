@@ -9,6 +9,22 @@ namespace AsusDeltaIIProtocol
 {
 using Packet = std::array<unsigned char, 64>;
 
+enum class LinkState { Disconnected, Connected };
+
+// Exact unsolicited report observed during the owner's manual OFF/ON cycle.
+// Connected is not proof of awake/idle state and must not authorize RGB alone.
+inline std::optional<LinkState> ParseLinkState(const unsigned char* data, size_t size)
+{
+    if(!data || size != Packet{}.size() || data[0] != 0xCC || data[1] != 0x12 ||
+       data[2] != 0 || data[3] != 0 || data[4] != 1 || data[5] > 1 ||
+       !std::all_of(data + 6, data + size, [](unsigned char byte) { return byte == 0; }))
+    {
+        return {};
+    }
+    return data[5] == 1 ? LinkState::Connected : LinkState::Disconnected;
+}
+
+
 // Owner-captured 0B05:1AFA firmware settings commands. These are not a
 // software animation protocol; do not stream frames through Builtin().
 inline std::optional<Packet> Builtin(unsigned int mode, unsigned int brightness,

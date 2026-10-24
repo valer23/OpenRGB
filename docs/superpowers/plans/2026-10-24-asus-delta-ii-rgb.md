@@ -90,3 +90,6 @@ Remaining independent gates: an asleep/visible-idle RGB experiment needs a separ
 
 
 Awake hardware result: all six native RGB stages pass physically, including both nominal1Hz/5Hz animations and restoration with audio normal. Native82writes all64bytes, no errors. Parent's final failure is an exit/output-flush reporting race, reproduced/tested and fixed offline; no repeat of passing hardware tests. Both services restoredRunning, installed files unchanged, FanControl/OpenRGB running. Sleep safety and ASUS existing-owner backend remain separate unresolved gates. See evidence document for exact report identity and cadence measurements.
+
+
+Manual OFF/ON passive check completed with ASUS running, zero collector commands. CapturedCC1200000100/01 matches installed vendor parser state handling. Added sanitized fixture and strict LinkState parser with failing-before/passing-after tests; all four headset test executables pass. No awake gate enabled: natural-idle comparison still needed and Connected is not sleep proof. See evidence document for source identity.

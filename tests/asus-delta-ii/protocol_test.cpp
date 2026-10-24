@@ -70,5 +70,29 @@ int main()
     assert(frame[5] == 1 && frame[6] == 2 && frame[7] == 3);
     assert(frame[44] == 4 && frame[45] == 5 && frame[46] == 6);
     assert(std::all_of(frame.begin() + 47, frame.end(), [](unsigned char b) { return b == 0; }));
+    std::ifstream link_file("tests/asus-delta-ii/fixtures/link-state-20261024.json");
+    assert(link_file.good());
+    nlohmann::json link; link_file >> link;
+    for(const auto& sample : link.at("samples"))
+    {
+        auto data = sample.at("data").get<std::vector<unsigned char>>();
+        const auto expected = sample.at("manual_state") == "on" ?
+            AsusDeltaIIProtocol::LinkState::Connected : AsusDeltaIIProtocol::LinkState::Disconnected;
+        assert(AsusDeltaIIProtocol::ParseLinkState(data.data(), data.size()) == expected);
+        for(size_t size = 0; size < 64; ++size)
+            assert(!AsusDeltaIIProtocol::ParseLinkState(data.data(), size));
+        data.push_back(0); assert(!AsusDeltaIIProtocol::ParseLinkState(data.data(), data.size())); data.pop_back();
+        for(size_t index : {0u, 1u, 2u, 3u, 4u, 6u, 63u})
+        {
+            data[index] ^= 1;
+            assert(!AsusDeltaIIProtocol::ParseLinkState(data.data(), data.size()));
+            data[index] ^= 1;
+        }
+        data[5] = 2; assert(!AsusDeltaIIProtocol::ParseLinkState(data.data(), data.size()));
+        data[5] = 0xFF; data[6] = 0xAA;
+        assert(!AsusDeltaIIProtocol::ParseLinkState(data.data(), data.size()));
+    }
+    assert(!AsusDeltaIIProtocol::ParseLinkState(nullptr, 64));
+    assert(!AsusDeltaIIProtocol::ParseLinkState(enabled.data(), enabled.size()));
     std::cout<<"Delta II captured built-in and software commands: encoding and acknowledgement routing passed\n";
 }
