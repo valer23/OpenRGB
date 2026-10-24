@@ -55,3 +55,14 @@ Receiver release invalidates in-flight transactions without waiting and closes r
 `direct-sleep-20261024-161724` acquired the exact exclusive receiver collection, sent zero commands and recorded zero input reports during its native eight-minute cap. The logos were already off at the baseline (16:17:45 local time), with the button blue. The later observation was entered at17:47:42, after the recording ended at16:25:26. Consequently no awake-to-idle or wake transition was established, and sleep safety remains unvalidated.
 
 Both services were restored Running with no reported restoration errors. The diagnostic helper previously waited for user input after its recorder had exited; its next version now stops waiting on recorder exit or deadline and restores services automatically. It also requires lit logos before and after ASUS closure, cancelling if a useful baseline is lost. Timed input/timeout tests pass in Windows PowerShell5.1. No additional live test has been run or authorized by the completed one-shot exception.
+
+
+## Confirmed awake RGB output
+
+The owner-approved awake trial `awake-rgb-20261024-221451` completed all six native stages with 82 writes of64bytes and no native errors. The owner confirmed red/green/blue, all captured firmware effects including Off, brightness, brief changing-colour animation at1Hz and5Hz, audio continuity, and final Breathing/purple5900A4/50% restoration. The final software-mode disable, LED-power enable and firmware-effect commands received matching acknowledgements. Native log SHA256: `3992eefa72bc561ba0cbf4c4c53dcf6c8ad430870774bf183b03529196c07fe4`.
+
+The nine changing1Hz frames had logged write-completion intervals1001–1011ms (mean1004.875ms); the fifty changing5Hz frames had intervals197–218ms (mean204.694ms). Final purple frames are excluded. These short awake trials establish visible uniform-colour software control at the tested nominal rates, not independent physical LED addressing, extended stability or sleep safety.
+
+The wrapper incorrectly reported final restore failure after observing process exit before reading the final output records. Native completion and all final acknowledgements are present; the owner also confirmed the last test passed. Offline tests now cover output flush/final reread. An earlier launch sent zero writes before a live-log sharing error; explicit shared-read handling is reproduced/tested with an actual live PowerShell writer. Both attempts restored services; installed executable/configuration hashes remained unchanged and Fan Control/OpenRGB continued running. These private harness fixes require no repeat of successful physical tests.
+
+ASUS existing-owner integration and a reliable sleep policy remain open. No new RGBController has been installed or published.
