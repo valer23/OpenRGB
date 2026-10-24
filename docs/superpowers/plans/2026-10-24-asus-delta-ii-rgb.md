@@ -116,3 +116,11 @@ recovery watchdog, fresh awake baseline, pause/natural idle/normal audio resume,
 no setup or cleanup commands while idle, and manual setting restoration. A new
 service-closure diagnostic exception is required before running it. ASUS's legitimate
 existing-owner writer remains an independent blocker; the feature is not complete.
+
+
+2026-10-25 controlled audio-gated trial PASSED. Native30writes(all64bytes), including
+27softwareframes, no writes during owner-confirmed silence/dark. Naturalidle,
+normal-audiowake and resumedcolours confirmed; services/settings restored, installed
+files unchanged. This consumes the approved diagnostic exception. Record evidence
+without repeating the successful test. Continue offline integration and bounded
+existing-owner ASUS investigation; no universal RGB-safety/default enablement claim.

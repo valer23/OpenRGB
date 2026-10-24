@@ -130,3 +130,31 @@ old/duplicate observations cannot extend a lease. Five focused test executables
 pass, including actual gate-to-queue revocation before an existing lease expires.
 The experimental three-second settling/250 ms freshness values are test policy
 choices, not physically validated wake timings. No live RGB path uses them yet.
+
+
+## Bounded Windows audio-gated RGB result (2026-10-25)
+
+Owner-authorized `audio-rgb-20261025-012736` completed with all physical phases
+passing: colours during normal playback, sustained natural logos-off after pause,
+a20second dark interval, and colour updates after normal PC audio resumed. Audio
+remained normal. The native log SHA256 is
+`3a5e82d12ac827282e473e90cf46327f777df369e294a10756532088fbe52fba`.
+
+The single native process owned Core Audio observation and one exclusive receiver.
+It sent three awake setup commands and27software frames (23before pause, four after
+resume), all64bytes, with zero failed writes or native errors. Across1,755audio
+samples the maximum measured sample age was1ms. Permission was revoked at elapsed
+60,949ms; no RGB writes occurred between the owner's confirmed pause and the
+normal-audio-resume prompt. Native completion was cooperative with no RGB cleanup.
+
+Both ASUS services returned to their original Running state, the owner restored
+Breathing5900A4/50% and five minutes, installed file hashes matched, and Fan Control
+and installed OpenRGB remained running. The one-shot service-closure/experimental
+RGB exception is consumed; this is not authorization for another live experiment.
+
+This is a passing bounded Windows direct-path experiment, not universal sleep
+qualification. The experimental3second settling/250ms age policy was exercised
+for this playback configuration, at approximately1Hz output. Mute, exclusive-mode
+playback, endpoint changes, suspend/replug and long sessions still require coverage.
+The ASUS existing-owner writer remains unproved. No native RGBController or this
+watcher is installed, and no cross-platform audio provider is claimed.
