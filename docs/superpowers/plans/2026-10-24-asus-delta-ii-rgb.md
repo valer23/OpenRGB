@@ -93,3 +93,6 @@ Awake hardware result: all six native RGB stages pass physically, including both
 
 
 Manual OFF/ON passive check completed with ASUS running, zero collector commands. CapturedCC1200000100/01 matches installed vendor parser state handling. Added sanitized fixture and strict LinkState parser with failing-before/passing-after tests; all four headset test executables pass. No awake gate enabled: natural-idle comparison still needed and Connected is not sleep proof. See evidence document for source identity.
+
+
+Natural-idle comparison completed from a lit baseline: owner observed sustained logos-off/button-blue; savedcapture has zeroUSBrecords. LinkState is therefore not established as an idle guard. Owner-proposed5→2→10→5 timer capture identified CC5137/minutes field with matchingACKs, final5restored; production adds no timer writes. Both evidence records are saved. Further passive waiting alone does not establish nonwaking software frames. An ASUS-own-traffic AuraSync/2minuteidle comparison is prepared and awaits owner availability; services remain running. Public SDK ownership/cleanup and exact writer handoff also remain unproved; no SDK instance or competing output opened.

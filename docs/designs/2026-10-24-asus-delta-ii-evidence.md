@@ -73,3 +73,10 @@ ASUS existing-owner integration and a reliable sleep policy remain open. No new 
 Owner-labelled capture `delta-power-state-20261024-222803.pcap` (SHA256 `c6ba95efd994730d9928bc55010d84b4261c1021ed395215e27d1c30cf12ed69`) contains unsolicited64byte reports `CC1200000100` on manual headset OFF and `CC1200000101` on ON, followed by zero padding. The owner observed all lights off, then Breathing purple logos/blue button on. The installed audio HAL's input parser180045540 stores the corresponding state byte and dispatches its callback, agreeing with these observations. All vendor services, OpenRGB and Fan Control remained running; collector sent no commands.
 
 The strict parser labels this LinkState, not awake state. One manual power cycle does not establish natural-idle behavior, RF sleep semantics or a renewable streaming permission. Tests reject unknown states, altered headers/reserved bytes, wrong sizes, null and unrelated reports. Connected alone does not authorize output. Natural-idle comparison remains pending.
+
+
+## Natural idle and timer configuration
+
+The next bounded, lit-baseline capture `delta-sleep-20261024-223508.pcap` (SHA256 `e7b9346dc2244452eb9f2a68c0d5550bb5d928a79399a132836b36e959988a24`) contains zero records. Owner confirmed lit at20:35:37UTC and sustained logos-off/button-blue at20:41:31UTC, followed by30seconds of observation. Services stayed running. This provides no passive natural-idle report; manual link-state notifications must not be promoted to an awake guard. It is consistent with local firmware behavior but does not establish RF power state.
+
+Owner-controlled timer capture `delta-timer-20261024-224720.pcap` (SHA256 `e8985ec90276f644d22f976603b00ed016524b99833e82350c59cf9247511ee2`) identifies64byte setting reports `CC51370000` followed by minutes02/0A/05 at byte5 and unchanged bytes14/01 at6/7. Each has a matching allzero `CC5137` acknowledgement. Final five-minute write and owner's UI confirmation establish restoration; no separate timer readback was queried. These are setting packets, not sleep events. The production lighting API does not add timer writes.
