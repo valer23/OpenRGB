@@ -75,5 +75,36 @@ int main()
         assert(io.transfers == sent);
     }
     assert(io.closes == 2); // Failed retained connections are discarded.
+    io.result = 64;
+    std::promise<void> acquired, release_finished;
+    auto resume = release_finished.get_future();
+    auto in_flight = std::async(std::launch::async, [&] {
+        std::string detail;
+        auto transaction = receiver.Acquire(detail);
+        assert(transaction);
+        transaction.KeepOpen(true);
+        acquired.set_value();
+        resume.wait();
+        // A late setup callback must not re-retain or write the released session.
+        transaction.KeepOpen(true);
+        std::array<unsigned char, 64> data = {};
+        assert(!transaction);
+        assert(transaction.Transfer(true, data.data(), data.size(), 100) == -1);
+    });
+    acquired.get_future().wait();
+    int sent_before_release = io.transfers;
+    auto releasing = std::async(std::launch::async, [&] { receiver.Release(); });
+    assert(releasing.wait_for(std::chrono::milliseconds(200)) == std::future_status::ready);
+    releasing.get(); // Must not wait behind the held transaction.
+    release_finished.set_value();
+    in_flight.get();
+    assert(io.transfers == sent_before_release && io.closes == 3);
+    {
+        auto transaction = receiver.Acquire(error);
+        assert(transaction);
+        transaction.KeepOpen(true);
+    }
+    receiver.Release(); // Also closes an idle retained handle immediately.
+    assert(io.closes == 4);
     std::cout << "Delta II single-owner receiver: sharing, contention, cancellation and failure cleanup passed\n";
 }

@@ -178,7 +178,6 @@ HEADERS +=                                                                      
     BatteryStatus/BatteryMonitoringService.h \
     BatteryStatus/AsusBatteryLog.h \
     BatteryStatus/AsusBatteryMonitor.h \
-    Controllers/AsusAuraUSBController/AsusDeltaIIController/AsusDeltaIIReceiver.h \
     BatteryStatus/AsusDeltaIIBattery.h \
     BatteryStatus/BatteryProtocol.h \
     BatteryStatus/WindowsHidTransfer.h \
@@ -260,7 +259,6 @@ SOURCES +=                                                                      
     BatteryStatus/BatteryMonitoringService.cpp \
     BatteryStatus/AsusBatteryLog.cpp \
     BatteryStatus/AsusBatteryMonitor.cpp \
-    Controllers/AsusAuraUSBController/AsusDeltaIIController/AsusDeltaIIReceiver_Windows.cpp \
     BatteryStatus/AsusDeltaIIBattery.cpp \
     BatteryStatus/WindowsHidTransfer.cpp \
     OpenRGBPluginAPI.cpp                                                                        \

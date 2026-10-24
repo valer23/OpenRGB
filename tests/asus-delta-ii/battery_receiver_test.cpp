@@ -5,6 +5,7 @@
 #include <cassert>
 #include <deque>
 #include <future>
+#include <functional>
 #include <iostream>
 #include <vector>
 using Packet = AsusDeltaIIProtocol::Packet;
@@ -14,6 +15,7 @@ struct SimulatedReceiver final : AsusDeltaIIReceiver::Io
     int opens = 0, closes = 0;
     std::deque<Packet> replies;
     std::vector<Packet> writes;
+    std::function<void()> on_write;
     bool Ready() override { return ready; }
     bool Open(std::string& error) override
     {
@@ -30,6 +32,7 @@ struct SimulatedReceiver final : AsusDeltaIIReceiver::Io
         {
             Packet packet = {}; std::copy(data, data + size, packet.begin());
             writes.push_back(packet);
+            if(on_write) { on_write(); }
         }
         else
         {
@@ -79,5 +82,16 @@ int main()
     int attempts = io.opens;
     auto pending = AsusDeltaIIBattery::ReadAwakeSnapshot(true);
     assert(pending["percentage"].is_null() && io.opens == attempts && io.writes.size() == 2);
+    io.ready = true;
+    std::promise<void> written, resume;
+    auto continue_reading = resume.get_future();
+    io.on_write = [&] { written.set_value(); continue_reading.wait(); };
+    auto reading = std::async(std::launch::async, [] { return AsusDeltaIIBattery::ReadAwakeSnapshot(true); });
+    written.get_future().wait();
+    GetAsusDeltaIIReceiver().Release();
+    resume.set_value();
+    const auto interrupted = reading.get();
+    assert(interrupted["percentage"].is_null() && interrupted.contains("error"));
+    assert(io.writes.size() == 3 && io.writes.back()[2] == 7); // No charging query after release.
     std::cout << "Actual battery path: shares RGB session, routes queued replies, rejects contention and pending cancellation\n";
 }
