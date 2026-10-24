@@ -96,3 +96,6 @@ Manual OFF/ON passive check completed with ASUS running, zero collector commands
 
 
 Natural-idle comparison completed from a lit baseline: owner observed sustained logos-off/button-blue; savedcapture has zeroUSBrecords. LinkState is therefore not established as an idle guard. Owner-proposed5→2→10→5 timer capture identified CC5137/minutes field with matchingACKs, final5restored; production adds no timer writes. Both evidence records are saved. Further passive waiting alone does not establish nonwaking software frames. An ASUS-own-traffic AuraSync/2minuteidle comparison is prepared and awaits owner availability; services remain running. Public SDK ownership/cleanup and exact writer handoff also remain unproved; no SDK instance or competing output opened.
+
+
+ASUS AuraSync/2minuteidle capture completed and originalsettings restored. Only9startupframes, none during observedidle; spontaneousbattery notification occurs afterlogosdark. This does not prove streaming sleep safety. OnepossiblewakeRGBframe experiment is explicitly approved and prepared/reviewed (fake-I/O guards, oneframe limit, native540s/watchdog600s, manualsettingscleanup). UAClaunchcancelledbeforeteststarted; no authorization used, manualadministrator launch pending. Installedsoftware/FanControl/ASUSservices unchanged.
