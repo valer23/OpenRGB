@@ -99,3 +99,6 @@ Natural-idle comparison completed from a lit baseline: owner observed sustained 
 
 
 ASUS AuraSync/2minuteidle capture completed and originalsettings restored. Only9startupframes, none during observedidle; spontaneousbattery notification occurs afterlogosdark. This does not prove streaming sleep safety. OnepossiblewakeRGBframe experiment is explicitly approved and prepared/reviewed (fake-I/O guards, oneframe limit, native540s/watchdog600s, manualsettingscleanup). UAClaunchcancelledbeforeteststarted; no authorization used, manualadministrator launch pending. Installedsoftware/FanControl/ASUSservices unchanged.
+
+
+Oneidleframe test completedwithvisiblewake. Exactly4nativewrites,oneafteridle;ownerreportedwoke,nativecompletedtrue,allstates/settingsrestored. This disprovesunconditionalstreamingidlepreservation. One-shotexceptionconsumed,noretry. Audioalonewakeslogosperowner; Windows-onlyCoreAudio shadowobserverprepared/exactreceiver-matched,noRGBorownaudiostreamcreation,pairedUSBmeasurementpending. Nonheadset/microphonerefusalsandobserver-onlydeadlinebranchtested. Cross-platformstatusclarified: nootherOSbackendclaimed. Needliveaudio shadowqualification before designingpermission; ASUS existing-ownerwriterstillunproved. No RGBController installed/pushed.
