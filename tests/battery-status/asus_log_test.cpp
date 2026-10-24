@@ -39,6 +39,19 @@ int main() {
     assert(AsusBatteryLog::Parse(unknown,now)["charging"].is_null());
     auto conflict=Event("00:34:22.258",84);
     assert(AsusBatteryLog::Parse(one+conflict,now)["percentage"].is_null());
+    // ASUS emits duplicate broadcasts with optional unrelated metadata.
+    auto metadata=one;
+    metadata.insert(metadata.find("\"levels\""),"\"isHPC\": false, ");
+    assert(AsusBatteryLog::Parse(one+metadata,now)["percentage"]==83);
+    // Old conflicts must not poison a newer unambiguous measurement, in either order.
+    auto newer=Event("00:55:00.000",86);
+    assert(AsusBatteryLog::Parse(one+conflict+newer,now)["percentage"]==86);
+    assert(AsusBatteryLog::Parse(newer+one+conflict,now)["percentage"]==86);
+    assert(AsusBatteryLog::Parse(conflict+newer+one,now)["percentage"]==86);
+    // A newer offline report does not resolve an ambiguous retained measurement.
+    assert(AsusBatteryLog::Parse(one+conflict+Event("00:56:00.000",-2,false),now)["percentage"].is_null());
+    // Genuine ambiguity at the latest timestamp remains unavailable.
+    assert(AsusBatteryLog::Parse(one+newer+Event("00:55:00.000",87),now)["percentage"].is_null());
     auto dir=std::filesystem::temp_directory_path()/"openrgb-battery-log-test";
     std::filesystem::create_directories(dir);
     for(int i=0;i<160;++i) { std::ofstream f(dir/("000-unrelated-"+std::to_string(i)+".log"));f<<"not a battery report"; }

@@ -13,6 +13,9 @@
 #include <hidapi.h>
 #include <array>
 
+/* Implemented beside the Windows detector; also used by offline tests. */
+bool AsusAuraNeoHasCompetingLighting();
+
 /* Only the onboard logo of 0B05:1CD2 has a confirmed colour response.
  * This controller never sends addressable-header configuration or colours. */
 class RGBController_AsusAuraNeo : public RGBController
@@ -26,6 +29,7 @@ public:
     void DeviceUpdateZoneLEDs(int zone) override;
     void DeviceUpdateSingleLED(int led) override;
     void DeviceUpdateMode() override;
+    void DeviceSaveMode() override;
 
 private:
     using Report = std::array<unsigned char, 64>;
@@ -34,5 +38,6 @@ private:
     bool initialized = false;
     bool Send(const Report& report);
     bool Initialize();
+    bool Query(const Report& request, Report& response);
     static Report OnboardReport(unsigned char output, bool initialize, RGBColor color);
 };

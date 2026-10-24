@@ -25,6 +25,21 @@ transfers at every setup/colour stage, retry setup, and callback bounds.
 The Windows hotplug HIDAPI include supplies the control output-report API.
 No tests access lighting devices.
 
+The shutdown extension additionally checks staged/default settings, exact
+captured Static-blue standby packets, advertised effect filtering, route and
+length validation, bounded stale-input handling, competing-reader refusal,
+all six captured effects, retained parameters, partial writes and failed
+readback. These checks exercise the normal explicit-save entry point.
+The separate Off fixture matches all four captured disable/Static-black writes;
+the transition test verifies that selecting an effect after Off enables standby
+again, and that Off ignores an unused invalid colour field.
+The tests do not prove UI rendering or S5 persistence.
+Writer-selection tests also verify that ASUS service saves send no HID queries,
+service failures never trigger direct fallback, Leave unchanged suppresses both
+writers, and invalid writer settings fail before any I/O. These tests mock the
+service boundary; Windows COM integration and saved-profile behaviour are
+verified separately.
+
 The separate `pawnio_port_test.py` takes the production PawnIO source path,
 MinGW compiler path and temporary output directory as its three arguments.
 It compiles the actual PIIX4 port selection and registration blocks against

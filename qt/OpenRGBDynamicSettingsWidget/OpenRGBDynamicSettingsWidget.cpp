@@ -1,15 +1,20 @@
 
 #include <QApplication>
 #include <QCheckBox>
+#include <QColor>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QDirIterator>
 #include <QComboBox>
 #include <QGroupBox>
 #include <QLineEdit>
 #include <QSpinBox>
+#include <QPushButton>
 #include <QToolTip>
 #include <QTranslator>
 #include <QVBoxLayout>
 #include "JsonUtils.h"
+#include "ColorWheel.h"
 #include "OpenRGBDynamicSettingsWidget.h"
 #include "ProfileManager.h"
 #include "ResourceManager.h"
@@ -166,6 +171,7 @@ OpenRGBDynamicSettingsWidget::OpenRGBDynamicSettingsWidget(std::string key, nloh
         \*-------------------------------------------------*/
         else
         {
+            QPushButton* color_button = nullptr;
             if(type == "profile")
             {
                 /*-----------------------------------------*\
@@ -229,6 +235,36 @@ OpenRGBDynamicSettingsWidget::OpenRGBDynamicSettingsWidget(std::string key, nloh
                     right_widget                            = (QWidget*)new QLineEdit(QString::fromStdString(value));
 
                     QObject::connect((QLineEdit*)right_widget, &QLineEdit::textChanged, this, &OpenRGBDynamicSettingsWidget::OnSettingChanged);
+
+                    /*-------------------------------------*\
+                    | Opt-in colour strings keep their hex  |
+                    | editor and reuse the main-page wheel. |
+                    | Only accepting the dialog stages data.|
+                    \*-------------------------------------*/
+                    if(JsonUtils::JsonGetString(schema, "format") == "color")
+                    {
+                        QLineEdit* color_edit = (QLineEdit*)right_widget;
+                        color_button = new QPushButton(tr("Choose colour..."));
+                        QObject::connect(color_button, &QPushButton::clicked, this, [this, color_edit]()
+                        {
+                            QDialog dialog(this);
+                            dialog.setWindowTitle(tr("Choose colour"));
+                            QVBoxLayout dialog_layout(&dialog);
+                            ColorWheel wheel(&dialog);
+                            wheel.setMinimumSize(240, 240);
+                            QColor initial_color("#" + color_edit->text());
+                            wheel.setColor(color_edit->text().size() == 6 && initial_color.isValid() ? initial_color : QColor(Qt::red));
+                            dialog_layout.addWidget(&wheel);
+                            QDialogButtonBox buttons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+                            dialog_layout.addWidget(&buttons);
+                            QObject::connect(&buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+                            QObject::connect(&buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+                            if(dialog.exec() == QDialog::Accepted)
+                            {
+                                color_edit->setText(wheel.color().name(QColor::HexRgb).mid(1).toUpper());
+                            }
+                        });
+                    }
                 }
                 /*-----------------------------------------*\
                 | Add a ComboBox for enum string settings   |
@@ -385,6 +421,10 @@ OpenRGBDynamicSettingsWidget::OpenRGBDynamicSettingsWidget(std::string key, nloh
 
             layout->addWidget(left_widget, 1);
             layout->addWidget(right_widget, 1);
+            if(color_button)
+            {
+                layout->addWidget(color_button);
+            }
 
             UpdateLabels();
 
