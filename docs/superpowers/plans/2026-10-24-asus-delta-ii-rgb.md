@@ -102,3 +102,17 @@ ASUS AuraSync/2minuteidle capture completed and originalsettings restored. Only9
 
 
 Oneidleframe test completedwithvisiblewake. Exactly4nativewrites,oneafteridle;ownerreportedwoke,nativecompletedtrue,allstates/settingsrestored. This disprovesunconditionalstreamingidlepreservation. One-shotexceptionconsumed,noretry. Audioalonewakeslogosperowner; Windows-onlyCoreAudio shadowobserverprepared/exactreceiver-matched,noRGBorownaudiostreamcreation,pairedUSBmeasurementpending. Nonheadset/microphonerefusalsandobserver-onlydeadlinebranchtested. Cross-platformstatusclarified: nootherOSbackendclaimed. Needliveaudio shadowqualification before designingpermission; ASUS existing-ownerwriterstillunproved. No RGBController installed/pushed.
+
+
+2026-10-25 audio shadow checkpoint: completed with zero invalid samples and no
+activity-positive samples throughout the confirmed silent/dark interval. USB
+capture contains only owner timer changes and ACKs. Original settings restored;
+ASUS, Fan Control and installed OpenRGB remained running. Added the closed-by-default
+platform-neutral audio gate and immediate downstream queue revocation, verified by
+five focused executables. Windows source stays private/custom and uninstalled.
+Shadow results do not establish RGB safety or a production settling delay.
+Next: prepare/review one bounded same-process audio-gated RGB experiment with
+recovery watchdog, fresh awake baseline, pause/natural idle/normal audio resume,
+no setup or cleanup commands while idle, and manual setting restoration. A new
+service-closure diagnostic exception is required before running it. ASUS's legitimate
+existing-owner writer remains an independent blocker; the feature is not complete.

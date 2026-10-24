@@ -98,3 +98,35 @@ The explicitly authorized experiment `idle-rgb-20261024-232028` established soli
 This fails visible idle preservation; unconditional software streaming is unsafe for the requested behavior. No reliable natural-idle transition was received. The one possible-wake exception is consumed. Both services were restored Running, no restoration errors, owner restored Breathingpurple50%/sleep5min, installed files unchanged, Fan Control/OpenRGB continued running. The reported service-stop API warning was recovered, not an end-of-test failure.
 
 The owner confirms that normal PC playback alone wakes the logos. A private **Windows-only** Core Audio observer is prepared to correlate existing playback/pause, natural idle and normal audio wake without RGB output or audio stream creation. It matches the receiver's exact PnP container and rejects other speakers and the matching microphone before activation. Software peak metering is required; volume getter traffic remains to be measured in the paired USB capture. Shadow phases have structured pass/incomplete outcomes, and an audio-only deadline monitor cannot enter service-restoration code. No positive live shadow run or production awake permission is established. Other operating systems have no implementation or validation; the protocol remains platform-independent.
+
+
+## Windows audio shadow observation (2026-10-25)
+
+`delta-audio-shadow-20261025-003328` completed with the owner confirming playback,
+natural logos-off/button-blue after pause, wake by normal PC audio alone, and
+restoration to Breathing purple/50% and five minutes. No ASUS service was stopped.
+The collector created no playback/recording stream or HID handle. Saved audio-log
+SHA256: `bb9d22a18ae715b1f2ddbc0bb6e10fb495982498339e34e9f30b4c8f34983c18`;
+HID/control capture SHA256:
+`ccb2a21d5a2841a1dd24c44126d844c7f603326c99a401538e3c505ebc45f7da`.
+
+All 2,460 samples were valid, with polling gaps 106–125 ms. Confirmed playback had
+275/275 activity-positive samples; confirmed pause through dark had 0/1,582;
+confirmed audio wake had 46/46. The exact receiver-container render endpoint used
+a software peak meter (hardware flags 3, meter-support bit 4 absent). The capture
+contains only eight URB records: the owner's two-minute/five-minute timer writes
+and their acknowledgements. No additional HID/control traffic was recorded during
+observer activation or polling in this configuration; audio payloads were excluded.
+
+This qualifies a research candidate, not an RGB sleep-safety guarantee. Human
+instruction/typing timestamps cannot establish the exact audio-start-to-logo-wake
+latency. Mute, exclusive playback, device switching and replug remain untested.
+The source is Windows-only and is not installed or enabled by default.
+
+The platform-neutral audio gate requires an explicitly armed, qualified source,
+continuous fresh non-muted receiver-matched playback, and a settling interval.
+Invalid samples immediately revoke frame permission and drop pending colours;
+old/duplicate observations cannot extend a lease. Five focused test executables
+pass, including actual gate-to-queue revocation before an existing lease expires.
+The experimental three-second settling/250 ms freshness values are test policy
+choices, not physically validated wake timings. No live RGB path uses them yet.
