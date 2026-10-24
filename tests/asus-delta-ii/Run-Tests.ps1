@@ -7,7 +7,7 @@ $buildRoot=Join-Path $repoRoot 'build-battery\tests'
 New-Item -ItemType Directory -Path $buildRoot -Force | Out-Null
 Push-Location $repoRoot
 try {
-    foreach($name in @('protocol','receiver','battery_receiver')) {
+    foreach($name in @('protocol','receiver','battery_receiver','frame_queue')) {
         $sources=@("tests/asus-delta-ii/${name}_test.cpp")
         if($name -eq 'battery_receiver') { $sources += 'BatteryStatus/AsusDeltaIIBattery.cpp' }
         & "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' '-Idependencies/json' @sources -o "$buildRoot\delta_${name}_test.exe"
