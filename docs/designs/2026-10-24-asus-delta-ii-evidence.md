@@ -49,3 +49,9 @@ Further static review excludes the inspected SetProfile candidate: it modifies l
 The full isolated custom core builds successfully after removing duplicate explicit controller entries; source discovery is automatic. SHA256: `fbbdb41c1d2c9c2f3009daba8d77b6a6bd5ba1826504131ff4a3727f3bb39b24`. MinGW reports a Qt metadata duplicate-section warning, but link exits successfully. The executable has not been launched or installed.
 
 Receiver release invalidates in-flight transactions without waiting and closes retained handles after their bounded operation returns. The actual battery-code test confirms no charging query follows release. The pure frame queue covers closed startup, expiry, coalescing, deduplication and old-generation callbacks. Renewing permission after an unobserved expiry discards old frames. No validated hardware frame rate or awake provider is configured.
+
+## Direct passive input subscription
+
+`direct-sleep-20261024-161724` acquired the exact exclusive receiver collection, sent zero commands and recorded zero input reports during its native eight-minute cap. The logos were already off at the baseline (16:17:45 local time), with the button blue. The later observation was entered at17:47:42, after the recording ended at16:25:26. Consequently no awake-to-idle or wake transition was established, and sleep safety remains unvalidated.
+
+Both services were restored Running with no reported restoration errors. The diagnostic helper previously waited for user input after its recorder had exited; its next version now stops waiting on recorder exit or deadline and restores services automatically. It also requires lit logos before and after ASUS closure, cancelling if a useful baseline is lost. Timed input/timeout tests pass in Windows PowerShell5.1. No additional live test has been run or authorized by the completed one-shot exception.
