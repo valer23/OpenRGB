@@ -74,13 +74,13 @@ std::string ReceiverContainer()
     // PnP metadata only. Never activate a HID collection to discover identity.
     const auto devices=SetupDiGetClassDevsW(nullptr,L"USB",nullptr,DIGCF_PRESENT|DIGCF_ALLCLASSES);
     if(devices==INVALID_HANDLE_VALUE)return {};
-    unsigned matches=0;std::string result;
+    unsigned matches=0;bool complete=false;std::string result;
     for(DWORD i=0;i<4096;++i)
     {
         SP_DEVINFO_DATA info{};info.cbSize=sizeof(info);
-        if(!SetupDiEnumDeviceInfo(devices,i,&info))break;
+        if(!SetupDiEnumDeviceInfo(devices,i,&info)){complete=GetLastError()==ERROR_NO_MORE_ITEMS;break;}
         wchar_t id[1024]{};
-        if(!SetupDiGetDeviceInstanceIdW(devices,&info,id,1024,nullptr))continue;
+        if(!SetupDiGetDeviceInstanceIdW(devices,&info,id,1024,nullptr))break;
         std::wstring instance=id;
         std::transform(instance.begin(),instance.end(),instance.begin(),[](wchar_t c){return std::towupper(c);});
         if(instance.rfind(L"USB\\VID_0B05&PID_1AFA\\",0)!=0)continue;
@@ -90,7 +90,7 @@ std::string ReceiverContainer()
             type==DEVPROP_TYPE_GUID && bytes==sizeof(value))result=GuidString(value);
     }
     SetupDiDestroyDeviceInfoList(devices);
-    return matches==1 ? result : std::string{};
+    return complete && matches==1 ? result : std::string{};
 }
 AsusDeltaIIAudioSource::Endpoint Describe(IMMDevice* device)
 {
@@ -156,7 +156,9 @@ bool AsusDeltaIIAudioSource::Open(Time confirmed_awake,std::string& error)
         {
             Com<IMMDevice> device;
             if(FAILED(devices->Item(i,device.Out())))return fail("Playback endpoint metadata unavailable");
-            descriptions.push_back(Describe(device.value));
+            const auto description=Describe(device.value);
+        if(description.id.empty())return fail("Playback endpoint metadata incomplete");
+        descriptions.push_back(description);
         }
         state->endpoint_id=SelectEndpoint(state->container,descriptions);
         if(state->endpoint_id.empty())return fail("Unique Delta II playback endpoint unavailable");

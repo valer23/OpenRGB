@@ -179,3 +179,12 @@ one thread. Eight focused executables pass, including selection ambiguity,
 microphone/inactive rejection, zero-activation startup and stale/future awake
 rejection. Tests do not activate observation on the real headset. Real provider
 activation, native UI/controller integration and ASUS writer remain unverified.
+Audio metadata review: incomplete PnP enumeration, failed instance-ID reads,
+metadata limits and unavailable playback metadata now refuse endpoint selection
+rather than treating a partial inventory as unique. This is an offline hardening
+change; no real observer activation has been performed. The headset feature
+branch was rebased onto dbcccc9a to retain the installed Corsair startup fix.
+The owner confirms installed receiver/lighting/plugins work; Corsair battery is
+still waiting for its first passive notification. Tray redraw is1000ms, not a
+mouse battery polling interval. Do not claim the receiver's firmware report
+cadence has been established.
