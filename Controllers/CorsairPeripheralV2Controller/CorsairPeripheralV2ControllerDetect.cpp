@@ -56,7 +56,7 @@ DetectedControllers DetectCorsairV2HardwareControllers(hid_device_info* info, co
 #ifdef _WIN32
             if(info->vendor_id==0x1B1C && info->product_id==0x1BA6 && info->interface_number==1 && info->usage_page==0xFF42 && info->usage==1)
             {
-                if(CorsairRecoveryInputScope::Ambiguous())
+                if(CorsairRecoveryInputScope::Ambiguous() && CorsairRecoveryInputScope::Current())
                 {
                     ForgetMissingCorsairReceiver(info->path);
                     LOG_WARNING("[Corsair startup recovery] Wireless child mapping is ambiguous; use awake manual rescan");
@@ -96,7 +96,7 @@ DetectedControllers DetectCorsairV2SoftwareControllers(hid_device_info* info, co
 #ifdef _WIN32
             if(info->vendor_id==0x1B1C && info->product_id==0x1BA6 && info->interface_number==1 && info->usage_page==0xFF42 && info->usage==1)
             {
-                if(CorsairRecoveryInputScope::Ambiguous())
+                if(CorsairRecoveryInputScope::Ambiguous() && CorsairRecoveryInputScope::Current())
                 {
                     ForgetMissingCorsairReceiver(info->path);
                     LOG_WARNING("[Corsair startup recovery] Wireless child mapping is ambiguous; use awake manual rescan");

@@ -176,7 +176,7 @@ int main()
  }
  // Recovery reuses THIS controller's sole existing handle and receiver-mask
  // method. It must never issue a child09 command on ambiguous or stale input.
- for(int scenario=0;scenario<10;++scenario)
+ for(int scenario=0;scenario<12;++scenario)
  {
   writes.clear();events.clear();pending=false;receiver=true;pid=0x1B7E;
   mask=2;root_pid=0x1BA6;recovery_noise=0;mask_length=64;mask_status=mask_route=0;fail_mask=false;expire_mask=false;recovery_fresh=true;
@@ -189,6 +189,8 @@ int main()
   if(scenario==7)expire_mask=true;
   if(scenario==8)recovery_noise=8;
   if(scenario==9)root_pid=0x1B66;
+  if(scenario==10)mask=3;
+  if(scenario==11)mask=1;
   std::function<bool()> current=[](){return recovery_fresh;};
   CorsairRecoveryInputScope recovery(current);
   struct RecoveryDevice: CorsairPeripheralV2Controller
@@ -196,14 +198,14 @@ int main()
    RecoveryDevice():CorsairPeripheralV2Controller(control,"target","mouse"){}
    void SetLedsDirect(std::vector<RGBColor*>) override {}
   } controller;
-  CHECK(controller.IsDeviceSupported()==(scenario==0));
+  CHECK(controller.IsDeviceSupported()==(scenario==0 || scenario==10));
   int masks=0;
   for(const auto& write:writes)
   {
    if(write[1]==8 && write[2]==2 && write[3]==0x36)++masks;
-   if(scenario!=0)CHECK(write[1]!=9);
+   if(scenario!=0 && scenario!=10)CHECK(write[1]!=9);
   }
-  CHECK(masks==(scenario>=8 ? 0 : 1));
+  CHECK(masks==((scenario==8 || scenario==9) ? 0 : 1));
  }
  std::cout<<"Native actual-driver checks passed: counter cadence/decoding, silent idle colours, offline zero writes, child mask isolation, checked wake recovery, listener recovery and startup/non-target guards.\n";
 }

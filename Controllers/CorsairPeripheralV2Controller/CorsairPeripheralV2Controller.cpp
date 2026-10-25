@@ -65,8 +65,11 @@ CorsairPeripheralV2Controller::CorsairPeripheralV2Controller(hid_device* dev_han
                 unsigned int connected_mask=0;
                 if(!CorsairRecoveryInputScope::Current())return;
                 const bool valid=ReadMouseConnection(&connected_mask);
-                if(valid && connected_mask && connected_mask!=0x02)CorsairRecoveryInputScope::MarkAmbiguous();
-                if(!valid || connected_mask!=0x02 || !CorsairRecoveryInputScope::Current())return;
+                if(!valid || !CorsairRecoveryInputScope::Current())return;
+                // Bit0 is receiver address08; bit1 is wireless child09.
+                // No other wireless child may be present for automatic recovery.
+                if(connected_mask & ~0x03U)CorsairRecoveryInputScope::MarkAmbiguous();
+                if(!(connected_mask & 0x02U) || (connected_mask & ~0x03U))return;
             }
 #endif
             pid         = GetAddressRetry(0x12);

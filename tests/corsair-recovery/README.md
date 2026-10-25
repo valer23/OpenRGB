@@ -15,7 +15,8 @@ or overwritten. Expired events, cleanup and replug invalidate queued recovery.
 
 Recovery reuses the ordinary constructor's existing handle and receiver-connected
 mask method before addressing wireless child1. It requires the exact receiver PID,
-a valid mask of02 (sole child1), and fresh input. Other/multiple children require
+wireless child1 as the sole wireless participant (mask02 or03, allowing the
+receiver-root bit0), and fresh input. Other/multiple wireless children require
 an awake manual rescan. No separate status reader is created. Tests exercise this
 actual constructor and verify zero child09 commands for stale, short, erroneous,
 ambiguous, noisy or wrong-receiver cases.
