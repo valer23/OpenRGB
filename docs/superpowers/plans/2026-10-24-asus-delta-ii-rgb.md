@@ -124,3 +124,23 @@ normal-audiowake and resumedcolours confirmed; services/settings restored, insta
 files unchanged. This consumes the approved diagnostic exception. Record evidence
 without repeating the successful test. Continue offline integration and bounded
 existing-owner ASUS investigation; no universal RGB-safety/default enablement claim.
+
+
+Direct backend command integration checkpoint: added captured firmware/Off/software
+command execution with explicit5second awake intent, bounded acknowledgements and
+no retry/cleanup. Software output borrows only the retained session established
+by awake setup; shared battery failures, release and cancellation cannot reopen it.
+Separate streaming and ownership flags preserve teardown after a busy borrower.
+Independent review found/fixed transaction-scoped release and retained-session-loss
+issues. Six headset executables and the complete battery suite pass; Corsair
+20,000step trace remains23,529packets/hash4169482241693242891. Source is not installed.
+UI/controller integration and the legitimate ASUS writer remain incomplete.
+
+User reported missing Corsair receiver after a later startup. Installed executable
+hash stillmatches1.0.20261023.3; no headset diagnostic left running, ASUS services
+Running. Windows sees1B1C:1BA6/serialBF69A8993F428CB4 normally; both detector settings
+enabled. Startup log skipsregistration after unknowncapabilities, a failure also
+seen in older logs before the last headset trial. Mouse awake confirmed; requested
+one existing-OpenRGB tray rescan, result pending. No competing reader, USB query,
+service stop or installed change was introduced for this diagnosis. Prioritize
+mouse recovery before another headset hardware test.

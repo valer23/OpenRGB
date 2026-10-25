@@ -21,13 +21,19 @@ public:
     class Transaction
     {
     public:
-        Transaction(AsusDeltaIIReceiver& receiver, std::string& error) :
+        Transaction(AsusDeltaIIReceiver& receiver, std::string& error,
+                    bool existing_only = false, uint64_t expected_session = 0) :
             owner(receiver), generation(receiver.generation.load()), lock(receiver.mutex, std::try_to_lock)
         {
             error.clear();
             if(!lock.owns_lock())
             {
                 error = "Delta II receiver is busy with another OpenRGB operation; no new reader opened";
+                return;
+            }
+            if(existing_only && (!owner.open || owner.session != expected_session))
+            {
+                error = "Delta II receiver session ended; fresh awake setup required";
                 return;
             }
             if(!owner.io.Ready())
@@ -39,6 +45,7 @@ public:
             {
                 if(!owner.io.Open(error)) { owner.io.Close(); return; }
                 owner.open = true;
+                ++owner.session;
             }
             valid = true;
         }
@@ -54,13 +61,14 @@ public:
         Transaction(const Transaction&) = delete;
         Transaction& operator=(const Transaction&) = delete;
         explicit operator bool() const { return valid && generation == owner.generation.load(); }
+        uint64_t Session() const { return *this ? owner.session : 0; }
         void KeepOpen(bool enabled) { if(*this) { owner.keep_open = enabled; } }
         int Transfer(bool write, unsigned char* data, unsigned int size, unsigned int timeout)
         {
             if(!*this) { return -1; }
             const int result = owner.io.Transfer(write, data, size, timeout);
             if(result < 0) { valid = false; failed = true; }
-            return result;
+            return *this ? result : -1;
         }
     private:
         AsusDeltaIIReceiver& owner;
@@ -73,6 +81,10 @@ public:
     AsusDeltaIIReceiver(const AsusDeltaIIReceiver&) = delete;
     AsusDeltaIIReceiver& operator=(const AsusDeltaIIReceiver&) = delete;
     Transaction Acquire(std::string& error) { return Transaction(*this, error); }
+    // Frames may only borrow their original retained session. They must never
+    // silently reopen after a battery failure, disconnect or owner release.
+    Transaction AcquireExisting(std::string& error, uint64_t expected_session)
+    { return Transaction(*this, error, true, expected_session); }
     // Invalidate in-flight transactions immediately. Closing waits only for the
     // current bounded operation to leave its transaction; the caller never waits.
     // Call outside a transaction, e.g. on disconnect or backend teardown.
@@ -91,6 +103,7 @@ private:
     Io& io;
     std::mutex mutex;
     bool open = false;
+    uint64_t session = 0;
     std::atomic<bool> keep_open{false};
     std::atomic<uint64_t> generation{0};
 };
