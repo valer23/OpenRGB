@@ -144,3 +144,25 @@ seen in older logs before the last headset trial. Mouse awake confirmed; request
 one existing-OpenRGB tray rescan, result pending. No competing reader, USB query,
 service stop or installed change was introduced for this diagnosis. Prioritize
 mouse recovery before another headset hardware test.
+
+2026-10-25 control coordinator checkpoint: AsusDeltaIIControl composes the actual
+bounded direct commands, audio gate and frame queue on one serialized owner path.
+Selection/configuration performs no acquisition or writes. Explicit ASUS selection
+returns unavailable and never falls back to direct USB. Direct firmware actions
+still require fresh awake confirmation; software setup also requires a qualified
+source generation. Three-second continuous audio settling and 250ms leases gate
+coalesced 1Hz frames. Silence/mute/expiry drop queued colours; endpoint loss,
+receiver mismatch, source replacement, backend/mode changes and transport errors
+end the session without retries or cleanup writes. Seven focused executables pass,
+including actual coordinator-to-transport tests. This is offline infrastructure,
+not native device/UI integration or a new installation. Existing-owner ASUS writer,
+Windows provider lifecycle and native controller remain incomplete.
+
+Corsair priority resolved separately: branch codex/corsair-startup-recovery,
+commit dbcccc9a, fork PR11. An isolated deliberate startup miss recovered after
+fresh physical mouse input; owner confirmed receiver, lighting and both plugins.
+Production OpenRGB Custom1.0.20261025.1 installed with matching executable hash,
+unchanged pre-launch JSON settings, same plugins/startup scripts and Windows
+uninstall identity. The installed production startup registered the receiver and
+loaded Halloween - The Dark. Owner final installed confirmation is pending.
+Fan Control remained running; no ASUS service changes by this mouse fix.
