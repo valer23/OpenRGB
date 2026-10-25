@@ -166,3 +166,16 @@ unchanged pre-launch JSON settings, same plugins/startup scripts and Windows
 uninstall identity. The installed production startup registered the receiver and
 loaded Halloween - The Dark. Owner final installed confirmation is pending.
 Fan Control remained running; no ASUS service changes by this mouse fix.
+2026-10-25 Windows audio provider extraction: added an explicit-awake-only
+Core Audio source using the getter interfaces exercised by the prior shadow and
+RGB experiments. It enumerates playback metadata, selects exactly one active
+render endpoint belonging to the unique0B05:1AFA USB receiver container, requires
+a software peak meter, and stamps samples before COM getters so stalls cannot
+extend permission. Each read rechecks current endpoint/container metadata; failure
+ends the source. No audio playback/recording stream, HID owner, device command or
+volume setter exists in this provider. All interfaces are released before COM is
+uninitialized; the eventual native worker must own Open/Read/Stop/destruction on
+one thread. Eight focused executables pass, including selection ambiguity,
+microphone/inactive rejection, zero-activation startup and stale/future awake
+rejection. Tests do not activate observation on the real headset. Real provider
+activation, native UI/controller integration and ASUS writer remain unverified.
