@@ -91,3 +91,25 @@ inline bool RunCorsairRecoveryAttempt(const std::function<bool()>& current,
     detect();
     return registered();
 }
+
+// Bridge the existing two-argument detector callback to its ordinary controller
+// constructor. This scope carries input evidence; it opens no reader. Ownership
+// remains with the controller's existing HID handle.
+class CorsairRecoveryInputScope
+{
+public:
+    explicit CorsairRecoveryInputScope(const std::function<bool()>& check) : check(check),previous(active)
+    { active=this->check ? this : nullptr; }
+    ~CorsairRecoveryInputScope(){active=previous;}
+    CorsairRecoveryInputScope(const CorsairRecoveryInputScope&)=delete;
+    CorsairRecoveryInputScope& operator=(const CorsairRecoveryInputScope&)=delete;
+    static bool Requested(){return active!=nullptr;}
+    static bool Current(){return active && active->check();}
+    static void MarkAmbiguous(){if(active)active->ambiguous=true;}
+    static bool Ambiguous(){return active && active->ambiguous;}
+private:
+    std::function<bool()> check;
+    CorsairRecoveryInputScope* previous;
+    bool ambiguous=false;
+    inline static thread_local CorsairRecoveryInputScope* active=nullptr;
+};

@@ -63,5 +63,14 @@ int main(){
   if(scenario==6)assert(metadata==1 && queries==1 && profileLoads==1 && recovered);
  }
  policy.Watch("stale-control","same-receiver");policy.ForgetReceiver("same-receiver");assert(policy.Empty());
+ assert(!CorsairRecoveryInputScope::Requested());
+ {
+  CorsairRecoveryInputScope outer([](){return true;});
+  assert(CorsairRecoveryInputScope::Requested() && CorsairRecoveryInputScope::Current());
+  CorsairRecoveryInputScope::MarkAmbiguous();assert(CorsairRecoveryInputScope::Ambiguous());
+  {CorsairRecoveryInputScope empty(std::function<bool()>{});assert(!CorsairRecoveryInputScope::Requested());}
+  assert(CorsairRecoveryInputScope::Current() && CorsairRecoveryInputScope::Ambiguous());
+ }
+ assert(!CorsairRecoveryInputScope::Requested());
  std::cout<<"Corsair startup recovery: exact source, fresh input, cooldown, replug, cleanup, busy/occupied scheduler and empty reports passed\n";
 }

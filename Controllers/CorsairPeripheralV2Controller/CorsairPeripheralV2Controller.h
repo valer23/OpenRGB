@@ -128,7 +128,7 @@ private:
     bool                            UpdateMouseConnection(unsigned long long now);
     bool                            AllowMouseFrame(unsigned long long now);
     void                            SetMouseConnected(bool connected);
-    bool                            ReadMouseConnection();
+    bool                            ReadMouseConnection(unsigned int* connected_mask = nullptr);
     bool                            ReadMouseInactivity();
     bool                            MouseIsIdle();
     bool                            ChangeMouseOwnership(bool software);

@@ -6,17 +6,24 @@ rescan registered the same receiver. This does not establish the exact earlier
 PID reply, only that failed initial identification had no later retry.
 
 The Windows custom-build fix watches ordinary Raw Input only when that receiver
-failed identification. It opens no HID reader and sends no polling requests.
+failed identification. The observer opens no HID reader and sends no polling requests.
 A fresh physical mouse event must match the failed control interface's container.
 The detection worker retries only that exact interface, revalidates current
 identity/age after metadata and immediately before detector I/O, honors disabled
 settings, and skips already registered receivers. Busy detection is never blocked
 or overwritten. Expired events, cleanup and replug invalidate queued recovery.
 
+Recovery reuses the ordinary constructor's existing handle and receiver-connected
+mask method before addressing wireless child1. It requires the exact receiver PID,
+a valid mask of02 (sole child1), and fresh input. Other/multiple children require
+an awake manual rescan. No separate status reader is created. Tests exercise this
+actual constructor and verify zero child09 commands for stale, short, erroneous,
+ambiguous, noisy or wrong-receiver cases.
+
 The standard detector and registration path still perform initialization and load
 the existing active profile. Recovery unsubscribes from Raw Input once no missing
-receiver remains. It does not change the native sleep/lighting/battery driver,
-ASUS services, Fan Control, profiles, or the installed app until deployment.
+receiver remains. Normal native sleep/lighting/battery traffic is unchanged. ASUS services, Fan
+Control, profiles and the installed app remain unchanged until deployment.
 Other platforms retain their existing behavior.
 
 Run `./tests/corsair-recovery/Run-Tests.ps1` for deterministic policy/worker/queue

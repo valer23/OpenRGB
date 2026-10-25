@@ -1615,7 +1615,14 @@ void DetectionManager::RunHIDDetector(hid_device_info* current_hid_device, json&
                     // Progress callbacks and list locks may have delayed us.
                     // Activity-triggered recovery revalidates at the I/O boundary.
                     if(current && !current())return;
-                    DetectedControllers detected_controllers = detector->function(current_hid_device, detector->name);
+                    DetectedControllers detected_controllers;
+                    {
+#ifdef _WIN32
+                        const bool corsair_receiver=current_hid_device->vendor_id==0x1B1C && current_hid_device->product_id==0x1BA6;
+                        CorsairRecoveryInputScope recovery_input(corsair_receiver ? current : std::function<bool()>{});
+#endif
+                        detected_controllers = detector->function(current_hid_device, detector->name);
+                    }
 
                     for(std::size_t detected_controller_idx = 0; detected_controller_idx < detected_controllers.size(); detected_controller_idx++)
                     {

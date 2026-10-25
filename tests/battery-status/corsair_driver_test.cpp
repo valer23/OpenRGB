@@ -1,4 +1,5 @@
 #include "BatteryStatus/BatteryStatusManager.h"
+#include "Controllers/CorsairPeripheralV2Controller/CorsairStartupRecoveryPolicy.h"
 // Private test: actual controller source, fake HID/settings and deterministic clock.
 #include "CorsairPeripheralV2Controller.h"
 #include "SettingsManager.h"
@@ -17,6 +18,9 @@ std::vector<std::vector<unsigned char>> writes;
 std::vector<unsigned char> last;
 std::deque<std::vector<unsigned char>> events;
 bool pending=false,receiver=true,missing=false,ambiguous=false,identity_bad=false;
+bool recovery_fresh=true,expire_mask=false;
+unsigned mask_length=64,mask_status=0,mask_route=0,root_pid=0x1BA6;
+int recovery_noise=0;
 bool fail_sw=false,fail_init=false,fail_counter=false,fail_events=false,fail_mask=false;
 unsigned int battery_level=760,battery_length=64,battery_child=1,battery_status=0;
 unsigned int pid=0x1B7E,idle=0,mask=2,counter_length=64,counter_error=0,counter_child=1;
@@ -35,10 +39,10 @@ extern "C" int hid_read_timeout(hid_device* dev,unsigned char* data,size_t size,
   auto report=events.front();events.pop_front();std::memcpy(data,report.data(),report.size());return(int)report.size();
  }
  CHECK(dev==control);
- if(!pending) return 0;
+ if(!pending) {if(recovery_noise>0){--recovery_noise;return 64;}return 0;}
  pending=false;std::memset(data,0,size);
- if(last[2]==2 && last[3]==0x12) {unsigned int product=receiver && last[1]==8 ? 0x1BA6 : pid;data[3]=product&255;data[4]=product>>8;}
- if(last[2]==2 && last[3]==0x36) {if(fail_mask) return 0;data[0]=0;data[1]=2;data[3]=mask;}
+ if(last[2]==2 && last[3]==0x12) {unsigned int product=receiver && last[1]==8 ? root_pid : pid;data[3]=product&255;data[4]=product>>8;}
+ if(last[2]==2 && last[3]==0x36) {if(fail_mask) return 0;data[0]=mask_route;data[1]=2;data[2]=mask_status;data[3]=mask;if(expire_mask)recovery_fresh=false;return mask_length;}
  if(last[2]==2 && last[3]==0x0F) {
   data[0]=battery_child;data[1]=2;data[2]=battery_status;data[3]=battery_level&255;data[4]=battery_level>>8;return battery_length;
  }
@@ -169,6 +173,37 @@ int main()
   events.push_back({1,1,0x0F,0,0x20,3});d.Frame();CHECK(cache.Snapshots()[0]["percentage"]==75);
   CHECK(cache.Snapshots()[0]["availability"]=="disconnected");
   cache.Release(token);cache.SetCorsairValidated(false);
+ }
+ // Recovery reuses THIS controller's sole existing handle and receiver-mask
+ // method. It must never issue a child09 command on ambiguous or stale input.
+ for(int scenario=0;scenario<10;++scenario)
+ {
+  writes.clear();events.clear();pending=false;receiver=true;pid=0x1B7E;
+  mask=2;root_pid=0x1BA6;recovery_noise=0;mask_length=64;mask_status=mask_route=0;fail_mask=false;expire_mask=false;recovery_fresh=true;
+  if(scenario==1)mask=0;
+  if(scenario==2)mask=4;
+  if(scenario==3)mask=6;
+  if(scenario==4)mask_length=3;
+  if(scenario==5)mask_status=5;
+  if(scenario==6)mask_route=1;
+  if(scenario==7)expire_mask=true;
+  if(scenario==8)recovery_noise=8;
+  if(scenario==9)root_pid=0x1B66;
+  std::function<bool()> current=[](){return recovery_fresh;};
+  CorsairRecoveryInputScope recovery(current);
+  struct RecoveryDevice: CorsairPeripheralV2Controller
+  {
+   RecoveryDevice():CorsairPeripheralV2Controller(control,"target","mouse"){}
+   void SetLedsDirect(std::vector<RGBColor*>) override {}
+  } controller;
+  CHECK(controller.IsDeviceSupported()==(scenario==0));
+  int masks=0;
+  for(const auto& write:writes)
+  {
+   if(write[1]==8 && write[2]==2 && write[3]==0x36)++masks;
+   if(scenario!=0)CHECK(write[1]!=9);
+  }
+  CHECK(masks==(scenario>=8 ? 0 : 1));
  }
  std::cout<<"Native actual-driver checks passed: counter cadence/decoding, silent idle colours, offline zero writes, child mask isolation, checked wake recovery, listener recovery and startup/non-target guards.\n";
 }
