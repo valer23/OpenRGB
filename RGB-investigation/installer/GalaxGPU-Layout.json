@@ -1,7 +1,7 @@
 {
   "name": "KFA2 GeForce RTX 3080 Ti SG 1-Click OC",
-  "vendor": "GALAX",
-  "description": "GALAX / KFA2 RTX GPU",
+  "vendor": "KFA2",
+  "description": "KFA2 SG I2C lighting controller",
   "modes": [
     {
       "brightness": 0,
@@ -21,40 +21,12 @@
       "brightness": 0,
       "brightness_max": 0,
       "brightness_min": 0,
-      "color_mode": 1,
-      "colors_max": 0,
-      "colors_min": 0,
-      "direction": 0,
-      "flags": 32,
-      "name": "Breathing",
-      "speed": 0,
-      "speed_max": 0,
-      "speed_min": 0
-    },
-    {
-      "brightness": 0,
-      "brightness_max": 0,
-      "brightness_min": 0,
       "color_mode": 0,
       "colors_max": 0,
       "colors_min": 0,
       "direction": 0,
       "flags": 0,
-      "name": "Rainbow",
-      "speed": 0,
-      "speed_max": 0,
-      "speed_min": 0
-    },
-    {
-      "brightness": 0,
-      "brightness_max": 0,
-      "brightness_min": 0,
-      "color_mode": 0,
-      "colors_max": 0,
-      "colors_min": 0,
-      "direction": 0,
-      "flags": 0,
-      "name": "Cycle Breathing",
+      "name": "Motherboard Sync",
       "speed": 0,
       "speed_max": 0,
       "speed_min": 0

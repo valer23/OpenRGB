@@ -4,6 +4,7 @@ $ErrorActionPreference='Stop'
 & (Join-Path $PSScriptRoot 'service_trial_test.ps1')
 & (Join-Path $PSScriptRoot 'sleep_wrapper_test.ps1')
 & (Join-Path $PSScriptRoot 'trial_packaging_test.ps1')
+& (Join-Path $PSScriptRoot 'gpu_identity_migration_test.ps1')
 $repoRoot=(Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $compilerBin=Join-Path $ToolchainRoot 'Tools\mingw1310_64\bin'
 $qtBin=Join-Path $ToolchainRoot '6.8.3\mingw_64\bin'
