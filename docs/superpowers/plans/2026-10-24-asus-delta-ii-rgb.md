@@ -188,3 +188,11 @@ The owner confirms installed receiver/lighting/plugins work; Corsair battery is
 still waiting for its first passive notification. Tray redraw is1000ms, not a
 mouse battery polling interval. Do not claim the receiver's firmware report
 cadence has been established.
+2026-10-25 verification checkpoint: all eight Delta II executables and the full
+battery suite pass after rebasing onto the Corsair recovery branch. The native
+mouse mixed trace remains23,529packets/hash4169482241693242891. Normal application
+compile/link succeeded with the new Windows audio provider, including metadata
+hardening (object timestamp checked against current source). Development exe
+SHA2568D34BE9DA37B89E5241561CB44078630920BD3940B4EB98A94BC2E49EDD34443.
+It was not launched or installed. Keep installed production1.0.20261025.1;
+headset native controller/UI and proven ASUS existing-owner writer remain open.
