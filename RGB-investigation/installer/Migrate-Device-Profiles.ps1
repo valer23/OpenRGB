@@ -24,7 +24,8 @@ function Update-DeviceReferences($node) {
             }
             $script:changed = $true
         }
-        if($node.name -eq $newGpu -and $node.description -eq 'KFA2 SG I2C lighting controller') {
+        if($node.name -eq $newGpu -and $node.description -in @('KFA2 SG I2C lighting controller','GALAX / KFA2 RTX GPU')) {
+            $gpuBefore = $node | ConvertTo-Json -Depth 100 -Compress
             $node.description = $gpuLayout.description
             if($node.PSObject.Properties['vendor']) {$node.vendor = $gpuLayout.vendor}
             if($node.PSObject.Properties['modes']) {
@@ -45,7 +46,8 @@ function Update-DeviceReferences($node) {
                 }
                 $node.modes = $newModes
             }
-            $script:changed = $true
+            $gpuAfter = $node | ConvertTo-Json -Depth 100 -Compress
+            if($gpuAfter -ne $gpuBefore) {$script:changed = $true}
         }
         if($node.name -eq $oldFan) {
             $node.name = $newFan
