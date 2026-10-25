@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #pragma once
+#include "AsusDeltaIIProtocol.h"
 #include <atomic>
 #include <cstdint>
 #include <mutex>
@@ -67,7 +68,16 @@ public:
         {
             if(!*this) { return -1; }
             const int result = owner.io.Transfer(write, data, size, timeout);
-            if(result < 0) { valid = false; failed = true; }
+            if(result < 0 || static_cast<unsigned int>(result)>size) { valid = false; failed = true; }
+            if(!failed && *this && !write && result > 0 &&
+               AsusDeltaIIProtocol::ParseLinkState(data,static_cast<size_t>(result))==AsusDeltaIIProtocol::LinkState::Disconnected)
+            {
+                // Battery and RGB share this input stream. Whichever consumes
+                // OFF invalidates the retained RGB session. Do not recursively
+                // call Release() or close I/O while this transaction owns mutex.
+                ++owner.generation;owner.keep_open=false;valid=false;failed=true;
+                return result; // Deliver OFF once, but no further transfer is valid.
+            }
             return *this ? result : -1;
         }
     private:

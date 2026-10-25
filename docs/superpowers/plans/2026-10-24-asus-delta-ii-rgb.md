@@ -214,3 +214,15 @@ awake built-ins/software setup, continuous settling, pause/resume without reopen
 backend-stop without writes, cancellation, duplicate confirmation, stale owner
 and immediate teardown. Native GUI build and isolated hardware validation remain
 pending. No installed change or real headset command has been made.
+Whole-branch read-only review at c741e2ad found one P1 issue: a battery or passive
+observer could consume OFF without revoking retained RGB ownership. Reproduced
+with an actual-battery-path regression (leased RGB frame incorrectly succeeded).
+The shared transaction now recognizes only the exact validated disconnected
+packet, invalidates generation/retention and closes on transaction destruction,
+without recursively acquiring its mutex. It delivers that final event once for
+diagnostics; subsequent transfers and old-session RGB are rejected without reopen.
+Tests exercise both actual battery Query and Observe consuming OFF, connected
+reports remaining valid, zero following RGB writes and no replacement reader.
+All nine focused executables and the full battery suite pass after the fix.
+No other material review findings were reported. Native GUI compile is running;
+no new hardware activation, service changes or installation performed.
