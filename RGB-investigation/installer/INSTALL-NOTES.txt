@@ -1,5 +1,7 @@
 OpenRGB Custom - personal build for valerian
 
+Version 1.0.20261025.1 recovers a Corsair receiver missed during startup after fresh input from that physical mouse. It retries only that receiver, preserves native mouse sleep/battery behavior, and does not poll sleeping devices or stop vendor services. Existing profiles, battery plugins, motherboard shutdown preferences, startup and Windows uninstall support are preserved.
+
 Includes the tested KFA2 GPU, Lian Li fan and ASUS logo support, the Effects Plugin and your saved lighting profiles.
 
 Version 1.0.20261023.1 installs the validated battery core/plugin with explicit ASUS cache and manual Direct receiver modes. Startup respects the saved on-open profile instead of forcing ValWhite, and never stops ASUS services. Existing device configuration, mouse sleep settings, effects and lighting profiles are preserved. Battery monitoring defaults to ASUS cache with notifications off.

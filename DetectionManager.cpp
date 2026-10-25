@@ -14,6 +14,11 @@
 #include <cctype>
 #include <cstdio>
 #include <set>
+#include <memory>
+#ifdef _WIN32
+#include "Controllers/CorsairPeripheralV2Controller/CorsairStartupRecovery_Windows.h"
+#include "Controllers/CorsairPeripheralV2Controller/CorsairStartupRecoveryPolicy.h"
+#endif
 #include "DetectionManager.h"
 #include "JsonUtils.h"
 #include "LogManager.h"
@@ -177,6 +182,9 @@ DetectionManager::DetectionManager()
 
 DetectionManager::~DetectionManager()
 {
+#ifdef _WIN32
+    StopCorsairStartupRecovery();
+#endif
     /*-----------------------------------------------------*\
     | Exit HID in background thread                         |
     \*-----------------------------------------------------*/
@@ -655,6 +663,53 @@ void DetectionManager::BackgroundThreadFunction()
     }
 }
 
+#ifdef _WIN32
+bool DetectionManager::TryDetectCorsairFromInput(std::string path, std::chrono::steady_clock::time_point observed,
+                                                std::function<bool()> current, std::function<void(bool)> finished)
+{
+    auto work=[this,path,observed,current,finished]()
+    {
+        bool recovered=false;
+        struct Completion { std::function<void(bool)> callback; bool& recovered; ~Completion(){callback(recovered);} } completion{finished,recovered};
+        std::lock_guard<std::mutex> detection_lock(DetectDevicesMutex);
+        auto fresh=[&](){const auto now=std::chrono::steady_clock::now();return observed<=now && now-observed<1s && current();};
+        auto registered=[&]()
+        {
+            std::lock_guard<std::mutex> lock(RGBControllersMutex);
+            for(const auto* controller:rgb_controllers)if(controller->detection_path==path)return true;
+            return false;
+        };
+        json settings;
+        auto enabled=[&]()
+        {
+            settings=ResourceManager::get()->GetSettingsManager()->GetSettings("Detectors");
+            return !JsonUtils::JsonGetBool(settings,"hid_safe_mode") &&
+                   !(settings.contains("detectors") && settings["detectors"].contains("Corsair Slipstream Wireless Receiver HW") &&
+                     settings["detectors"]["Corsair Slipstream Wireless Receiver HW"]==false);
+        };
+        std::unique_ptr<hid_device_info,decltype(&hid_free_enumeration)> devices(nullptr,hid_free_enumeration);
+        hid_device_info* selected=nullptr;
+        auto lookup=[&]()
+        {
+            devices.reset(hid_enumerate(0x1B1C,0x1BA6));
+            for(auto* info=devices.get();info;info=info->next)
+                if(info->path && path==info->path && info->interface_number==1 && info->usage_page==0xFF42 && info->usage==1)
+                { selected=info;return true; }
+            return false;
+        };
+        recovered=RunCorsairRecoveryAttempt(fresh,registered,enabled,lookup,[&]()
+        {
+            LOG_INFO("[Corsair startup recovery] Retrying missing receiver after fresh mouse input");
+            RunHIDDetector(selected,settings,fresh);
+        });
+    };
+    if(!TryScheduleCorsairRecovery(BackgroundThreadStateMutex,BackgroundThreadScheduledFunction,
+                                  background_thread_running,std::move(work)))return false;
+    BackgroundThreadScheduledFunctionStart.notify_one();
+    return true;
+}
+#endif
+
 void DetectionManager::RunInBackgroundThread(std::function<void()> coroutine)
 {
     if(std::this_thread::get_id() == BackgroundThread->get_id())
@@ -690,6 +745,9 @@ void DetectionManager::RunInBackgroundThread(std::function<void()> coroutine)
 \*---------------------------------------------------------*/
 void DetectionManager::BackgroundDetectDevices()
 {
+#ifdef _WIN32
+    StartCorsairStartupRecovery();
+#endif
     /*-----------------------------------------------------*\
     | Lock detection mutex                                  |
     \*-----------------------------------------------------*/
@@ -1446,8 +1504,23 @@ void DetectionManager::BackgroundHIDInit()
 /*---------------------------------------------------------*\
 | Functions to run detectors                                |
 \*---------------------------------------------------------*/
-void DetectionManager::RunHIDDetector(hid_device_info* current_hid_device, json& detector_settings)
+void DetectionManager::RunHIDDetector(hid_device_info* current_hid_device, json& detector_settings, const std::function<bool()>& current)
 {
+#ifdef _WIN32
+    std::unique_lock<std::mutex> corsair_detection_lock;
+    if(current_hid_device->vendor_id==0x1B1C && current_hid_device->product_id==0x1BA6 &&
+       current_hid_device->interface_number==1 && current_hid_device->usage_page==0xFF42)
+    {
+        // Serialize this receiver's initial/hotplug/activity detection through
+        // registration, so recovery cannot introduce a second reader.
+        corsair_detection_lock=std::unique_lock<std::mutex>(CorsairReceiverDetectionMutex(),std::try_to_lock);
+        if(!corsair_detection_lock.owns_lock())return;
+        std::lock_guard<std::mutex> lock(RGBControllersMutex);
+        for(const auto* controller:rgb_controllers)
+            if(controller->detection_path==current_hid_device->path)return;
+    }
+#endif
+
     if(LogManager::get()->GetLogLevel() >= LL_DEBUG)
     {
         const char* manu_name = StringUtils::wchar_to_char(current_hid_device->manufacturer_string);
@@ -1539,6 +1612,9 @@ void DetectionManager::RunHIDDetector(hid_device_info* current_hid_device, json&
 
                     SignalUpdate(DETECTIONMANAGER_UPDATE_REASON_DETECTION_PROGRESS_CHANGED);
 
+                    // Progress callbacks and list locks may have delayed us.
+                    // Activity-triggered recovery revalidates at the I/O boundary.
+                    if(current && !current())return;
                     DetectedControllers detected_controllers = detector->function(current_hid_device, detector->name);
 
                     for(std::size_t detected_controller_idx = 0; detected_controller_idx < detected_controllers.size(); detected_controller_idx++)
@@ -1679,6 +1755,10 @@ void DetectionManager::RunHIDWrappedDetector(const hidapi_wrapper* wrapper, hid_
 \*---------------------------------------------------------*/
 void DetectionManager::ProcessCleanup()
 {
+#ifdef _WIN32
+    // Fence queued input before waiting for in-flight detection or clearing devices.
+    StopCorsairStartupRecovery();
+#endif
     WaitForDetection();
 
 #if(HID_HOTPLUG_ENABLED)
