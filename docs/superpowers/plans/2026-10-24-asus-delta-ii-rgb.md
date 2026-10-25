@@ -196,3 +196,21 @@ hardening (object timestamp checked against current source). Development exe
 SHA2568D34BE9DA37B89E5241561CB44078630920BD3940B4EB98A94BC2E49EDD34443.
 It was not launched or installed. Keep installed production1.0.20261025.1;
 headset native controller/UI and proven ASUS existing-owner writer remain open.
+2026-10-25 native controller/UI integration checkpoint: the Windows metadata-only
+HID detector targets only0B05:1AFA/MI03/COL04/FF00:1. Native headset has seven modes
+and one shared logo zone. Discovery, profile/mode/configuration loads and raw
+SDK/CLI SaveMode perform no headset acquisition or command. A separate optional
+local-UI awake-save interface prepares a weak lifetime ticket; only confirmation
+queues a five-second intent on the existing RGBController device worker. Modal
+removal/cancellation cannot dereference a deleted controller. The same worker owns
+Core Audio and retained direct RGB; teardown runs COM/receiver cleanup there
+before Shutdown joins. No added RGBController virtual slot or data field changes
+plugin ABI. A protected non-signaling scheduling helper reuses the existing
+queue. Its flags now initialize before thread launch, removing lost-initial-job
+and immediate-destruction races. Direct firmware and audio-gated1Hz animation
+are connected; explicit ASUS selection still reports unavailable with no fallback.
+Actual-base-worker tests use only fake transport/audio: staged-only startup,
+awake built-ins/software setup, continuous settling, pause/resume without reopen,
+backend-stop without writes, cancellation, duplicate confirmation, stale owner
+and immediate teardown. Native GUI build and isolated hardware validation remain
+pending. No installed change or real headset command has been made.

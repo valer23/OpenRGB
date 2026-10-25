@@ -68,6 +68,7 @@ private:
     | Coalesces rapid ColorChanged() calls into one update   |
     \*-----------------------------------------------------*/
     bool color_update_pending = false;
+    bool awake_save_pending = false;
 
     /*-----------------------------------------------------*\
     | UI Update Functions                                   |

@@ -7,12 +7,14 @@ $buildRoot=Join-Path $repoRoot 'build-battery\tests'
 New-Item -ItemType Directory -Path $buildRoot -Force | Out-Null
 Push-Location $repoRoot
 try {
-    foreach($name in @('protocol','receiver','battery_receiver','frame_queue','audio_gate','direct_commands','control','audio_source')) {
+    foreach($name in @('protocol','receiver','battery_receiver','frame_queue','audio_gate','direct_commands','control','audio_source','controller')) {
         $sources=@("tests/asus-delta-ii/${name}_test.cpp")
         if($name -eq 'battery_receiver') { $sources += 'BatteryStatus/AsusDeltaIIBattery.cpp' }
         $libraries=@()
+        $extraIncludes=@()
+        if($name -eq 'controller') { $sources += @('Controllers/AsusAuraUSBController/AsusDeltaIIController/RGBController_AsusDeltaII_Windows.cpp','RGBController/RGBController.cpp','StringUtils.cpp'); $extraIncludes=@('-Itests/asus-delta-ii/controller-stubs','-IRGBController') }
         if($name -eq 'audio_source') { $sources += 'Controllers/AsusAuraUSBController/AsusDeltaIIController/AsusDeltaIIAudioSource_Windows.cpp'; $libraries=@('-lsetupapi','-lole32','-luuid') }
-        & "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra '-I.' '-Idependencies/json' @sources @libraries -o "$buildRoot\delta_${name}_test.exe"
+        & "$compilerBin\g++.exe" -std=c++17 -Wall -Wextra @extraIncludes '-I.' '-Idependencies/json' @sources @libraries -o "$buildRoot\delta_${name}_test.exe"
         if($LASTEXITCODE -ne 0) { throw "Delta II $name test compilation failed" }
         & "$buildRoot\delta_${name}_test.exe"
         if($LASTEXITCODE -ne 0) { throw "Delta II $name test failed" }

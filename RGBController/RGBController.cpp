@@ -91,6 +91,8 @@ RGBController::RGBController()
     /*-----------------------------------------------------*\
     | Initialize device thread                              |
     \*-----------------------------------------------------*/
+    CallFlag_UpdateLEDs = false;
+    CallFlag_UpdateMode = false;
     DeviceThreadRunning = true;
     DeviceCallThread    = new std::thread(&RGBController::DeviceCallThreadFunction, this);
 }
@@ -2054,9 +2056,6 @@ void RGBController::SaveMode()
 
 void RGBController::DeviceCallThreadFunction()
 {
-    CallFlag_UpdateLEDs = false;
-    CallFlag_UpdateMode = false;
-
     while(DeviceThreadRunning.load() == true)
     {
         if(CallFlag_UpdateMode.load() == true)

@@ -173,6 +173,7 @@ HEADERS +=                                                                      
     NetworkClient.h                                                                             \
     NetworkProtocol.h                                                                           \
     NetworkServer.h                                                                             \
+    OpenRGBDeviceAwakeSave.h \
     OpenRGBBatteryStatusInterface.h \
     BatteryStatus/BatteryStatusManager.h \
     BatteryStatus/BatteryMonitoringService.h \

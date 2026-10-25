@@ -8,6 +8,9 @@
 \*---------------------------------------------------------*/
 
 #include <QTimer>
+#include <QMessageBox>
+#include <QPointer>
+#include "OpenRGBDeviceAwakeSave.h"
 
 #include "OpenRGBDevicePage.h"
 #include "OpenRGBDeviceEditorDialog.h"
@@ -2132,10 +2135,30 @@ void OpenRGBDevicePage::on_ColorWheelBox_colorChanged(const QColor color)
 
 void OpenRGBDevicePage::on_DeviceSaveButton_clicked()
 {
-    if(device->GetModeFlags(device->GetActiveMode()) & MODE_FLAG_MANUAL_SAVE)
+    if(awake_save_pending || !(device->GetModeFlags(device->GetActiveMode()) & MODE_FLAG_MANUAL_SAVE))return;
+    auto* awake=dynamic_cast<OpenRGBDeviceAwakeSave*>(device);
+    if(!awake){device->SaveMode();return;}
+    // Prepare while the controller is present. Its weak lifetime ticket remains
+    // safe if hotplug removes the device during the modal confirmation.
+    auto operation=awake->PrepareAwakeSave();
+    const auto prompt=QString::fromStdString(operation->Prompt());
+    QPointer<OpenRGBDevicePage> page(this);
+    const auto answer=QMessageBox::question(window(),tr("Apply headset lighting"),prompt,QMessageBox::Yes|QMessageBox::Cancel,QMessageBox::Cancel);
+    if(!page || answer!=QMessageBox::Yes){operation->Cancel();return;}
+    awake_save_pending=true;ui->DeviceSaveButton->setEnabled(false);
+    operation->Confirm();
+    const auto started=std::chrono::steady_clock::now();
+    auto* timer=new QTimer(this);
+    connect(timer,&QTimer::timeout,this,[this,timer,operation,started]()
     {
-        device->SaveMode();
-    }
+        auto result=operation->Read();
+        if(!result.done && std::chrono::steady_clock::now()-started<std::chrono::seconds(10))return;
+        if(!result.done){operation->Cancel();result=operation->Read();result.message="Headset lighting timed out; no retry was requested.";}
+        timer->stop();timer->deleteLater();awake_save_pending=false;UpdateModeUi();
+        if(result.success)QMessageBox::information(window(),tr("Headset lighting"),QString::fromStdString(result.message));
+        else QMessageBox::warning(window(),tr("Headset lighting"),QString::fromStdString(result.message));
+    });
+    timer->start(100);
 }
 
 void OpenRGBDevicePage::on_DeviceViewBox_selectionChanged(int selected_zone, int selected_segment, std::vector<unsigned int> indices)

@@ -297,6 +297,8 @@ protected:
     unsigned int            LEDsInZone(unsigned int zone);
     void                    SetupColors();
     void                    UpdateLEDsInternal();
+    // Queue on the existing worker without signaling while device locks are held.
+    void                    ScheduleDeviceUpdate() { CallFlag_UpdateLEDs = true; }
 
     /*-----------------------------------------------------*\
     | Functions to be implemented in device implementation  |
