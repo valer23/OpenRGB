@@ -13,6 +13,7 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <cstdint>
 #include <cstdio>
@@ -154,6 +155,10 @@ public:
     | Function for cleaning up on exit                      |
     \*-----------------------------------------------------*/
     void                                Cleanup();
+#ifdef _WIN32
+    bool TryDetectCorsairFromInput(std::string path, std::chrono::steady_clock::time_point observed,
+                                   std::function<bool()> current, std::function<void(bool)> finished);
+#endif
 
     /*-----------------------------------------------------*\
     | Functions to access device lists                      |
@@ -362,7 +367,8 @@ private:
     /*-----------------------------------------------------*\
     | Functions to run detectors                            |
     \*-----------------------------------------------------*/
-    void RunHIDDetector(hid_device_info* current_hid_device, json& detector_settings);
+    void RunHIDDetector(hid_device_info* current_hid_device, json& detector_settings,
+                        const std::function<bool()>& current = {});
     void RunHIDWrappedDetector(const hidapi_wrapper* wrapper, hid_device_info* current_hid_device, json& detector_settings);
 
     /*-----------------------------------------------------*\

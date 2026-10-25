@@ -13,6 +13,10 @@
 #include <hidapi.h>
 #include "DetectionManager.h"
 #include "LogManager.h"
+#ifdef _WIN32
+#include "CorsairStartupRecovery_Windows.h"
+#include "CorsairStartupRecoveryPolicy.h"
+#endif
 
 /*---------------------------------------------------------*\
 | Corsair Peripheral specific includes                      |
@@ -49,12 +53,26 @@ DetectedControllers DetectCorsairV2HardwareControllers(hid_device_info* info, co
         {
             LOG_WARNING("[%s] not registering device, capabilities unknown.", name.c_str());
             delete controller;
+#ifdef _WIN32
+            if(info->vendor_id==0x1B1C && info->product_id==0x1BA6 && info->interface_number==1 && info->usage_page==0xFF42 && info->usage==1)
+            {
+                if(CorsairRecoveryInputScope::Ambiguous() && CorsairRecoveryInputScope::Current())
+                {
+                    ForgetMissingCorsairReceiver(info->path);
+                    LOG_WARNING("[Corsair startup recovery] Wireless child mapping is ambiguous; use awake manual rescan");
+                }
+                else WatchMissingCorsairReceiver(info->path);
+            }
+#endif
             return(detected_controllers);
         }
 
         RGBController_CorsairV2HW*          rgb_controller  = new RGBController_CorsairV2HW(controller);
 
         detected_controllers.push_back(rgb_controller);
+#ifdef _WIN32
+        if(info->vendor_id==0x1B1C && info->product_id==0x1BA6)ForgetMissingCorsairReceiver(info->path);
+#endif
     }
 
     return(detected_controllers);
@@ -75,12 +93,26 @@ DetectedControllers DetectCorsairV2SoftwareControllers(hid_device_info* info, co
         {
             LOG_WARNING("[%s] not registering device, capabilities unknown.", name.c_str());
             delete controller;
+#ifdef _WIN32
+            if(info->vendor_id==0x1B1C && info->product_id==0x1BA6 && info->interface_number==1 && info->usage_page==0xFF42 && info->usage==1)
+            {
+                if(CorsairRecoveryInputScope::Ambiguous() && CorsairRecoveryInputScope::Current())
+                {
+                    ForgetMissingCorsairReceiver(info->path);
+                    LOG_WARNING("[Corsair startup recovery] Wireless child mapping is ambiguous; use awake manual rescan");
+                }
+                else WatchMissingCorsairReceiver(info->path);
+            }
+#endif
             return(detected_controllers);
         }
 
         RGBController_CorsairV2SW*          rgb_controller  = new RGBController_CorsairV2SW(controller);
 
         detected_controllers.push_back(rgb_controller);
+#ifdef _WIN32
+        if(info->vendor_id==0x1B1C && info->product_id==0x1BA6)ForgetMissingCorsairReceiver(info->path);
+#endif
     }
 
     return(detected_controllers);

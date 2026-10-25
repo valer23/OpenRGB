@@ -17,6 +17,7 @@
 #include "StringUtils.h"
 #ifdef _WIN32
 #include <hidapi_winapi.h>
+#include "CorsairStartupRecoveryPolicy.h"
 #endif
 #include <nlohmann/json.hpp>
 #include "BatteryStatus/BatteryStatusManager.h"
@@ -44,6 +45,9 @@ CorsairPeripheralV2Controller::CorsairPeripheralV2Controller(hid_device* dev_han
     \*---------------------------------------------------------*/
     unsigned int pid    = GetAddressRetry(0x12);
     mouse_receiver_pid  = pid;
+#ifdef _WIN32
+    if(CorsairRecoveryInputScope::Requested() && pid!=CORSAIR_SLIPSTREAM_WIRELESS_PID1)return;
+#endif
 
     switch(pid)
     {
@@ -53,6 +57,21 @@ CorsairPeripheralV2Controller::CorsairPeripheralV2Controller(hid_device* dev_han
         case CORSAIR_SLIPSTREAM_M75_PID:
         case CORSAIR_SLIPSTREAM_IRONCLAW_SE_PID:
             write_cmd   = CORSAIR_V2_WRITE_WIRELESS_ID;
+#ifdef _WIN32
+            if(mouse_receiver_pid==CORSAIR_SLIPSTREAM_WIRELESS_PID1 && CorsairRecoveryInputScope::Requested())
+            {
+                // Reuse this constructor's EXISTING handle and existing
+                // receiver-only connection check. No separate reader/probe.
+                unsigned int connected_mask=0;
+                if(!CorsairRecoveryInputScope::Current())return;
+                const bool valid=ReadMouseConnection(&connected_mask);
+                if(!valid || !CorsairRecoveryInputScope::Current())return;
+                // Bit0 is receiver address08; bit1 is wireless child09.
+                // No other wireless child may be present for automatic recovery.
+                if(connected_mask & ~0x03U)CorsairRecoveryInputScope::MarkAmbiguous();
+                if(!(connected_mask & 0x02U) || (connected_mask & ~0x03U))return;
+            }
+#endif
             pid         = GetAddressRetry(0x12);
             break;
 
@@ -711,13 +730,29 @@ void CorsairPeripheralV2Controller::ReadMouseEvents(unsigned long long now)
     }
 }
 
-bool CorsairPeripheralV2Controller::ReadMouseConnection()
+bool CorsairPeripheralV2Controller::ReadMouseConnection(unsigned int* connected_mask)
 {
     /*---------------------------------------------------------*\
     | Query the receiver's child mask only on initialization   |
     | or event-reader recovery. This does not address the mouse.|
     \*---------------------------------------------------------*/
-    ClearPacketBuffer();
+    if(connected_mask)
+    {
+        // Recovery must bound queued input before correlating its sole GET36.
+        bool drained=false;
+        unsigned char old[CORSAIR_V2_PACKET_SIZE]={};
+        for(unsigned int i=0;i<8;++i)
+        {
+            const int count=hid_read_timeout(dev,old,sizeof(old),0);
+            if(count<0)return false;
+            if(!count){drained=true;break;}
+        }
+        if(!drained)return false;
+#ifdef _WIN32
+        if(!CorsairRecoveryInputScope::Current())return false;
+#endif
+    }
+    else ClearPacketBuffer();
     unsigned char request[CORSAIR_V2_WRITE_SIZE] = {};
     unsigned char response[CORSAIR_V2_PACKET_SIZE] = {};
     request[1] = CORSAIR_V2_WRITE_WIRED_ID;
@@ -732,6 +767,7 @@ bool CorsairPeripheralV2Controller::ReadMouseConnection()
     {
         return false;
     }
+    if(connected_mask)*connected_mask=response[3];
     SetMouseConnected((response[3] & (1U << (write_cmd - CORSAIR_V2_WRITE_WIRED_ID))) != 0);
     return true;
 }
