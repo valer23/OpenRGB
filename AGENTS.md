@@ -52,7 +52,9 @@ validation was performed.
   exposed through Edit Device and stored in Configuration.json. OpenRGB.json is
   for application settings. Check the actual UI consumer: its checkbox type is
   `bool`, not `boolean`. Verify rendering, callbacks, defaults/reset, live changes
-  and saved reloads. Keep personal migration tools outside controller-only MRs.
+  and saved reloads. A settings schema alone does not enable Edit Device: check
+  the controller's configurability flags too. Keep personal migration tools
+  outside controller-only MRs.
 - Identify protocol modes by `modes[active_mode].value`, not presentation order.
   Keep internal streaming sentinels out of hardware commands. Check startup
   readback, reordered modes and existing modes when consolidating update paths.
@@ -74,6 +76,23 @@ validation was performed.
   A restored software profile does not prove automatic device-side saving. Set
   save capabilities only when the relevant persistence behaviour is verified.
 
+## Preserve saved profiles across upgrades
+
+- Treat persisted identity and capability metadata as a compatibility contract.
+  Trace the actual profile loader, save editor and plugin matchers; they may use
+  different fields. Check name, vendor, description, serial, version, location,
+  modes and zone metadata rather than assuming the display name is sufficient.
+- When a change is necessary, preserve compatibility or update the project-owned
+  migration path. Cover already-renamed and partially migrated entries, including
+  nested plugin assignments. Keep migrations narrow and idempotent, verify
+  backups, preserve colours/effects/preferences, and reject unsupported mappings
+  before writing files.
+- Check packaged layout/migration data against the controller in the built
+  executable. Unchanged profile-file hashes prove preservation, not compatibility.
+- Test copies of existing profiles as well as fresh defaults. Check load, switching
+  and Save Profile in the actual app. An Add + Keep pair can mean stale identity
+  or mode/zone capabilities rather than duplicate detection. Do not hide it by
+  merging display names: two identically named physical devices may be valid.
 ## Keep the implementation and diff small
 
 - Follow CONTRIBUTING.md and nearby code, including its C-style conventions and
