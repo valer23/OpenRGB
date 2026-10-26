@@ -24,7 +24,8 @@ function Update-DeviceReferences($node) {
             }
             $script:changed = $true
         }
-        if($node.name -eq $newGpu -and $node.description -eq 'KFA2 SG I2C lighting controller') {
+        if($node.name -eq $newGpu -and $node.description -in @('KFA2 SG I2C lighting controller','GALAX / KFA2 RTX GPU')) {
+            $gpuBefore = $node | ConvertTo-Json -Depth 100 -Compress
             $node.description = $gpuLayout.description
             if($node.PSObject.Properties['vendor']) {$node.vendor = $gpuLayout.vendor}
             if($node.PSObject.Properties['modes']) {
@@ -45,7 +46,24 @@ function Update-DeviceReferences($node) {
                 }
                 $node.modes = $newModes
             }
-            $script:changed = $true
+            $gpuAfter = $node | ConvertTo-Json -Depth 100 -Compress
+            if($gpuAfter -ne $gpuBefore) {$script:changed = $true}
+        }
+        # Shutdown support added manual Save To Device to the existing Static
+        # mode. Old descriptors otherwise appear as Add + Keep in Save Profile.
+        if($node.name -eq 'ASUS ROG STRIX B850-F GAMING WIFI7 NEO (logo)' -and
+           $node.description -eq 'Onboard logo only; captured 0B05:1CD2 protocol' -and
+           $node.PSObject.Properties['modes']) {
+            if($node.modes.Count -ne 1 -or $node.modes[0].name -ne 'Static') {
+                throw 'Unknown ASUS NEO saved-mode schema; profiles were not modified.'
+            }
+            $flags = [int]$node.modes[0].flags
+            if($flags -eq 32) {
+                $node.modes[0].flags = 288 # PER_LED_COLOR | MANUAL_SAVE
+                $script:changed = $true
+            } elseif($flags -ne 288) {
+                throw 'Unknown ASUS NEO mode capabilities; profiles were not modified.'
+            }
         }
         if($node.name -eq $oldFan) {
             $node.name = $newFan
