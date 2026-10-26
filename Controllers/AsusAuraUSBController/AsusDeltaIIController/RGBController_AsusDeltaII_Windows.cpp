@@ -10,7 +10,7 @@ RGBController_AsusDeltaII::RGBController_AsusDeltaII(const std::string& path,con
     description="Both side logos share one colour. Use Save To Device while the headset is awake. "
         "Direct animation follows audible playback on Windows. ASUS RGB integration is not available yet.";
     location="HID: "+path;serial=device_serial;version="Experimental Windows RGB";
-    flags=CONTROLLER_FLAG_RESET_BEFORE_UPDATE;active_mode=0;
+    flags=CONTROLLER_FLAG_RESET_BEFORE_UPDATE | CONTROLLER_FLAG_MANUALLY_CONFIGURABLE_DEVICE_SPECIFIC;active_mode=0;
     const char* names[]={"Direct","Static","Breathing","Strobing","Color cycle","Rainbow","Off"};
     for(unsigned i=0;i<7;++i)
     {
@@ -77,9 +77,10 @@ void RGBController_AsusDeltaII::QueueAwake(const std::shared_ptr<Operation>& ope
     std::lock_guard<std::mutex> lock(DeviceMutex);
     if(closing || operation->Cancelled() || active_mode<0 || static_cast<size_t>(active_mode)>=modes.size())
     {operation->Complete(false,"Headset lighting is unavailable");return;}
+    if(modes[active_mode].value<0 || modes[active_mode].value>6){operation->Complete(false,"Invalid headset lighting value");return;}
     CancelPending("A newer headset lighting action replaced this request");
     const RGBColor colour=colors.empty()?0:colors[0];
-    pending=Request{operation,confirmed,active_mode,modes[active_mode].brightness,
+    pending=Request{operation,confirmed,modes[active_mode].value,modes[active_mode].brightness,
         {static_cast<unsigned char>(RGBGetRValue(colour)),static_cast<unsigned char>(RGBGetGValue(colour)),
          static_cast<unsigned char>(RGBGetBValue(colour))},backend};
     ScheduleDeviceUpdate();
@@ -90,7 +91,7 @@ void RGBController_AsusDeltaII::CancelPending(const std::string& reason)
 }
 void RGBController_AsusDeltaII::StopOnWorker()
 {
-    control.Stop();audio.Stop();streaming=false;applied_mode=-1;last_audio={};
+    control.Stop();audio.Stop();streaming=false;applied_value=-1;last_audio={};
 }
 void RGBController_AsusDeltaII::Apply(Request request)
 {
@@ -109,7 +110,7 @@ void RGBController_AsusDeltaII::Apply(Request request)
     if(request.backend!=Backend::DirectReceiver)
     {finish(false,"ASUS RGB integration is not available yet; no direct fallback was attempted");return;}
     std::string error;bool success=false;
-    if(request.mode==0)
+    if(request.value==0)
     {
         if(!audio.Open(request.confirmed,error)){finish(false,error);return;}
         if(request.operation->Cancelled()){finish(false,"Headset lighting operation cancelled");return;}
@@ -117,10 +118,10 @@ void RGBController_AsusDeltaII::Apply(Request request)
         success=control.BeginSoftware(request.brightness,request.colour,request.confirmed,error);
         streaming=success;
     }
-    else if(request.mode==6)success=control.ApplyOff(request.confirmed,error);
-    else success=control.ApplyBuiltin(request.mode,request.brightness,request.colour,request.confirmed,error);
+    else if(request.value==6)success=control.ApplyOff(request.confirmed,error);
+    else success=control.ApplyBuiltin(request.value,request.brightness,request.colour,request.confirmed,error);
     if(!success){finish(false,error);return;}
-    applied_mode=request.mode;applied_brightness=request.brightness;
+    applied_value=request.value;applied_brightness=request.brightness;
     finish(true,streaming ? "Direct RGB active. Animation follows audible playback and pauses during silence." : "Headset firmware lighting applied.");
 }
 void RGBController_AsusDeltaII::DeviceUpdateLEDs()
@@ -133,7 +134,7 @@ void RGBController_AsusDeltaII::DeviceUpdateLEDs()
     }
     if(stop_requested){StopOnWorker();stop_requested=false;}
     if(pending){auto request=std::move(*pending);pending.reset();Apply(std::move(request));}
-    if(!streaming || active_mode!=0)return;
+    if(!streaming || active_mode<0 || static_cast<size_t>(active_mode)>=modes.size() || modes[active_mode].value!=0)return;
     const auto now=std::chrono::steady_clock::now();
     if(last_audio==Time{} || now-last_audio>=100ms)
     {
@@ -153,9 +154,10 @@ void RGBController_AsusDeltaII::DeviceUpdateMode()
 {
     if(active_mode<0 || static_cast<size_t>(active_mode)>=modes.size())
     {CancelPending("Invalid headset lighting mode");stop_requested=true;ScheduleDeviceUpdate();return;}
-    if(pending && (pending->mode!=active_mode || pending->brightness!=modes[active_mode].brightness))
+    const int selected_value=modes[active_mode].value;
+    if(pending && (pending->value!=selected_value || pending->brightness!=modes[active_mode].brightness))
         CancelPending("Lighting selection changed; confirm the awake headset again");
-    if(applied_mode!=active_mode || applied_brightness!=modes[active_mode].brightness)
+    if(applied_value!=selected_value || applied_brightness!=modes[active_mode].brightness)
     {stop_requested=true;ScheduleDeviceUpdate();}
 }
 void RGBController_AsusDeltaII::DeviceSaveMode()

@@ -7,7 +7,7 @@
 #include <condition_variable>
 #include <optional>
 
-class RGBController_AsusDeltaII final : public RGBController, public OpenRGBDeviceAwakeSave
+class RGBController_AsusDeltaII : public RGBController, public OpenRGBDeviceAwakeSave
 {
 public:
     RGBController_AsusDeltaII(const std::string& path,const std::string& device_serial);
@@ -22,7 +22,7 @@ private:
     {
         std::shared_ptr<Operation> operation;
         Time confirmed;
-        int mode;
+        int value;
         unsigned brightness;
         AsusDeltaIIProtocol::RGB colour;
         Backend backend;
@@ -35,7 +35,7 @@ private:
     Backend backend=Backend::AsusService;
     std::optional<Request> pending;
     bool stop_requested=false,closing=false,streaming=false;
-    int applied_mode=-1;
+    int applied_value=-1;
     unsigned applied_brightness=0;
     Time last_audio{};
     std::mutex close_mutex;

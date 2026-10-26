@@ -33,6 +33,12 @@ bool AsusDeltaIIAudioSource::Open(Time,std::string&){++audio_opens;state=std::ma
 uint64_t AsusDeltaIIAudioSource::Generation()const{return state?77:0;}
 void AsusDeltaIIAudioSource::Stop(){state.reset();}
 AsusDeltaIIAudioGate::Sample AsusDeltaIIAudioSource::Read(){++audio_reads;return {77,Clock::now(),true,true,playing?1U:0U,false,playing?0.5f:0.0f,1.0f};}
+class ReorderedDelta : public RGBController_AsusDeltaII
+{
+public:
+    ReorderedDelta():RGBController_AsusDeltaII("receiver","serial"){}
+    void Swap(unsigned a,unsigned b){std::unique_lock<std::shared_mutex> lock(AccessMutex);std::swap(modes[a],modes[b]);}
+};
 auto wait(const std::shared_ptr<OpenRGBDeviceAwakeSave::Operation>& operation)
 {
     const auto until=std::chrono::steady_clock::now()+2s;
@@ -54,6 +60,7 @@ int main()
         RGBController_AsusDeltaII controller("receiver path","serial");
         assert(controller.GetDeviceType()==DEVICE_TYPE_HEADSET && controller.GetZoneCount()==1 && controller.GetLEDCount()==1);
         assert(controller.GetModeCount()==7);
+        assert(controller.GetFlags() & CONTROLLER_FLAG_MANUALLY_CONFIGURABLE_DEVICE_SPECIFIC);
         for(unsigned i=0;i<7;++i)assert(controller.GetModeFlags(i)&MODE_FLAG_MANUAL_SAVE);
         controller.SetAllColors(ToRGBColor(89,0,164));controller.SetActiveMode(1);controller.UpdateLEDs();
         std::this_thread::sleep_for(30ms);
@@ -87,6 +94,21 @@ int main()
         controller.SetDeviceSpecificConfiguration({{"rgb_backend","ASUS integration"}});
         std::this_thread::sleep_for(30ms);
         assert(io.writes==beforeBackend); // Backend edit stops without cleanup writes.
+    }
+    {
+        ReorderedDelta controller;controller.Swap(0,4);
+        controller.SetDeviceSpecificConfiguration({{"rgb_backend","Direct receiver"}});
+        controller.SetActiveMode(4); // Direct value0, now at presentation index4.
+        const auto opens=audio_opens.load(),writes=io.writes.load(),reads=audio_reads.load();
+        auto op=controller.PrepareAwakeSave();op->Confirm();assert(wait(op).success);
+        std::this_thread::sleep_for(20ms);
+        assert(audio_opens==opens+1 && io.writes==writes+4 && audio_reads>reads);
+        controller.SetActiveMode(0); // Firmware Color cycle value4 at index0.
+        auto cycle=controller.PrepareAwakeSave();cycle->Confirm();assert(wait(cycle).success);
+        assert(io.writes==writes+7 && audio_opens==opens+1);
+        controller.Swap(1,6);controller.SetActiveMode(1); // Off value6 at index1.
+        auto off=controller.PrepareAwakeSave();off->Confirm();assert(wait(off).success);
+        assert(io.writes==writes+9 && audio_opens==opens+1);
     }
     std::shared_ptr<OpenRGBDeviceAwakeSave::Operation> removed;
     {RGBController_AsusDeltaII controller("receiver","serial");removed=controller.PrepareAwakeSave();}
